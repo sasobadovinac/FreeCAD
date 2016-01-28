@@ -1131,11 +1131,7 @@ Py::Object PyResource::value(const Py::Tuple& args)
 #endif
         break;
     default:
-#if PY_MAJOR_VERSION >= 3
-        item = Py::Unicode("");
-#else
         item = Py::String("");
-#endif
         break;
     }
 
