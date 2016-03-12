@@ -361,7 +361,7 @@ class _ArchDrawingView:
                 result += '">\n'
                 result += svg
                 result += '</g>\n'
-                # print "complete node:",result
+                # print("complete node:",result)
                 obj.ViewResult = result
 
     def onChanged(self, obj, prop):
@@ -523,7 +523,7 @@ class _ArchDrawingView:
     def getDXF(self,obj):
         "returns a DXF representation of the view"
         if obj.RenderingMode == "Solid":
-            print "Unable to get DXF from Solid mode: ",obj.Label
+            print("Unable to get DXF from Solid mode: ",obj.Label)
             return ""
         result = []
         import Drawing

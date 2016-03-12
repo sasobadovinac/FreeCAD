@@ -78,6 +78,20 @@ def export(objectslist,filename):
         if Draft.getType(building) == "Building":
             filestream.write( '    <Building id="$s" buildingType="$s">\n' % (building.Name,building.BuildingType) )
             filestream.write( '        <Area>$f</Area>\n' % str(building.Area.getValueAs("m^2")) )
+
+            # space
+            for space in Draft.getGroupContents(building):
+                if Draft.getType(space) == "Space":
+                    zone = "BLABLA" # TODO build values
+                    filestream.write( '        <Space id="%s" spaceType="%s" zoneIdRef="%s">\n' % (space.Name, space.SpaceType, zone) )
+                    filestream.write( '            <Name>%s</Name>\n' % space.Label )
+                    filestream.write( '            <Description>%s</Description>\n' % space.Description )
+                    filestream.write( '            <Name>%s</Name>\n' % space.Label )
+                    #filestream.write( '            <PeopleNumber unit="NumberOfPeople">1.00000</PeopleNumber>\n' )
+                    #filestream.write( '            <LightPowerPerArea unit="WattPerSquareFoot">1.50000</LightPowerPerArea>\n' )
+                    #filestream.write( '            <EquipPowerPerArea unit="WattPerSquareFoot">0.00000</EquipPowerPerArea>\n' )
+                    filestream.write( '            <Area>$f</Area>\n' % space.Area)
+>>>>>>> python: Arch: *.py: Fix syntax for python3
             
             # spaces
             for space in Draft.getObjectsOfType(Draft.getGroupContents(building.Group,addgroups=True),"Space"):
