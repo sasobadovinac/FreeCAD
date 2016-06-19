@@ -27,8 +27,13 @@ cache:
     ccache: true
 
 language: cpp
-python: 2.7
+
+python:
+    - "2.7"
+    - "3.5"
+
 os: linux
+
 dist: trusty
 sudo: required
 compiler:
