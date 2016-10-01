@@ -33,7 +33,9 @@ else:
     def translate(ctx,txt):
         return txt
 
-    
+if open.__module__ in ['__builtin__','io']:
+    pyopen = open # because we'll redefine open below
+
 def export(objectslist,filename):
     
     if len(objectslist) != 1:
@@ -91,8 +93,7 @@ def export(objectslist,filename):
                     #filestream.write( '            <LightPowerPerArea unit="WattPerSquareFoot">1.50000</LightPowerPerArea>\n' )
                     #filestream.write( '            <EquipPowerPerArea unit="WattPerSquareFoot">0.00000</EquipPowerPerArea>\n' )
                     filestream.write( '            <Area>$f</Area>\n' % space.Area)
->>>>>>> python: Arch: *.py: Fix syntax for python3
-            
+
             # spaces
             for space in Draft.getObjectsOfType(Draft.getGroupContents(building.Group,addgroups=True),"Space"):
                 if not space.Zone:
