@@ -59,8 +59,12 @@ int  ExtensionContainerPy::initialization() {
             //      self is added to the functions arguments list. FreeCAD py implementations are not 
             //      made to handle this, the do not accept self as argument. Hence we only use function
             PyObject *func = PyCFunction_New(tmpptr,obj);
-            //PyObject *method = PyMethod_New(func, (PyObject*)this, PyObject_Type((PyObject*)this));  
+            //PyObject *method = PyMethod_New(func, (PyObject*)this, PyObject_Type((PyObject*)this));
+#if PY_MAJOR_VERSION < 3
             PyDict_SetItem(this->ob_type->tp_dict, PyString_FromString(tmpptr->ml_name), func);
+#else
+            PyDict_SetItem(this->ob_type->tp_dict, PyBytes_FromString(tmpptr->ml_name), func);
+#endif
             Py_DECREF(func);
             //Py_DECREF(method);
             ++tmpptr;
@@ -168,7 +172,11 @@ PyObject* ExtensionContainerPy::addExtension(PyObject *args) {
         //      made to handle this, the do not accept self as argument. Hence we only use function
         PyObject *func = PyCFunction_New(tmpptr, ext->getExtensionPyObject());
         //PyObject *method = PyMethod_New(func, (PyObject*)this, PyObject_Type((PyObject*)this));
+#if PY_MAJOR_VERSION < 3
         PyDict_SetItem(this->ob_type->tp_dict, PyString_FromString(tmpptr->ml_name), func);
+#else
+        PyDict_SetItem(this->ob_type->tp_dict, PyBytes_FromString(tmpptr->ml_name), func);
+#endif
         Py_DECREF(func);
         //Py_DECREF(method);
         ++tmpptr;
