@@ -593,14 +593,16 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         )
         # check which modules are available
         if(UNIX AND NOT APPLE)
-            list(APPEND VTK_COMPONENTS vtkIOMPIParallel vtkParallelMPI vtkhdf5)
-            foreach(_module ${VTK_COMPONENTS})
-                file(GLOB_RECURSE _module_exists /usr/lib*/cmake/*${_module}.cmake
-                                                 ${CMAKE_ROOT}/*${_module}.cmake)
-                if(_module_exists)
-                    list(APPEND AVAILABLE_VTK_COMPONENTS ${_module})
-                endif()
-            endforeach()
+            if(${PYTHON_VERSION_MAJOR} LESS 3)
+                list(APPEND VTK_COMPONENTS vtkIOMPIParallel vtkParallelMPI vtkhdf5)
+                foreach(_module ${VTK_COMPONENTS})
+                    file(GLOB_RECURSE _module_exists /usr/lib*/cmake/*${_module}.cmake
+                                                     ${CMAKE_ROOT}/*${_module}.cmake)
+                    if(_module_exists)
+                        list(APPEND AVAILABLE_VTK_COMPONENTS ${_module})
+                    endif()
+                endforeach()
+            endif()
         endif()
 
         # don't check VERSION 6 as this would exlude VERSION 7
