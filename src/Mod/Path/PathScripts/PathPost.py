@@ -137,7 +137,7 @@ class CommandPathPost:
                 filename = "%s%03d%s" % (fn, n, ext)
 
         if openDialog:
-            foo = QtGui.QFileDialog.getSaveFileName(QtGui.qApp.activeWindow(), "Output File", filename)
+            foo = QtGui.QFileDialog.getSaveFileName(QtGui.QApplication.activeWindow(), "Output File", filename)
             if foo:
                 filename = foo[0]
             else:
@@ -252,6 +252,7 @@ class CommandPathPost:
             if tc is not None:
                 if tc.ToolNumber != currTool:
                     postlist.append(tc)
+                    currTool = tc.ToolNumber
             postlist.append(obj)
 
         fail = True
