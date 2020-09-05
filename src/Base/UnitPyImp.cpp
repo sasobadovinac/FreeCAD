@@ -26,7 +26,7 @@ std::string UnitPy::representation(void) const
     ret << Sig.LuminousIntensity  << ",";
     ret << Sig.Angle  << ")"; 
     std::string type = getUnitPtr()->getTypeString().toUtf8().constData();
-    if(! type.empty())
+    if (! type.empty())
         ret << " [" << type << "]";
 
     return ret.str();
@@ -41,7 +41,40 @@ PyObject *UnitPy::PyMake(struct _typeobject *, PyObject *, PyObject *)  // Pytho
 // constructor method
 int UnitPy::PyInit(PyObject* args, PyObject* /*kwd*/)
 {
+    PyObject *object;
     Unit *self = getUnitPtr();
+
+    // get quantity
+    if (PyArg_ParseTuple(args,"O!",&(Base::QuantityPy::Type), &object)) {
+        // Note: must be static_cast, not reinterpret_cast
+        *self = static_cast<Base::QuantityPy*>(object)->getQuantityPtr()->getUnit();
+        return 0;
+    }
+    PyErr_Clear(); // set by PyArg_ParseTuple()
+
+    // get unit
+    if (PyArg_ParseTuple(args,"O!",&(Base::UnitPy::Type), &object)) {
+        // Note: must be static_cast, not reinterpret_cast
+        *self = *(static_cast<Base::UnitPy*>(object)->getUnitPtr());
+        return 0;
+    }
+    PyErr_Clear(); // set by PyArg_ParseTuple()
+
+    // get string
+    char* string;
+    if (PyArg_ParseTuple(args,"et", "utf-8", &string)) {
+        QString qstr = QString::fromUtf8(string);
+        PyMem_Free(string);
+        try {
+            *self = Quantity::parse(qstr).getUnit();
+            return 0;
+        }
+        catch (const Base::Exception& e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return -1;
+        }
+    }
+    PyErr_Clear(); // set by PyArg_ParseTuple()
 
     int i1=0;
     int i2=0;
@@ -52,32 +85,14 @@ int UnitPy::PyInit(PyObject* args, PyObject* /*kwd*/)
     int i7=0;
     int i8=0;
     if (PyArg_ParseTuple(args, "|iiiiiiii", &i1,&i2,&i3,&i4,&i5,&i6,&i7,&i8)) {
-        *self = Unit(i1,i2,i3,i4,i5,i6,i7,i8);
-        return 0;
-    }
-    PyErr_Clear(); // set by PyArg_ParseTuple()
-
-    PyObject *object;
-
-    if (PyArg_ParseTuple(args,"O!",&(Base::QuantityPy::Type), &object)) {
-        // Note: must be static_cast, not reinterpret_cast
-        *self = static_cast<Base::QuantityPy*>(object)->getQuantityPtr()->getUnit();
-        return 0;
-    }
-    PyErr_Clear(); // set by PyArg_ParseTuple()
-
-    if (PyArg_ParseTuple(args,"O!",&(Base::UnitPy::Type), &object)) {
-        // Note: must be static_cast, not reinterpret_cast
-        *self = *(static_cast<Base::UnitPy*>(object)->getUnitPtr());
-        return 0;
-    }
-    PyErr_Clear(); // set by PyArg_ParseTuple()
-    char* string;
-    if (PyArg_ParseTuple(args,"et", "utf-8", &string)) {
-        QString qstr = QString::fromUtf8(string);
-        PyMem_Free(string);
-        *self = Quantity::parse(qstr).getUnit();
-        return 0;
+        try {
+            *self = Unit(i1,i2,i3,i4,i5,i6,i7,i8);
+            return 0;
+        }
+        catch (const Base::OverflowError& e) {
+            PyErr_SetString(PyExc_OverflowError, e.what());
+            return -1;
+        }
     }
 
     PyErr_SetString(PyExc_TypeError, "Either string, (float,8 ints), Unit() or Quantity()");

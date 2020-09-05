@@ -1,6 +1,7 @@
 # ***************************************************************************
+# *   Copyright (c) 2017 Johannes Hartung <j.hartung@gmx.net>               *
 # *                                                                         *
-# *   Copyright (c) 2017 - Johannes Hartung <j.hartung@gmx.net>             *
+# *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -19,7 +20,6 @@
 # *   USA                                                                   *
 # *                                                                         *
 # ***************************************************************************
-from __future__ import print_function
 
 __title__ = "FreeCAD Fenics XML mesh reader"
 __author__ = "Johannes Hartung"
@@ -29,10 +29,11 @@ __url__ = "http://www.freecadweb.org"
 #  \ingroup FEM
 #  \brief FreeCAD Fenics Mesh XML reader for FEM workbench
 
+import itertools
+from xml.etree import ElementTree as ET
 
 import FreeCAD
-from xml.etree import ElementTree as ET
-import itertools
+from FreeCAD import Console
 
 
 def read_fenics_mesh_xml(xmlfilename):
@@ -58,8 +59,8 @@ def read_fenics_mesh_xml(xmlfilename):
 
         vertex_size = 0
 
-        print("Mesh dimension: %d" % (dim,))
-        print("Mesh cell type: %s" % (cell_type,))
+        Console.PrintLog("Mesh dimension: %d\n" % (dim,))
+        Console.PrintLog("Mesh cell type: %s\n" % (cell_type,))
 
         # every cell type contains a dict with key=dimension and value=number
 
@@ -77,10 +78,10 @@ def read_fenics_mesh_xml(xmlfilename):
         cell_dict = {}
 
         if find_vertices is None:
-            print("No vertices found!")
+            Console.PrintWarning("No vertices found!\n")
         else:
             vertex_size = int(find_vertices.attrib.get("size"))
-            print("Reading %d vertices" % (vertex_size,))
+            Console.PrintLog("Reading %d vertices\n" % (vertex_size,))
 
             for vertex in find_vertices:
                 ind = int(vertex.get("index"))
@@ -94,18 +95,18 @@ def read_fenics_mesh_xml(xmlfilename):
                     # increase node index by one, since fenics starts at 0, FreeCAD at 1
                     # print("%d %f %f %f" % (ind, node_x, node_y, node_z))
                 else:
-                    print("found strange vertex tag: %s" % (vertex.tag,))
+                    Console.PrintWarning("found strange vertex tag: %s\n" % (vertex.tag,))
 
         if find_cells is None:
-            print("No cells found!")
+            Console.PrintWarning("No cells found!\n")
         else:
-            print("Reading %d cells" % (int(find_cells.attrib.get("size")),))
+            Console.PrintLog("Reading %d cells\n" % (int(find_cells.attrib.get("size")),))
             for cell in find_cells:
                 ind = int(cell.get("index"))
 
                 if cell.tag.lower() != cell_type.lower():
-                    print(
-                        "Strange mismatch between cell type {} and cell tag {}"
+                    Console.PrintWarning(
+                        "Strange mismatch between cell type {} and cell tag {}\n"
                         .format(cell_type, cell.tag.lower())
                     )
                 num_vertices = cells_parts_dim[cell_type][0]
@@ -232,23 +233,23 @@ def read_fenics_mesh_xml(xmlfilename):
     root = tree.getroot()
 
     if root.tag.lower() != "dolfin":
-        print("Strange root tag, should be dolfin!")
+        Console.PrintWarning("Strange root tag, should be dolfin!\n")
 
     find_mesh = root.find("mesh")
     if find_mesh is not None:  # these are consistency checks of the XML structure
-        print("Mesh found")
+        Console.PrintMessage("Mesh found\n")
         (nodes, cells_dict, cell_type, dim) = read_mesh_block(find_mesh)
         element_dict = generate_lower_dimensional_structures(nodes, cells_dict, cell_type, dim)
-        print("Show min max element dict")
+        Console.PrintMessage("Show min max element dict\n")
         for (elm, numbers) in list(element_dict.items()):
             lst = sorted(list(numbers.items()), key=lambda x: x[0])
             if lst != []:
-                print(elm, " min: ", lst[0], " max: ", lst[-1])
+                Console.PrintWarning(elm, " min: ", lst[0], " max: ", lst[-1], "\n")
     else:
-        print("No mesh found")
+        Console.PrintError("No mesh found\n")
 
     if root.find("data") is not None:
-        print("Internal mesh data found")
+        Console.PrintLog("Internal mesh data found\n")
 
     return {
         "Nodes": nodes,

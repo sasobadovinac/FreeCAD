@@ -2,235 +2,273 @@
 <!DOCTYPE TS>
 <TS version="2.0" language="ja" sourcelanguage="en">
   <context>
+    <name>AddonInstaller</name>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="444"/>
+      <source>Installed location</source>
+      <translation>インストール場所</translation>
+    </message>
+  </context>
+  <context>
     <name>AddonsInstaller</name>
     <message>
-      <location filename="../../addonmanager_macro.py" line="145"/>
+      <location filename="../../addonmanager_macro.py" line="147"/>
       <source>Unable to fetch the code of this macro.</source>
-      <translation type="unfinished">Unable to fetch the code of this macro.</translation>
+      <translation>このマクロのコードがフェッチできません。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_macro.py" line="164"/>
+      <location filename="../../addonmanager_macro.py" line="166"/>
       <source>Unable to retrieve a description for this macro.</source>
-      <translation type="unfinished">Unable to retrieve a description for this macro.</translation>
+      <translation>このマクロについての説明を受信することができません。</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="77"/>
+      <location filename="../../AddonManager.py" line="76"/>
       <source>The addons that can be installed here are not officially part of FreeCAD, and are not reviewed by the FreeCAD team. Make sure you know what you are installing!</source>
-      <translation type="unfinished">The addons that can be installed here are not officially part of FreeCAD, and are not reviewed by the FreeCAD team. Make sure you know what you are installing!</translation>
+      <translation>ここからインストールできますアドオンは、FreeCAD公式の一部ではないゆえにFreeCADチームによってレビューがなされていない。あなたが何をインストールしようとしているかを確認して下さい！</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="187"/>
+      <location filename="../../AddonManager.py" line="190"/>
       <source>Addon manager</source>
-      <translation type="unfinished">Addon manager</translation>
+      <translation>アドオン・マネージャー</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="189"/>
+      <location filename="../../AddonManager.py" line="192"/>
       <source>You must restart FreeCAD for changes to take effect. Press Ok to restart FreeCAD now, or Cancel to restart later.</source>
-      <translation type="unfinished">You must restart FreeCAD for changes to take effect. Press Ok to restart FreeCAD now, or Cancel to restart later.</translation>
+      <translation>変更を有効にするためには、「Ok」を押してFreeCADを今すぐ再起動する必要がありますか、とりあえず「キャンセル」を押して再起動を後回しにしておくこともできます。</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="230"/>
+      <location filename="../../AddonManager.py" line="233"/>
       <source>Checking for updates...</source>
-      <translation type="unfinished">Checking for updates...</translation>
+      <translation>アップデートを確認中…</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="249"/>
+      <location filename="../../AddonManager.py" line="253"/>
       <source>Apply</source>
       <translation>適用する</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="249"/>
+      <location filename="../../AddonManager.py" line="253"/>
       <source>update(s)</source>
-      <translation type="unfinished">update(s)</translation>
+      <translation>アップデート</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="252"/>
+      <location filename="../../AddonManager.py" line="256"/>
       <source>No update available</source>
-      <translation type="unfinished">No update available</translation>
+      <translation>利用可能なアップデートはありません</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="405"/>
+      <location filename="../../AddonManager.py" line="431"/>
       <source>Macro successfully installed. The macro is now available from the Macros dialog.</source>
-      <translation type="unfinished">Macro successfully installed. The macro is now available from the Macros dialog.</translation>
+      <translation>マクロのインストールが成功しました。このマクロは、マクロダイアログよりすぐに利用できます。</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="407"/>
+      <location filename="../../AddonManager.py" line="433"/>
       <source>Unable to install</source>
-      <translation type="unfinished">Unable to install</translation>
+      <translation>インストールできません</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="469"/>
+      <location filename="../../AddonManager.py" line="495"/>
       <source>Addon successfully removed. Please restart FreeCAD</source>
-      <translation type="unfinished">Addon successfully removed. Please restart FreeCAD</translation>
+      <translation>アドオンの削除が成功しました。FreeCADを再起動してください。</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="471"/>
+      <location filename="../../AddonManager.py" line="497"/>
       <source>Unable to remove this addon</source>
-      <translation type="unfinished">Unable to remove this addon</translation>
+      <translation>このアドオンを削除できません</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="477"/>
+      <location filename="../../AddonManager.py" line="503"/>
       <source>Macro successfully removed.</source>
-      <translation type="unfinished">Macro successfully removed.</translation>
+      <translation>マクロを削除しました</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="479"/>
+      <location filename="../../AddonManager.py" line="505"/>
       <source>Macro could not be removed.</source>
-      <translation type="unfinished">Macro could not be removed.</translation>
+      <translation>マクロを削除できませんでした</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="111"/>
+      <location filename="../../addonmanager_workers.py" line="135"/>
       <source>Unable to download addon list.</source>
-      <translation type="unfinished">Unable to download addon list.</translation>
+      <translation>アドオンの一覧をダウンロードできませんでした。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="116"/>
+      <location filename="../../addonmanager_workers.py" line="140"/>
       <source>Workbenches list was updated.</source>
-      <translation type="unfinished">Workbenches list was updated.</translation>
+      <translation>ワークベンチの一覧を更新しました。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="548"/>
+      <location filename="../../addonmanager_workers.py" line="634"/>
       <source>Outdated GitPython detected, consider upgrading with pip.</source>
-      <translation type="unfinished">Outdated GitPython detected, consider upgrading with pip.</translation>
+      <translation>古い GitPython が見つかりました。pip によるアップグレードを検討してください。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="233"/>
+      <location filename="../../addonmanager_workers.py" line="262"/>
       <source>List of macros successfully retrieved.</source>
-      <translation type="unfinished">List of macros successfully retrieved.</translation>
+      <translation>マクロの一覧を取り込むことに成功しました。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="457"/>
+      <location filename="../../addonmanager_workers.py" line="542"/>
       <source>Retrieving description...</source>
-      <translation type="unfinished">Retrieving description...</translation>
+      <translation>説明の取り込み中</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="315"/>
+      <location filename="../../addonmanager_workers.py" line="355"/>
       <source>Retrieving info from</source>
-      <translation type="unfinished">Retrieving info from</translation>
+      <translation>情報を取り込み中</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="376"/>
+      <location filename="../../addonmanager_workers.py" line="442"/>
       <source>An update is available for this addon.</source>
-      <translation type="unfinished">An update is available for this addon.</translation>
+      <translation>このアドオンでアップデートが利用可能です。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="378"/>
+      <location filename="../../addonmanager_workers.py" line="438"/>
       <source>This addon is already installed.</source>
-      <translation type="unfinished">This addon is already installed.</translation>
+      <translation>このアドオンは既にインストールされています。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="383"/>
-      <source>This add-on is marked as obsolete</source>
-      <translation type="unfinished">This add-on is marked as obsolete</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="383"/>
-      <source>This usually means it is no longer maintained, and some more advanced add-on in this list provides the same functionality.</source>
-      <translation type="unfinished">This usually means it is no longer maintained, and some more advanced add-on in this list provides the same functionality.</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="459"/>
+      <location filename="../../addonmanager_workers.py" line="544"/>
       <source>Retrieving info from git</source>
-      <translation type="unfinished">Retrieving info from git</translation>
+      <translation>Gitからの情報を取り込み中</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="462"/>
+      <location filename="../../addonmanager_workers.py" line="547"/>
       <source>Retrieving info from wiki</source>
-      <translation type="unfinished">Retrieving info from wiki</translation>
+      <translation>Wikiからの情報を取り込み中</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="512"/>
+      <location filename="../../addonmanager_workers.py" line="596"/>
       <source>GitPython not found. Using standard download instead.</source>
-      <translation type="unfinished">GitPython not found. Using standard download instead.</translation>
+      <translation>GitPythonが見つかりません。代わりに標準のダウンロードを使用しています。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="517"/>
+      <location filename="../../addonmanager_workers.py" line="601"/>
       <source>Your version of python doesn&apos;t appear to support ZIP files. Unable to proceed.</source>
-      <translation type="unfinished">Your version of python doesn&apos;t appear to support ZIP files. Unable to proceed.</translation>
+      <translation>利用しているPythonのバージョンではZIPファイルをサポートしていないようです。ゆえに続行できません。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="582"/>
+      <location filename="../../addonmanager_workers.py" line="670"/>
       <source>Workbench successfully installed. Please restart FreeCAD to apply the changes.</source>
-      <translation type="unfinished">Workbench successfully installed. Please restart FreeCAD to apply the changes.</translation>
+      <translation>ワークベンチのインストールが成功しました。 FreeCADを再起動して変更を有効にしてください。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="633"/>
+      <location filename="../../addonmanager_workers.py" line="720"/>
       <source>Missing workbench</source>
-      <translation type="unfinished">Missing workbench</translation>
+      <translation>ワークベンチが見当たりません</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="642"/>
+      <location filename="../../addonmanager_workers.py" line="729"/>
       <source>Missing python module</source>
-      <translation type="unfinished">Missing python module</translation>
+      <translation>Pythonが見当たりません</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="650"/>
+      <location filename="../../addonmanager_workers.py" line="737"/>
       <source>Missing optional python module (doesn&apos;t prevent installing)</source>
-      <translation type="unfinished">Missing optional python module (doesn&apos;t prevent installing)</translation>
+      <translation>オプションのPythonモジュールが見つかりません(インストールは停止されません)</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="652"/>
+      <location filename="../../addonmanager_workers.py" line="739"/>
       <source>Some errors were found that prevent to install this workbench</source>
-      <translation type="unfinished">Some errors were found that prevent to install this workbench</translation>
+      <translation>エラーが発生したためこのワークベンチをインストールすることができません</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="740"/>
+      <source>Please install the missing components first.</source>
+      <translation>先ずは、見当たらないコンポーネントをインストールしてください。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="764"/>
+      <source>Error: Unable to download</source>
+      <translation>エラー: ダウンロードできませんでした</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="783"/>
+      <source>Successfully installed</source>
+      <translation>インストールに成功しました。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="278"/>
+      <source>GitPython not installed! Cannot retrieve macros from git</source>
+      <translation>GitPythonがインストールされていませんでした！よってマクロをgitより取り戻すことができません</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_macro.py" line="159"/>
+      <source>Unable to clean macro code</source>
+      <translation>マクロコードをクリーンできません</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.py" line="566"/>
+      <source>Installed</source>
+      <translation>インストール済み</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.py" line="585"/>
+      <source>Update available</source>
+      <translation>アップデートを利用できます</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.py" line="544"/>
+      <source>Restart required</source>
+      <translation>再起動が必要です</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="554"/>
+      <source>This macro is already installed.</source>
+      <translation>このマクロは既にインストールされています。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="681"/>
+      <source>A macro has been installed and is available under Macro -&gt; Macros menu</source>
+      <translation>マクロがインストールされました。メニューのマクロ -&gt; マクロから利用できます。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="450"/>
+      <source>This addon is marked as obsolete</source>
+      <translation>このアドオンは非推奨に設定されています</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="451"/>
+      <source>This usually means it is no longer maintained, and some more advanced addon in this list provides the same functionality.</source>
+      <translation>通常はすでにメンテナンスがされていないことを意味します。このリストにあるさらに高度なアドオンが同じ機能を提供している場合があります。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="757"/>
+      <source>Error: Unable to locate zip from</source>
+      <translation>エラー: ZIP ファイルを以下から配置できません。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="285"/>
+      <source>Something went wrong with the Git Macro Retrieval, possibly the Git executable is not in the path</source>
+      <translation>Git マクロの取得に問題が発生しました。おそらく Git 実行ファイルがパス中にありません。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="455"/>
+      <source>This addon is marked as Python 2 Only</source>
+      <translation>このアドオンは Python 2 専用として記されています</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="456"/>
+      <source>This workbench may no longer be maintained and installing it on a Python 3 system will more than likely result in errors at startup or while in use.</source>
+      <translation>このワークベンチは保守されておらず、Python 3 システムにインストールすると起動時や使用中にエラーが発生する可能性が高くなります。</translation>
+    </message>
+    <message>
+      <location filename="../../addonmanager_workers.py" line="625"/>
+      <source>User requested updating a Python 2 workbench on a system running Python 3 - </source>
+      <translation>ユーザーが Python 3 を実行しているシステムで Python 2 用ワークベンチの更新を要求しました - </translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers.py" line="653"/>
-      <source>Please install the missing components first.</source>
-      <translation type="unfinished">Please install the missing components first.</translation>
+      <source>Workbench successfully updated. Please restart FreeCAD to apply the changes.</source>
+      <translation>ワークベンチの更新が成功しました。 FreeCADを再起動して変更を有効にしてください。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers.py" line="673"/>
-      <source>Error: Unable to download</source>
-      <translation type="unfinished">Error: Unable to download</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="692"/>
-      <source>Successfully installed</source>
-      <translation type="unfinished">Successfully installed</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="249"/>
-      <source>GitPython not installed! Cannot retrieve macros from git</source>
-      <translation type="unfinished">GitPython not installed! Cannot retrieve macros from git</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_macro.py" line="157"/>
-      <source>Unable to clean macro code</source>
-      <translation type="unfinished">Unable to clean macro code</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManager.py" line="542"/>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManager.py" line="561"/>
-      <source>Update available</source>
-      <translation type="unfinished">Update available</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManager.py" line="520"/>
-      <source>Restart required</source>
-      <translation type="unfinished">Restart required</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="469"/>
-      <source>This macro is already installed.</source>
-      <translation type="unfinished">This macro is already installed.</translation>
-    </message>
-    <message>
-      <location filename="../../addonmanager_workers.py" line="593"/>
-      <source>A macro has been installed and is available under Macro -&gt; Macros menu</source>
-      <translation type="unfinished">A macro has been installed and is available under Macro -&gt; Macros menu</translation>
+      <location filename="../../addonmanager_workers.py" line="659"/>
+      <source>User requested installing a Python 2 workbench on a system running Python 3 - </source>
+      <translation>ユーザーが Python 3 を実行しているシステムで Python 2 用ワークベンチのインストールを要求しました - </translation>
     </message>
   </context>
   <context>
     <name>Dialog</name>
-    <message>
-      <location filename="../../AddonManager.ui" line="14"/>
-      <source>Addons manager</source>
-      <translation>アドオンマネージャー</translation>
-    </message>
     <message>
       <location filename="../../AddonManager.ui" line="37"/>
       <source>Workbenches</source>
@@ -249,7 +287,7 @@
     <message>
       <location filename="../../AddonManager.ui" line="113"/>
       <source>Downloading info...</source>
-      <translation type="unfinished">Downloading info...</translation>
+      <translation>ダウンロード情報....</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="150"/>
@@ -259,80 +297,118 @@
     <message>
       <location filename="../../AddonManager.ui" line="56"/>
       <source>Executes the selected macro, if installed</source>
-      <translation type="unfinished">Executes the selected macro, if installed</translation>
+      <translation>インストールされている場合、選択したマクロを実行</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="127"/>
       <source>Uninstalls a selected macro or workbench</source>
-      <translation type="unfinished">Uninstalls a selected macro or workbench</translation>
+      <translation>選択されていますマクロ又はワークベンチをアンインストールします</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="137"/>
       <source>Installs or updates the selected macro or workbench</source>
-      <translation type="unfinished">Installs or updates the selected macro or workbench</translation>
+      <translation>選択したマクロ、ワークベンチをインストールまたは更新</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="147"/>
       <source>Download and apply all available updates</source>
-      <translation type="unfinished">Download and apply all available updates</translation>
+      <translation>利用可能な全てのアップデートをダウンロードして適用する</translation>
     </message>
     <message>
-      <location filename="../../AddonManagerOptions.ui" line="20"/>
-      <source>If this option is checked, when launching the Addon Manager, installed addons will be checked for available updates (requires the python-git package installed on your system)</source>
-      <translation type="unfinished">If this option is checked, when launching the Addon Manager, installed addons will be checked for available updates (requires the python-git package installed on your system)</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManagerOptions.ui" line="23"/>
-      <source>Automatically check for updates at start (requires python-git)</source>
-      <translation type="unfinished">Automatically check for updates at start (requires python-git)</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManagerOptions.ui" line="30"/>
+      <location filename="../../AddonManagerOptions.ui" line="35"/>
       <source>Custom repositories (one per line):</source>
-      <translation type="unfinished">Custom repositories (one per line):</translation>
-    </message>
-    <message>
-      <location filename="../../AddonManagerOptions.ui" line="37"/>
-      <source>You can use this window to specify additional addon repositories to be scanned for available addons</source>
-      <translation type="unfinished">You can use this window to specify additional addon repositories to be scanned for available addons</translation>
+      <translation>カスタム・レポジトリー（1行に1つ）:</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="89"/>
       <source>Sets configuration options for the Addon Manager</source>
-      <translation type="unfinished">Sets configuration options for the Addon Manager</translation>
+      <translation>アドオン・マネージャーの構成オプションを設定</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="92"/>
       <source>Configure...</source>
-      <translation type="unfinished">Configure...</translation>
+      <translation>設定...</translation>
     </message>
     <message>
       <location filename="../../AddonManagerOptions.ui" line="14"/>
       <source>Addon manager options</source>
-      <translation type="unfinished">Addon manager options</translation>
+      <translation>アドオン・マネージャーのオプション</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="130"/>
       <source>Uninstall selected</source>
-      <translation type="unfinished">Uninstall selected</translation>
+      <translation>選択をアンインストールする</translation>
     </message>
     <message>
       <location filename="../../AddonManager.ui" line="140"/>
       <source>Install/update selected</source>
-      <translation type="unfinished">Install/update selected</translation>
+      <translation>選択をインストール／更新する</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.ui" line="160"/>
+      <source>Close</source>
+      <translation>閉じる</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="20"/>
+      <source>If this option is selected, when launching the Addon Manager,
+installed addons will be checked for available updates
+(this requires the GitPython package installed on your system)</source>
+      <translation>このオプションが選択されている場合、アドオン・マネージャーの起動時にインストールされているアドオンに利用可能な更新があるかがチェックされます（システムにGitPythonパッケージがインストールされている必要があります）</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="25"/>
+      <source>Automatically check for updates at start (requires GitPython)</source>
+      <translation>開始時に更新を自動確認 （GitPython が必要）</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="57"/>
+      <source>Proxy </source>
+      <translation>プロキシ </translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="64"/>
+      <source>No proxy</source>
+      <translation>プロキシを使用しない</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="71"/>
+      <source>User system proxy</source>
+      <translation>ユーザーシステムプロキシ</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="78"/>
+      <source>User defined proxy :</source>
+      <translation>ユーザー定義プロキシ:</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.ui" line="14"/>
+      <source>Addon Manager</source>
+      <translation>アドオン・マネージャー</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManager.ui" line="157"/>
+      <source>Close the Addon Manager</source>
+      <translation>アドオン・マネージャーを閉じる</translation>
+    </message>
+    <message>
+      <location filename="../../AddonManagerOptions.ui" line="42"/>
+      <source>You can use this window to specify additional addon repositories
+to be scanned for available addons</source>
+      <translation>このウィンドウを使用して、利用可能なアドオンをスキャンさせる追加のアドオン・レポジトリーを指定できます</translation>
     </message>
   </context>
   <context>
     <name>Std_AddonMgr</name>
     <message>
-      <location filename="../../AddonManager.py" line="66"/>
+      <location filename="../../AddonManager.py" line="65"/>
       <source>&amp;Addon manager</source>
       <translation>アドオンマネージャー(&amp;A)</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="67"/>
+      <location filename="../../AddonManager.py" line="66"/>
       <source>Manage external workbenches and macros</source>
-      <translation type="unfinished">Manage external workbenches and macros</translation>
+      <translation>外部のワークベンチとマクロを管理</translation>
     </message>
   </context>
 </TS>

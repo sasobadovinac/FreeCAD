@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Riegel         <juergen.riegel@web.de>                  *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -69,7 +69,6 @@ Base::XMLReader::XMLReader(const char* FileName, std::istream& str)
 #ifdef _MSC_VER
     str.imbue(std::locale::empty());
 #else
-    //FIXME: Check whether this is correct
     str.imbue(std::locale::classic());
 #endif
 
@@ -130,39 +129,45 @@ long Base::XMLReader::getAttributeAsInteger(const char* AttrName) const
 {
     AttrMapType::const_iterator pos = AttrMap.find(AttrName);
 
-    if (pos != AttrMap.end())
+    if (pos != AttrMap.end()) {
         return atol(pos->second.c_str());
-    else
+    }
+    else {
         // wrong name, use hasAttribute if not sure!
-        assert(0);
-
-    return 0;
+        std::ostringstream msg;
+        msg << "XML Attribute: \"" << AttrName << "\" not found";
+        throw Base::XMLAttributeError(msg.str());
+    }
 }
 
 unsigned long Base::XMLReader::getAttributeAsUnsigned(const char* AttrName) const
 {
     AttrMapType::const_iterator pos = AttrMap.find(AttrName);
 
-    if (pos != AttrMap.end())
+    if (pos != AttrMap.end()) {
         return strtoul(pos->second.c_str(),0,10);
-    else
+    }
+    else {
         // wrong name, use hasAttribute if not sure!
-        assert(0);
-
-    return 0;
+        std::ostringstream msg;
+        msg << "XML Attribute: \"" << AttrName << "\" not found";
+        throw Base::XMLAttributeError(msg.str());
+    }
 }
 
 double Base::XMLReader::getAttributeAsFloat  (const char* AttrName) const
 {
     AttrMapType::const_iterator pos = AttrMap.find(AttrName);
 
-    if (pos != AttrMap.end())
+    if (pos != AttrMap.end()) {
         return atof(pos->second.c_str());
-    else
+    }
+    else {
         // wrong name, use hasAttribute if not sure!
-        assert(0);
-
-    return 0.0;
+        std::ostringstream msg;
+        msg << "XML Attribute: \"" << AttrName << "\" not found";
+        throw Base::XMLAttributeError(msg.str());
+    }
 }
 
 const char*  Base::XMLReader::getAttribute (const char* AttrName) const

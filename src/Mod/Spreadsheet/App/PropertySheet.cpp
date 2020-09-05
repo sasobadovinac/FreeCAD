@@ -28,7 +28,7 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/assign.hpp>
-#include <boost/bind.hpp>
+#include <boost_bind_bind.hpp>
 #include <boost/regex.hpp>
 #include <Base/Console.h>
 #include <App/Document.h>
@@ -43,13 +43,15 @@
 #include "Utils.h"
 #include <PropertySheetPy.h>
 #include <App/ExpressionVisitors.h>
-FC_LOG_LEVEL_INIT("Spreadsheet", true, true);
+#include <App/ExpressionParser.h>
+FC_LOG_LEVEL_INIT("Spreadsheet", true, true)
 
 using namespace App;
 using namespace Base;
 using namespace Spreadsheet;
+namespace bp = boost::placeholders;
 
-TYPESYSTEM_SOURCE(Spreadsheet::PropertySheet , App::PropertyExpressionContainer);
+TYPESYSTEM_SOURCE(Spreadsheet::PropertySheet , App::PropertyExpressionContainer)
 
 void PropertySheet::clear()
 {
@@ -223,9 +225,9 @@ App::Property *PropertySheet::Copy(void) const
 
 void PropertySheet::Paste(const Property &from)
 {
-    AtomicPropertyChange signaller(*this);
+    const PropertySheet &froms = dynamic_cast<const PropertySheet&>(from);
 
-    const PropertySheet * froms = static_cast<const PropertySheet*>(&from);
+    AtomicPropertyChange signaller(*this);
 
     std::map<CellAddress, Cell* >::iterator icurr = data.begin();
 
@@ -235,8 +237,8 @@ void PropertySheet::Paste(const Property &from)
         ++icurr;
     }
 
-    std::map<CellAddress, Cell* >::const_iterator ifrom = froms->data.begin();
-    while (ifrom != froms->data.end()) {
+    std::map<CellAddress, Cell* >::const_iterator ifrom = froms.data.begin();
+    while (ifrom != froms.data.end()) {
         std::map<CellAddress, Cell* >::iterator i = data.find(ifrom->first);
 
         if (i != data.end()) {
@@ -268,7 +270,7 @@ void PropertySheet::Paste(const Property &from)
             ++icurr;
     }
 
-    mergedCells = froms->mergedCells;
+    mergedCells = froms.mergedCells;
     signaller.tryInvoke();
 }
 
@@ -681,7 +683,7 @@ void PropertySheet::insertRows(int row, int count)
     boost::copy( data | boost::adaptors::map_keys, std::back_inserter(keys));
 
     /* Sort them */
-    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::rowSortFunc, this, _1, _2));
+    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::rowSortFunc, this, bp::_1, bp::_2));
 
     MoveCellsExpressionVisitor<PropertySheet> visitor(*this, 
             CellAddress(row, CellAddress::MAX_COLUMNS), count, 0);
@@ -732,7 +734,7 @@ void PropertySheet::removeRows(int row, int count)
     boost::copy(data | boost::adaptors::map_keys, std::back_inserter(keys));
 
     /* Sort them */
-    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::rowSortFunc, this, _1, _2));
+    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::rowSortFunc, this, bp::_1, bp::_2));
 
     MoveCellsExpressionVisitor<PropertySheet> visitor(*this, 
             CellAddress(row + count - 1, CellAddress::MAX_COLUMNS), -count, 0);
@@ -824,7 +826,7 @@ void PropertySheet::removeColumns(int col, int count)
     boost::copy(data | boost::adaptors::map_keys, std::back_inserter(keys));
 
     /* Sort them */
-    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::colSortFunc, this, _1, _2));
+    std::sort(keys.begin(), keys.end(), boost::bind(&PropertySheet::colSortFunc, this, bp::_1, bp::_2));
 
     MoveCellsExpressionVisitor<PropertySheet> visitor(*this, 
             CellAddress(CellAddress::MAX_ROWS, col + count - 1), 0, -count);
@@ -1066,7 +1068,7 @@ void PropertySheet::removeDependencies(CellAddress key)
 void PropertySheet::recomputeDependants(const App::DocumentObject *owner, const char *propName)
 {
     // First, search without actual property name for sub-object/link
-    // references, i.e indirect references. The depenedecies of these
+    // references, i.e indirect references. The dependencies of these
     // references are too complex to track exactly, so we only track the
     // top parent object instead, and mark the involved expression
     // whenever the top parent changes.
@@ -1128,7 +1130,7 @@ void PropertySheet::slotChangedObject(const App::DocumentObject &obj, const App:
 
 void PropertySheet::onAddDep(App::DocumentObject *obj) {
     depConnections[obj] = obj->signalChanged.connect(boost::bind(
-                &PropertySheet::slotChangedObject, this, _1, _2));
+                &PropertySheet::slotChangedObject, this, bp::_1, bp::_2));
 }
 
 void PropertySheet::onRemoveDep(App::DocumentObject *obj) {

@@ -57,6 +57,7 @@ known issues:
 import zipfile
 import xml.dom.minidom
 import FreeCAD as App
+import sys
 
 try: import FreeCADGui
 except ValueError: gui = False
@@ -225,13 +226,13 @@ class FormulaTranslator(object):
     if theExpr[0] in sepToken:
       branch = sepToken[theExpr[0]]
       
-      if branch == None:
+      if branch is None:
         keyToken = True
       else:
         #print('There is a branch. look up: ', theExpr[1])
         if (lenExpr > 1) and (theExpr[1] in treeDict[branch]):
           branch = treeDict[branch][theExpr[0]]
-          if branch == None:
+          if branch is None:
             keyToken = True
           else:
             if (lenExpr > 2) and (theExpr[2] in treeDict[branch]):
@@ -320,7 +321,10 @@ def getText(nodelist):
   for node in nodelist:
     if node.nodeType == node.TEXT_NODE:
       rc.append(node.data)
-  return ''.join(rc)
+    if sys.version_info.major >= 3:
+      return ''.join(rc)
+    else:
+      return ''.join(rc).encode('utf8')
 
 
 def handleWorkSheet(theDom, actSheet, strList):
@@ -351,7 +355,7 @@ def handleCells(cellList, actCellSheet, sList):
         theString = getText(tElement.childNodes)
         
         #print('theString: ', theString)
-        actCellSheet.set(ref, theString.encode('utf8'))
+        actCellSheet.set(ref, theString)
 
     formulaRef = cell.getElementsByTagName("f")
     if len(formulaRef)==1:
@@ -371,7 +375,7 @@ def handleCells(cellList, actCellSheet, sList):
           if cellType == 'n':
             actCellSheet.set(ref, theValue)
           if cellType == 's':
-            actCellSheet.set(ref, (sList[int(theValue)]).encode('utf8'))
+            actCellSheet.set(ref, (sList[int(theValue)]))
 
 
 def handleWorkBook(theBook, sheetDict, Doc):
@@ -403,7 +407,7 @@ def handleWorkBook(theBook, sheetDict, Doc):
       #print('Sheet Name: ', refList[0])
       #print('Adress: ', adressList[0] + adressList[1])
       actSheet, sheetFile = sheetDict[refList[0]]
-      actSheet.setAlias(adressList[0]+adressList[1], aliasName.encode('utf8'))
+      actSheet.setAlias(adressList[0]+adressList[1], aliasName)
 
 def handleStrings(theStr, sList):
   print('process Strings: ')

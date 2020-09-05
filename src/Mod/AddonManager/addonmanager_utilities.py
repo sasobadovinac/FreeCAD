@@ -23,6 +23,7 @@
 
 import os
 import sys
+import codecs
 import FreeCAD
 import shutil
 import re
@@ -40,12 +41,12 @@ except ImportError:
     pass
 else:
     try:
-        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
     except AttributeError:
         pass
+        
 
-
-
+        
 def translate(context, text, disambig=None):
     
     "Main translation function"
@@ -93,17 +94,34 @@ def urlopen(url):
         import urllib2
     else:
         import urllib.request as urllib2
+        
+    # Proxy an ssl configuration
+    pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
+    if pref.GetBool("NoProxyCheck",True):
+        proxies = {}  
+    else:
+        if pref.GetBool("SystemProxyCheck",False):
+            proxy = urllib2.getproxies()  
+            proxies = {"http": proxy.get('http'),"https": proxy.get('http')}
+        elif pref.GetBool("UserProxyCheck",False):
+            proxy = pref.GetString("ProxyUrl","")   
+            proxies = {"http": proxy, "https": proxy}                         
 
+    if ssl_ctx:
+        handler = urllib2.HTTPSHandler(context=ssl_ctx)
+    else:
+        handler = {}
+    proxy_support = urllib2.ProxyHandler(proxies)    
+    opener = urllib2.build_opener(proxy_support, handler)
+    urllib2.install_opener(opener) 
+    
+    # Url opening
     try:
-        if ssl_ctx:
-            u = urllib2.urlopen(url, context=ssl_ctx, timeout=timeout)
-        else:
-            u = urllib2.urlopen(url, timeout=timeout)
+        u = urllib2.urlopen(url, timeout=timeout)
     except:
         return None
     else:
         return u
-
 
 def getserver(url):
 
@@ -156,13 +174,8 @@ def install_macro(macro, macro_repo_dir):
         except OSError:
             return False
     macro_path = os.path.join(macro_dir, macro.filename)
-    if sys.version_info.major < 3:
-        # In python2 the code is a bytes object.
-        mode = 'wb'
-    else:
-        mode = 'w'
     try:
-        with open(macro_path, mode) as macrofile:
+        with codecs.open(macro_path, 'w', 'utf-8') as macrofile:
             macrofile.write(macro.code)
     except IOError:
         return False
@@ -294,10 +307,10 @@ def getRepoUrl(text):
     
     "finds an URL in a given piece of text extracted from github's HTML"
     
-    if ("github" in text) and ("href" in text):
+    if ("href" in text):
         return "https://github.com/" + re.findall("href=\"\/(.*?)\/tree",text)[0]
     elif ("MOOC" in text):
         # Bad hack for now... We need to do better
         return "https://framagit.org/freecad-france/mooc-workbench"
-    print("Debug: addonmanager_utilities.getRepoUrl: Unkable to find repo:",text)
+    print("Debug: addonmanager_utilities.getRepoUrl: Unable to find repo:",text)
     return None

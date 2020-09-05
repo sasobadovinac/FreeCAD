@@ -1,6 +1,5 @@
 #***************************************************************************
-#*                                                                         *
-#*   Copyright (c) 2015 - Yorik van Havre <yorik@uncreated.net>            *
+#*   Copyright (c) 2015 Yorik van Havre <yorik@uncreated.net>              *
 #*                                                                         *
 #*   This program is free software; you can redistribute it and/or modify  *
 #*   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -45,7 +44,7 @@ __url__ = "http://www.freecadweb.org"
 #  This module provides tools to add materials to
 #  Arch objects
 
-def makeMaterial(name="Material"):
+def makeMaterial(name="Material",color=None,transparency=None):
 
     '''makeMaterial(name): makes an Material object'''
     if not FreeCAD.ActiveDocument:
@@ -57,6 +56,12 @@ def makeMaterial(name="Material"):
     if FreeCAD.GuiUp:
         _ViewProviderArchMaterial(obj.ViewObject)
     getMaterialContainer().addObject(obj)
+    if color:
+        obj.Color = color[:3]
+        if len(color) > 3:
+            obj.Transparency = color[3]*100
+    if transparency:
+        obj.Transparency = transparency
     return obj
 
 
@@ -217,19 +222,24 @@ class _ViewProviderArchMaterialContainer:
             mats = [o for o in self.Object.Group if o.isDerivedFrom("App::MaterialObject")]
             todelete = []
             for mat in mats:
-                if mat.Label[-1].isdigit() and mat.Label[-2].isdigit() and mat.Label[-3].isdigit():
-                    orig = None
-                    for om in mats:
-                        if om.Label == mat.Label[:-3].strip():
-                            orig = om
-                            break
-                    if orig:
-                        for par in mat.InList:
-                            for prop in par.PropertiesList:
-                                if getattr(par,prop) == mat:
-                                    FreeCAD.Console.PrintMessage("Changed property '"+prop+"' of object "+par.Label+" from "+mat.Label+" to "+orig.Label+"\n")
-                                    setattr(par,prop,orig)
-                        todelete.append(mat)
+                orig = None
+                for om in mats:
+                    if om.Label == mat.Label:
+                        orig = om
+                        break
+                else:
+                    if mat.Label[-1].isdigit() and mat.Label[-2].isdigit() and mat.Label[-3].isdigit():
+                        for om in mats:
+                            if om.Label == mat.Label[:-3].strip():
+                                orig = om
+                                break
+                if orig:
+                    for par in mat.InList:
+                        for prop in par.PropertiesList:
+                            if getattr(par,prop) == mat:
+                                FreeCAD.Console.PrintMessage("Changed property '"+prop+"' of object "+par.Label+" from "+mat.Label+" to "+orig.Label+"\n")
+                                setattr(par,prop,orig)
+                    todelete.append(mat)
             for tod in todelete:
                 if not tod.InList:
                     FreeCAD.Console.PrintMessage("Merging duplicate material "+tod.Label+"\n")
@@ -284,7 +294,7 @@ class _ArchMaterial:
         d = obj.Material
         if prop == "Material":
             if "DiffuseColor" in obj.Material:
-                c = tuple([float(f) for f in obj.Material['DiffuseColor'].strip("()").split(",")])
+                c = tuple([float(f) for f in obj.Material['DiffuseColor'].strip("()").strip("[]").split(",")])
                 if hasattr(obj,"Color"):
                     if not self.isSameColor(obj.Color,c):
                         obj.Color = c
@@ -317,7 +327,7 @@ class _ArchMaterial:
         elif prop == "Color":
             if hasattr(obj,"Color"):
                 if "DiffuseColor" in d:
-                    if self.isSameColor(tuple([float(f) for f in d['DiffuseColor'].strip("()").split(",")]),obj.Color[:3]):
+                    if self.isSameColor(tuple([float(f) for f in d['DiffuseColor'].strip("()").strip("[]").split(",")]),obj.Color[:3]):
                         return
                 d["DiffuseColor"] = str(obj.Color[:3])
         elif prop == "Transparency":
@@ -359,7 +369,7 @@ class _ArchMaterial:
         if obj.Material:
             if FreeCAD.GuiUp:
                 if "DiffuseColor" in obj.Material:
-                    c = tuple([float(f) for f in obj.Material['DiffuseColor'].strip("()").split(",")])
+                    c = tuple([float(f) for f in obj.Material['DiffuseColor'].strip("()").strip("[]").split(",")])
                     for p in obj.InList:
                         if hasattr(p,"Material") and ( (not hasattr(p.ViewObject,"UseMaterialColor")) or p.ViewObject.UseMaterialColor):
                             if p.Material.Name == obj.Name:
@@ -867,7 +877,7 @@ class _ArchMultiMaterialTaskPanel:
                 thick = FreeCAD.Units.Quantity(d).Value
             else:
                 thick = FreeCAD.Units.Quantity(d,FreeCAD.Units.Length).Value
-            th += thick
+            th += abs(thick)
             if not thick:
                 suffix = " ("+translate("Arch","depends on the object")+")"
         val = FreeCAD.Units.Quantity(th,FreeCAD.Units.Length).UserString

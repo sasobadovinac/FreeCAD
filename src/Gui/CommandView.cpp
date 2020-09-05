@@ -29,14 +29,17 @@
 # include <Inventor/events/SoMouseButtonEvent.h>
 # include <Inventor/nodes/SoOrthographicCamera.h>
 # include <Inventor/nodes/SoPerspectiveCamera.h>
+# include <QApplication>
+# include <QDialog>
 # include <QFile>
 # include <QFileInfo>
 # include <QFont>
 # include <QFontMetrics>
 # include <QMessageBox>
 # include <QPainter>
+# include <QPointer>
 # include <QTextStream>
-# include <boost/bind.hpp>
+# include <boost_bind_bind.hpp>
 #endif
 
 #include "Command.h"
@@ -60,12 +63,14 @@
 #include "SoAxisCrossKit.h"
 #include "View3DInventor.h"
 #include "View3DInventorViewer.h"
+#include "ViewParams.h"
 #include "WaitCursor.h"
 #include "ViewProviderMeasureDistance.h"
 #include "ViewProviderGeometryObject.h"
 #include "SceneInspector.h"
 #include "DemoMode.h"
 #include "TextureMapping.h"
+#include "Tools.h"
 #include "Utilities.h"
 #include "NavigationStyle.h"
 
@@ -89,6 +94,7 @@
 
 using namespace Gui;
 using Gui::Dialog::DlgSettingsImageImp;
+namespace bp = boost::placeholders;
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -251,11 +257,15 @@ Action * StdCmdFreezeViews::createAction(void)
 
     // add the action items
     saveView = pcAction->addAction(QObject::tr("Save views..."));
-    pcAction->addAction(QObject::tr("Load views..."));
+    saveView->setWhatsThis(QString::fromLatin1(sWhatsThis));
+    QAction* loadView = pcAction->addAction(QObject::tr("Load views..."));
+    loadView->setWhatsThis(QString::fromLatin1(sWhatsThis));
     pcAction->addAction(QString::fromLatin1(""))->setSeparator(true);
     freezeView = pcAction->addAction(QObject::tr("Freeze view"));
     freezeView->setShortcut(QString::fromLatin1(sAccel));
+    freezeView->setWhatsThis(QString::fromLatin1(sWhatsThis));
     clearView = pcAction->addAction(QObject::tr("Clear views"));
+    clearView->setWhatsThis(QString::fromLatin1(sWhatsThis));
     separator = pcAction->addAction(QString::fromLatin1(""));
     separator->setSeparator(true);
     offset = pcAction->actions().count();
@@ -338,12 +348,12 @@ void StdCmdFreezeViews::onSaveViews()
 
             // remove the first line because it's a comment like '#Inventor V2.1 ascii'
             QString viewPos;
-            if ( !data.isEmpty() ) {
+            if (!data.isEmpty()) {
                 QStringList lines = data.split(QString::fromLatin1("\n"));
-                if ( lines.size() > 1 ) {
+                if (lines.size() > 1) {
                     lines.pop_front();
-                    viewPos = lines.join(QString::fromLatin1(" "));
                 }
+                viewPos = lines.join(QString::fromLatin1(" "));
             }
 
             str << "    <Camera settings=\"" << viewPos.toLatin1().constData() << "\"/>" << endl;
@@ -519,9 +529,12 @@ void StdCmdToggleClipPlane::activated(int iMsg)
             view->toggleClippingPlane();
     }
 #else
-    View3DInventor* view = qobject_cast<View3DInventor*>(getMainWindow()->activeWindow());
-    if (view) {
-        Gui::Control().showDialog(new Gui::Dialog::TaskClipping(view));
+    static QPointer<Gui::Dialog::Clipping> clipping = nullptr;
+    if (!clipping) {
+        View3DInventor* view = qobject_cast<View3DInventor*>(getMainWindow()->activeWindow());
+        if (view) {
+            clipping = Gui::Dialog::Clipping::makeDockWidget(view);
+        }
     }
 #endif
 }
@@ -543,9 +556,8 @@ bool StdCmdToggleClipPlane::isActive(void)
         return false;
     }
 #else
-    if (Gui::Control().activeDialog())
-        return false;
-    return true;
+    View3DInventor* view = qobject_cast<View3DInventor*>(getMainWindow()->activeWindow());
+    return view ? true : false;
 #endif
 }
 
@@ -571,12 +583,13 @@ StdCmdDrawStyle::StdCmdDrawStyle()
 {
     sGroup        = QT_TR_NOOP("Standard-View");
     sMenuText     = QT_TR_NOOP("Draw style");
-    sToolTipText  = QT_TR_NOOP("Draw style");
-    sStatusTip    = QT_TR_NOOP("Draw style");
+    sToolTipText  = QT_TR_NOOP("Change the draw style of the objects");
+    sStatusTip    = QT_TR_NOOP("Change the draw style of the objects");
+    sWhatsThis    = "Std_DrawStyle";
     sPixmap       = "DrawStyleAsIs";
     eType         = Alter3DView;
 
-    this->getGuiApplication()->signalActivateView.connect(boost::bind(&StdCmdDrawStyle::updateIcon, this, _1));
+    this->getGuiApplication()->signalActivateView.connect(boost::bind(&StdCmdDrawStyle::updateIcon, this, bp::_1));
 }
 
 Gui::Action * StdCmdDrawStyle::createAction(void)
@@ -591,36 +604,43 @@ Gui::Action * StdCmdDrawStyle::createAction(void)
     a0->setChecked(true);
     a0->setObjectName(QString::fromLatin1("Std_DrawStyleAsIs"));
     a0->setShortcut(QKeySequence(QString::fromUtf8("V,1")));
+    a0->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a1 = pcAction->addAction(QString());
     a1->setCheckable(true);
-    a1->setIcon(BitmapFactory().iconFromTheme("DrawStyleFlatLines"));
-    a1->setObjectName(QString::fromLatin1("Std_DrawStyleFlatLines"));
-    a1->setShortcut(QKeySequence(QString::fromUtf8("V,2")));
+    a1->setIcon(BitmapFactory().iconFromTheme("DrawStylePoints"));
+    a1->setObjectName(QString::fromLatin1("Std_DrawStylePoints"));
+    a1->setShortcut(QKeySequence(QString::fromUtf8("V,2")));    
+    a1->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a2 = pcAction->addAction(QString());
     a2->setCheckable(true);
-    a2->setIcon(BitmapFactory().iconFromTheme("DrawStyleShaded"));
-    a2->setObjectName(QString::fromLatin1("Std_DrawStyleShaded"));
+    a2->setIcon(BitmapFactory().iconFromTheme("DrawStyleWireFrame"));
+    a2->setObjectName(QString::fromLatin1("Std_DrawStyleWireframe"));
     a2->setShortcut(QKeySequence(QString::fromUtf8("V,3")));
+    a2->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a3 = pcAction->addAction(QString());
     a3->setCheckable(true);
-    a3->setIcon(BitmapFactory().iconFromTheme("DrawStyleWireFrame"));
-    a3->setObjectName(QString::fromLatin1("Std_DrawStyleWireframe"));
+    a3->setIcon(BitmapFactory().iconFromTheme("DrawStyleHiddenLine"));
+    a3->setObjectName(QString::fromLatin1("Std_DrawStyleHiddenLine"));
     a3->setShortcut(QKeySequence(QString::fromUtf8("V,4")));
+    a3->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a4 = pcAction->addAction(QString());
     a4->setCheckable(true);
-    a4->setIcon(BitmapFactory().iconFromTheme("DrawStylePoints"));
-    a4->setObjectName(QString::fromLatin1("Std_DrawStylePoints"));
+    a4->setIcon(BitmapFactory().iconFromTheme("DrawStyleNoShading"));
+    a4->setObjectName(QString::fromLatin1("Std_DrawStyleNoShading"));
     a4->setShortcut(QKeySequence(QString::fromUtf8("V,5")));
+    a4->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a5 = pcAction->addAction(QString());
     a5->setCheckable(true);
-    a5->setIcon(BitmapFactory().iconFromTheme("DrawStyleWireFrame"));
-    a5->setObjectName(QString::fromLatin1("Std_DrawStyleHiddenLine"));
+    a5->setIcon(BitmapFactory().iconFromTheme("DrawStyleShaded"));
+    a5->setObjectName(QString::fromLatin1("Std_DrawStyleShaded"));
     a5->setShortcut(QKeySequence(QString::fromUtf8("V,6")));
+    a5->setWhatsThis(QString::fromLatin1(sWhatsThis));
     QAction* a6 = pcAction->addAction(QString());
     a6->setCheckable(true);
-    a6->setIcon(BitmapFactory().iconFromTheme("DrawStyleWireFrame"));
-    a6->setObjectName(QString::fromLatin1("Std_DrawStyleNoShading"));
+    a6->setIcon(BitmapFactory().iconFromTheme("DrawStyleFlatLines"));
+    a6->setObjectName(QString::fromLatin1("Std_DrawStyleFlatLines"));
     a6->setShortcut(QKeySequence(QString::fromUtf8("V,7")));
+    a6->setWhatsThis(QString::fromLatin1(sWhatsThis));
 
 
     pcAction->setIcon(a0->icon());
@@ -645,34 +665,34 @@ void StdCmdDrawStyle::languageChange()
         "Std_DrawStyle", "Normal mode"));
 
     a[1]->setText(QCoreApplication::translate(
-        "Std_DrawStyle", "Flat lines"));
-    a[1]->setToolTip(QCoreApplication::translate(
-        "Std_DrawStyle", "Flat lines mode"));
-
-    a[2]->setText(QCoreApplication::translate(
-        "Std_DrawStyle", "Shaded"));
-    a[2]->setToolTip(QCoreApplication::translate(
-        "Std_DrawStyle", "Shaded mode"));
-
-    a[3]->setText(QCoreApplication::translate(
-        "Std_DrawStyle", "Wireframe"));
-    a[3]->setToolTip(QCoreApplication::translate(
-        "Std_DrawStyle", "Wireframe mode"));
-
-    a[4]->setText(QCoreApplication::translate(
         "Std_DrawStyle", "Points"));
-    a[4]->setToolTip(QCoreApplication::translate(
+    a[1]->setToolTip(QCoreApplication::translate(
         "Std_DrawStyle", "Points mode"));
 
-    a[5]->setText(QCoreApplication::translate(
+    a[2]->setText(QCoreApplication::translate(
+        "Std_DrawStyle", "Wireframe"));
+    a[2]->setToolTip(QCoreApplication::translate(
+        "Std_DrawStyle", "Wireframe mode"));
+
+    a[3]->setText(QCoreApplication::translate(
         "Std_DrawStyle", "Hidden line"));
-    a[5]->setToolTip(QCoreApplication::translate(
+    a[3]->setToolTip(QCoreApplication::translate(
         "Std_DrawStyle", "Hidden line mode"));
 
-    a[6]->setText(QCoreApplication::translate(
+    a[4]->setText(QCoreApplication::translate(
         "Std_DrawStyle", "No shading"));
-    a[6]->setToolTip(QCoreApplication::translate(
+    a[4]->setToolTip(QCoreApplication::translate(
         "Std_DrawStyle", "No shading mode"));
+
+    a[5]->setText(QCoreApplication::translate(
+        "Std_DrawStyle", "Shaded"));
+    a[5]->setToolTip(QCoreApplication::translate(
+        "Std_DrawStyle", "Shaded mode"));
+
+    a[6]->setText(QCoreApplication::translate(
+        "Std_DrawStyle", "Flat lines"));
+    a[6]->setToolTip(QCoreApplication::translate(
+        "Std_DrawStyle", "Flat lines mode"));
 }
 
 void StdCmdDrawStyle::updateIcon(const MDIView *view)
@@ -688,32 +708,32 @@ void StdCmdDrawStyle::updateIcon(const MDIView *view)
     if (!actionGroup)
         return;
 
-    if (mode == "Flat Lines")
+    if (mode == "Point")
     {
         actionGroup->setCheckedAction(1);
         return;
     }
-    if (mode == "Shaded")
+    if (mode == "Wireframe")
     {
         actionGroup->setCheckedAction(2);
         return;
     }
-    if (mode == "Wireframe")
+    if (mode == "Hidden Line")
     {
         actionGroup->setCheckedAction(3);
         return;
     }
-    if (mode == "Point")
+    if (mode == "No shading")
     {
         actionGroup->setCheckedAction(4);
         return;
     }
-    if (mode == "Hidden Line")
+    if (mode == "Shaded")
     {
         actionGroup->setCheckedAction(5);
         return;
-    }
-    if (mode == "No shading")
+    }    
+    if (mode == "Flat Lines")
     {
         actionGroup->setCheckedAction(6);
         return;
@@ -739,22 +759,22 @@ void StdCmdDrawStyle::activated(int iMsg)
                 switch (iMsg)
                 {
                 case 1:
-                    (oneChangedSignal) ? viewer->updateOverrideMode("Flat Lines") : viewer->setOverrideMode("Flat Lines");
-                    break;
-                case 2:
-                    (oneChangedSignal) ? viewer->updateOverrideMode("Shaded") : viewer->setOverrideMode("Shaded");
-                    break;
-                case 3:
-                    (oneChangedSignal) ? viewer->updateOverrideMode("Wireframe") : viewer->setOverrideMode("Wireframe");
-                    break;
-                case 4:
                     (oneChangedSignal) ? viewer->updateOverrideMode("Point") : viewer->setOverrideMode("Point");
                     break;
-                case 5:
+                case 2:
+                    (oneChangedSignal) ? viewer->updateOverrideMode("Wireframe") : viewer->setOverrideMode("Wireframe");
+                    break;
+                case 3:
                     (oneChangedSignal) ? viewer->updateOverrideMode("Hidden Line") : viewer->setOverrideMode("Hidden Line");
                     break;
-                case 6:
+                case 4:
                     (oneChangedSignal) ? viewer->updateOverrideMode("No Shading") : viewer->setOverrideMode("No Shading");
+                    break;
+                case 5:
+                    (oneChangedSignal) ? viewer->updateOverrideMode("Shaded") : viewer->setOverrideMode("Shaded");
+                    break;
+                case 6:
+                    (oneChangedSignal) ? viewer->updateOverrideMode("Flat Lines") : viewer->setOverrideMode("Flat Lines");
                     break;
                 default:
                     (oneChangedSignal) ? viewer->updateOverrideMode("As Is") : viewer->setOverrideMode("As Is");
@@ -792,7 +812,7 @@ StdCmdToggleVisibility::StdCmdToggleVisibility()
 void StdCmdToggleVisibility::activated(int iMsg)
 {
     Q_UNUSED(iMsg); 
-    Selection().setVisible(-1);
+    Selection().setVisible(SelectionSingleton::VisToggle);
 }
 
 bool StdCmdToggleVisibility::isActive(void)
@@ -866,7 +886,7 @@ StdCmdShowSelection::StdCmdShowSelection()
 void StdCmdShowSelection::activated(int iMsg)
 {
     Q_UNUSED(iMsg); 
-    Selection().setVisible(true);
+    Selection().setVisible(SelectionSingleton::VisShow);
 }
 
 bool StdCmdShowSelection::isActive(void)
@@ -893,7 +913,7 @@ StdCmdHideSelection::StdCmdHideSelection()
 void StdCmdHideSelection::activated(int iMsg)
 {
     Q_UNUSED(iMsg); 
-    Selection().setVisible(false);
+    Selection().setVisible(SelectionSingleton::VisHide);
 }
 
 bool StdCmdHideSelection::isActive(void)
@@ -1075,17 +1095,54 @@ StdCmdSetAppearance::StdCmdSetAppearance()
 void StdCmdSetAppearance::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
+#if 0
     static QPointer<QDialog> dlg = 0;
     if (!dlg)
-        dlg = new Gui::Dialog::DlgDisplayPropertiesImp(getMainWindow());
+        dlg = new Gui::Dialog::DlgDisplayPropertiesImp(true, getMainWindow());
     dlg->setModal(false);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     dlg->show();
+#else
+    Gui::Control().showDialog(new Gui::Dialog::TaskDisplayProperties());
+#endif
 }
 
 bool StdCmdSetAppearance::isActive(void)
 {
+#if 0
     return Gui::Selection().size() != 0;
+#else
+    return (Gui::Control().activeDialog() == nullptr) &&
+           (Gui::Selection().size() != 0);
+#endif
+}
+
+//===========================================================================
+// Std_ViewHome
+//===========================================================================
+DEF_3DV_CMD(StdCmdViewHome)
+
+StdCmdViewHome::StdCmdViewHome()
+  : Command("Std_ViewHome")
+{
+    sGroup        = QT_TR_NOOP("Standard-View");
+    sMenuText     = QT_TR_NOOP("Home");
+    sToolTipText  = QT_TR_NOOP("Set to default home view");
+    sWhatsThis    = "Std_ViewHome";
+    sStatusTip    = QT_TR_NOOP("Set to default home view");
+    //sPixmap       = "view-home";
+    sAccel        = "Home";
+    eType         = Alter3DView;
+}
+
+void StdCmdViewHome::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+
+    auto hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    std::string default_view = hGrp->GetASCII("NewDocumentCameraOrientation","Top");
+    doCommand(Command::Gui,"Gui.activeDocument().activeView().viewDefaultOrientation('%s',0)",default_view.c_str());
+    doCommand(Command::Gui,"Gui.SendMsgToActiveView(\"ViewFit\")");
 }
 
 //===========================================================================
@@ -1729,6 +1786,10 @@ void StdViewScreenShot::activated(int iMsg)
         QString ext = QString::fromLatin1(hExt->GetASCII("OffscreenImageFormat").c_str());
         int backtype = hExt->GetInt("OffscreenImageBackground",0);
 
+        Base::Reference<ParameterGrp> methodGrp = App::GetApplication().GetParameterGroupByPath
+            ("User parameter:BaseApp/Preferences/View");
+        QByteArray method = methodGrp->GetASCII("SavePicture").c_str();
+
         QStringList filter;
         QString selFilter;
         for (QStringList::Iterator it = formats.begin(); it != formats.end(); ++it) {
@@ -1751,9 +1812,10 @@ void StdViewScreenShot::activated(int iMsg)
         SbVec2s sz = vp.getWindowSize();
         opt->setImageSize((int)sz[0], (int)sz[1]);
         opt->setBackgroundType(backtype);
+        opt->setMethod(method);
 
         fd.setOptionsWidget(FileOptionsDialog::ExtensionRight, opt);
-        fd.setConfirmOverwrite(true);
+        fd.setOption(QFileDialog::DontConfirmOverwrite, false);
         opt->onSelectedFilter(fd.selectedNameFilter());
         QObject::connect(&fd, SIGNAL(filterSelected(const QString&)),
                          opt, SLOT(onSelectedFilter(const QString&)));
@@ -1782,6 +1844,9 @@ void StdViewScreenShot::activated(int iMsg)
 
             hExt->SetASCII("OffscreenImageFormat", (const char*)format.toLatin1());
 
+            method = opt->method();
+            methodGrp->SetASCII("SavePicture", method.constData());
+
             // which background chosen
             const char* background;
             switch(opt->backgroundType()){
@@ -1795,7 +1860,7 @@ void StdViewScreenShot::activated(int iMsg)
 
             QString comment = opt->comment();
             if (!comment.isEmpty()) {
-                // Replace newline escape sequence trough '\\n' string to build one big string,
+                // Replace newline escape sequence through '\\n' string to build one big string,
                 // otherwise Python would interpret it as an invalid command.
                 // Python does the decoding for us.
                 QStringList lines = comment.split(QLatin1String("\n"), QString::KeepEmptyParts );
@@ -1828,14 +1893,15 @@ void StdViewScreenShot::activated(int iMsg)
                     QFont font = painter.font();
                     font.setPointSize(20);
 
-                    int n = QFontMetrics(font).width(name);
+                    QFontMetrics fm(font);
+                    int n = QtTools::horizontalAdvance(fm, name);
                     int h = pixmap.height();
 
                     painter.setFont(font);
                     painter.drawText(8+appicon.width(), h-24, name);
 
                     font.setPointSize(12);
-                    int u = QFontMetrics(font).width(url);
+                    int u = QtTools::horizontalAdvance(fm, url);
                     painter.setFont(font);
                     painter.drawText(8+appicon.width()+n-u, h-9, url);
 
@@ -1875,10 +1941,6 @@ void StdCmdViewCreate::activated(int iMsg)
     Q_UNUSED(iMsg);
     getActiveGuiDocument()->createView(View3DInventor::getClassTypeId());
     getActiveGuiDocument()->getActiveView()->viewAll();
-
-    ParameterGrp::handle hViewGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
-    if (hViewGrp->GetBool("ShowAxisCross"))
-        doCommand(Command::Gui,"Gui.ActiveDocument.ActiveView.setAxisCross(True)");
 }
 
 bool StdCmdViewCreate::isActive(void)
@@ -2034,6 +2096,7 @@ StdCmdAxisCross::StdCmdAxisCross()
         sToolTipText  = QT_TR_NOOP("Toggle axis cross");
         sStatusTip    = QT_TR_NOOP("Toggle axis cross");
         sWhatsThis    = "Std_AxisCross";
+        sAccel        = "A,C";
 }
 
 void StdCmdAxisCross::activated(int iMsg)
@@ -2045,9 +2108,6 @@ void StdCmdAxisCross::activated(int iMsg)
             doCommand(Command::Gui,"Gui.ActiveDocument.ActiveView.setAxisCross(True)");
         else
             doCommand(Command::Gui,"Gui.ActiveDocument.ActiveView.setAxisCross(False)");
-
-        ParameterGrp::handle hViewGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
-        hViewGrp->SetBool("ShowAxisCross", view->getViewer()->hasAxisCross());
     }
 }
 
@@ -2503,7 +2563,7 @@ static std::vector<std::string> getBoxSelection(
     const auto &subs = obj->getSubObjects(App::DocumentObject::GS_SELECT);
     if(subs.empty()) {
         if(!selectElement) {
-            if(mode==INTERSECT || bbox.Contains(bbox.GetCenter()))
+            if(mode==INTERSECT || polygon.Contains(bbox.GetCenter()))
                 ret.emplace_back("");
             return ret;
         }
@@ -3078,7 +3138,7 @@ void CmdViewMeasureToggleAll::activated(int iMsg)
 // Std_SelBack
 //===========================================================================
 
-DEF_STD_CMD_A(StdCmdSelBack);
+DEF_STD_CMD_A(StdCmdSelBack)
 
 StdCmdSelBack::StdCmdSelBack()
   :Command("Std_SelBack")
@@ -3108,7 +3168,7 @@ bool StdCmdSelBack::isActive(void)
 // Std_SelForward
 //===========================================================================
 
-DEF_STD_CMD_A(StdCmdSelForward);
+DEF_STD_CMD_A(StdCmdSelForward)
 
 StdCmdSelForward::StdCmdSelForward()
   :Command("Std_SelForward")
@@ -3140,7 +3200,7 @@ bool StdCmdSelForward::isActive(void)
 #define TREEVIEW_DOC_CMD_DEF(_name,_v) \
 DEF_STD_CMD_AC(StdTree##_name) \
 void StdTree##_name::activated(int){ \
-    FC_TREEPARAM_SET(DocumentMode,_v);\
+    TreeParams::Instance()->setDocumentMode(_v);\
     if(_pcAction) _pcAction->setChecked(true,true);\
 }\
 Action * StdTree##_name::createAction(void) {\
@@ -3152,7 +3212,7 @@ Action * StdTree##_name::createAction(void) {\
     return pcAction;\
 }\
 bool StdTree##_name::isActive() {\
-    bool checked = FC_TREEPARAM(DocumentMode)==_v;\
+    bool checked = TreeParams::Instance()->DocumentMode()==_v;\
     if(_pcAction && _pcAction->isChecked()!=checked)\
         _pcAction->setChecked(checked,true);\
     return true;\
@@ -3212,8 +3272,8 @@ StdTreeCollapseDocument::StdTreeCollapseDocument()
 #define TREEVIEW_CMD_DEF(_name) \
 DEF_STD_CMD_AC(StdTree##_name) \
 void StdTree##_name::activated(int){ \
-    auto checked = !FC_TREEPARAM(_name);\
-    FC_TREEPARAM_SET(_name,checked);\
+    auto checked = !TreeParams::Instance()->_name();\
+    TreeParams::Instance()->set##_name(checked);\
     if(_pcAction) _pcAction->setChecked(checked,true);\
 }\
 Action * StdTree##_name::createAction(void) {\
@@ -3225,7 +3285,7 @@ Action * StdTree##_name::createAction(void) {\
     return pcAction;\
 }\
 bool StdTree##_name::isActive() {\
-    bool checked = FC_TREEPARAM(_name);\
+    bool checked = TreeParams::Instance()->_name();\
     if(_pcAction && _pcAction->isChecked()!=checked)\
         _pcAction->setChecked(checked,true);\
     return true;\
@@ -3352,97 +3412,83 @@ void StdTreeDrag::activated(int)
 // Std_TreeViewActions
 //===========================================================================
 //
-class StdCmdTreeViewActions : public Gui::Command
+class StdCmdTreeViewActions : public GroupCommand
 {
 public:
-    StdCmdTreeViewActions();
-    virtual const char* className() const {return "StdCmdTreeViewActions";}
-protected:
-    virtual void activated(int iMsg);
-    virtual Gui::Action * createAction(void);
+    StdCmdTreeViewActions()
+        :GroupCommand("Std_TreeViewActions")
+    {
+        sGroup        = QT_TR_NOOP("View");
+        sMenuText     = QT_TR_NOOP("TreeView actions");
+        sToolTipText  = QT_TR_NOOP("TreeView behavior options and actions");
+        sWhatsThis    = "Std_TreeViewActions";
+        sStatusTip    = QT_TR_NOOP("TreeView behavior options and actions");
+        eType         = 0;
+        bCanLog       = false;
 
-    std::vector<std::pair<Command*,size_t> > cmds;
+        addCommand(new StdTreeSyncView());
+        addCommand(new StdTreeSyncSelection());
+        addCommand(new StdTreeSyncPlacement());
+        addCommand(new StdTreePreSelection());
+        addCommand(new StdTreeRecordSelection());
+
+        addCommand();
+
+        addCommand(new StdTreeSingleDocument());
+        addCommand(new StdTreeMultiDocument());
+        addCommand(new StdTreeCollapseDocument());
+
+        addCommand();
+
+        addCommand(new StdTreeDrag(),cmds.size());
+        addCommand(new StdTreeSelection(),cmds.size());
+    };
+    virtual const char* className() const {return "StdCmdTreeViewActions";}
 };
 
-StdCmdTreeViewActions::StdCmdTreeViewActions()
-  : Command("Std_TreeViewActions")
+
+//======================================================================
+// Std_SelBoundingBox
+//===========================================================================
+DEF_STD_CMD_AC(StdCmdSelBoundingBox)
+
+StdCmdSelBoundingBox::StdCmdSelBoundingBox()
+  :Command("Std_SelBoundingBox")
 {
-    sGroup        = QT_TR_NOOP("View");
-    sMenuText     = QT_TR_NOOP("TreeView actions");
-    sToolTipText  = QT_TR_NOOP("TreeView behavior options and actions");
-    sWhatsThis    = "Std_TreeViewActions";
-    sStatusTip    = QT_TR_NOOP("TreeView behavior options and actions");
-    eType         = 0;
-    bCanLog       = false;
-
-    CommandManager &mgr = Application::Instance->commandManager();
-    cmds.reserve(12);
-    cmds.emplace_back(new StdTreeSyncView(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreeSyncSelection(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreeSyncPlacement(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreePreSelection(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreeRecordSelection(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-
-    cmds.emplace_back(nullptr,0);
-
-    cmds.emplace_back(new StdTreeSingleDocument(),cmds.size()+1);
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreeMultiDocument(),cmds.size()+1);
-    mgr.addCommand(cmds.back().first);
-    cmds.emplace_back(new StdTreeCollapseDocument(),cmds.size()-2);
-    mgr.addCommand(cmds.back().first);
-
-    cmds.emplace_back(nullptr,0);
-
-    cmds.emplace_back(new StdTreeDrag(),cmds.size());
-    mgr.addCommand(cmds.back().first);
-
-    cmds.emplace_back(new StdTreeSelection(),cmds.size());
-    mgr.addCommand(cmds.back().first);
+  sGroup        = QT_TR_NOOP("View");
+  sMenuText     = QT_TR_NOOP("&Bounding box");
+  sToolTipText  = QT_TR_NOOP("Show selection bounding box");
+  sWhatsThis    = "Std_SelBoundingBox";
+  sStatusTip    = QT_TR_NOOP("Show selection bounding box");
+  sPixmap       = "sel-bbox";
+  eType         = Alter3DView;
 }
 
-Action * StdCmdTreeViewActions::createAction(void) {
-    ActionGroup* pcAction = new ActionGroup(this, getMainWindow());
-    pcAction->setDropDownMenu(true);
-    pcAction->setExclusive(false);
-    applyCommandData(this->className(), pcAction);
+void StdCmdSelBoundingBox::activated(int iMsg)
+{
+    bool checked = !!iMsg;
+    if(checked != ViewParams::instance()->getShowSelectionBoundingBox()) {
+        ViewParams::instance()->setShowSelectionBoundingBox(checked);
+        if(_pcAction)
+            _pcAction->setChecked(checked,true);
+    }
+}
+
+bool StdCmdSelBoundingBox::isActive(void)
+{
+    if(_pcAction) {
+        bool checked = _pcAction->isChecked();
+        if(checked != ViewParams::instance()->getShowSelectionBoundingBox())
+            _pcAction->setChecked(!checked,true);
+    }
+    return true;
+}
+
+Action * StdCmdSelBoundingBox::createAction(void)
+{
+    Action *pcAction = Command::createAction();
     pcAction->setCheckable(true);
-
-    for(auto &v : cmds) {
-        if(!v.first)
-            pcAction->addAction(QString::fromLatin1(""))->setSeparator(true);
-        else
-            v.first->addToGroup(pcAction);
-    }
-    pcAction->setIcon(BitmapFactory().iconFromTheme(cmds[0].first->getPixmap()));
-    pcAction->setChecked(cmds[0].first->getAction()->isChecked(),true);
-
     return pcAction;
-}
-
-void StdCmdTreeViewActions::activated(int iMsg)
-{
-    if(iMsg<0 || iMsg>=(int)cmds.size())
-        return;
-
-    auto &v = cmds[iMsg];
-    if(!v.first)
-        return;
-
-    if(triggerSource()!=TriggerChildAction)
-        v.first->invoke(0);
-
-    Action* cmdAction = v.first->getAction();
-    if(_pcAction && cmdAction) {
-        _pcAction->setIcon(BitmapFactory().iconFromTheme(v.first->getPixmap()));
-        _pcAction->setChecked(cmdAction->isChecked(),true);
-        _pcAction->setProperty("defaultAction", QVariant((int)v.second));
-    }
 }
 
 //===========================================================================
@@ -3458,6 +3504,7 @@ void CreateViewStdCommands(void)
 
     // views
     rcCmdMgr.addCommand(new StdCmdViewBottom());
+    rcCmdMgr.addCommand(new StdCmdViewHome());
     rcCmdMgr.addCommand(new StdCmdViewFront());
     rcCmdMgr.addCommand(new StdCmdViewLeft());
     rcCmdMgr.addCommand(new StdCmdViewRear());
@@ -3518,9 +3565,17 @@ void CreateViewStdCommands(void)
     rcCmdMgr.addCommand(new StdCmdAxisCross());
     rcCmdMgr.addCommand(new CmdViewMeasureClearAll());
     rcCmdMgr.addCommand(new CmdViewMeasureToggleAll());
+    rcCmdMgr.addCommand(new StdCmdSelBoundingBox());
     rcCmdMgr.addCommand(new StdCmdSelBack());
     rcCmdMgr.addCommand(new StdCmdSelForward());
     rcCmdMgr.addCommand(new StdCmdTreeViewActions());
+
+
+    auto hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    if(hGrp->GetASCII("GestureRollFwdCommand").empty())
+        hGrp->SetASCII("GestureRollFwdCommand","Std_SelForward");
+    if(hGrp->GetASCII("GestureRollBackCommand").empty())
+        hGrp->SetASCII("GestureRollBackCommand","Std_SelBack");
 }
 
 } // namespace Gui

@@ -1,5 +1,6 @@
 # ***************************************************************************
 # *   Copyright (c) 2019 Bernd Hahnebach <bernd@bimstatik.org>              *
+# *   Copyright (c) 2020 Sudhanshu Dubey <sudhanshu.thethunder@gmail.com    *
 # *                                                                         *
 # *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
@@ -9,22 +10,35 @@
 # *   the License, or (at your option) any later version.                   *
 # *   for detail see the LICENCE text file.                                 *
 # *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful,            *
+# *   This program is distributed in the hope that it will be useful,       *
 # *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
 # *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
 # *   GNU Library General Public License for more details.                  *
 # *                                                                         *
 # *   You should have received a copy of the GNU Library General Public     *
-# *   License along with FreeCAD; if not, write to the Free Software        *
+# *   License along with this program; if not, write to the Free Software   *
 # *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
 # *   USA                                                                   *
 # *                                                                         *
 # ***************************************************************************
 
+# to run the example use:
+"""
+from femexamples.rc_wall_2d import setup
+setup()
+
+"""
+
+# example from Harry's epic topic: Concrete branch ready for testing
+# https://forum.freecadweb.org/viewtopic.php?f=18&t=33106&start=80#p296469
 
 import FreeCAD
-import ObjectsFem
+from FreeCAD import Vector as vec
+
 import Fem
+import ObjectsFem
+import Part
+from Part import makeLine as ln
 
 mesh_name = "Mesh"  # needs to be Mesh to work with unit tests
 
@@ -35,16 +49,25 @@ def init_doc(doc=None):
     return doc
 
 
-def setup_rcwall2d(doc=None, solver="ccxtools"):
+def get_information():
+    info = {"name": "RC Wall 2D",
+            "meshtype": "solid",
+            "meshelement": "Tria6",
+            "constraints": ["fixed", "force", "displacement"],
+            "solvers": ["calculix"],
+            "material": "reinforced",
+            "equation": "mechanical"
+            }
+    return info
+
+
+def setup(doc=None, solvertype="ccxtools"):
     # setup reinfoced wall in 2D
 
     if doc is None:
         doc = init_doc()
 
-    # part
-    from FreeCAD import Vector as vec
-    import Part
-    from Part import makeLine as ln
+    # geom objects
 
     v1 = vec(0, -2000, 0)
     v2 = vec(500, -2000, 0)
@@ -62,33 +85,39 @@ def setup_rcwall2d(doc=None, solver="ccxtools"):
     l6 = ln(v6, v7)
     l7 = ln(v7, v8)
     l8 = ln(v8, v1)
-    rcwall = doc.addObject("Part::Feature", "FIB_Wall")
-    rcwall.Shape = Part.Face(Part.Wire([l1, l2, l3, l4, l5, l6, l7, l8]))
+    geom_obj = doc.addObject("Part::Feature", "FIB_Wall")
+    geom_obj.Shape = Part.Face(Part.Wire([l1, l2, l3, l4, l5, l6, l7, l8]))
+    doc.recompute()
+
+    if FreeCAD.GuiUp:
+        geom_obj.ViewObject.Document.activeView().viewAxonometric()
+        geom_obj.ViewObject.Document.activeView().fitAll()
 
     # analysis
     analysis = ObjectsFem.makeAnalysis(doc, "Analysis")
 
     # solver
-    # TODO How to pass multiple solver for one analysis in one doc
-    if solver == "calculix":
+    if solvertype == "calculix":
         solver = analysis.addObject(
             ObjectsFem.makeSolverCalculix(doc, "SolverCalculiX")
         )[0]
-        solver.AnalysisType = "static"
-        solver.GeometricalNonlinearity = "linear"
-        solver.ThermoMechSteadyState = False
-        solver.MatrixSolverType = "default"
-        solver.IterationsControlParameterTimeUse = False
-    elif solver == "ccxtools":
+    elif solvertype == "ccxtools":
         solver = analysis.addObject(
             ObjectsFem.makeSolverCalculixCcxTools(doc, "CalculiXccxTools")
         )[0]
+        solver.WorkingDir = u""
+    else:
+        FreeCAD.Console.PrintWarning(
+            "Not known or not supported solver type: {}. "
+            "No solver object was created.\n".format(solvertype)
+        )
+    if solvertype == "calculix" or solvertype == "ccxtools":
+        solver.SplitInputWriter = False
         solver.AnalysisType = "static"
         solver.GeometricalNonlinearity = "linear"
         solver.ThermoMechSteadyState = False
         solver.MatrixSolverType = "default"
         solver.IterationsControlParameterTimeUse = False
-        solver.WorkingDir = u""
 
     # shell thickness
     thickness = analysis.addObject(
@@ -120,26 +149,26 @@ def setup_rcwall2d(doc=None, solver="ccxtools"):
     fixed_constraint = analysis.addObject(
         ObjectsFem.makeConstraintFixed(doc, name="ConstraintFixed")
     )[0]
-    fixed_constraint.References = [(rcwall, "Edge1"), (rcwall, "Edge5")]
+    fixed_constraint.References = [(geom_obj, "Edge1"), (geom_obj, "Edge5")]
 
     # force constraint
     force_constraint = doc.Analysis.addObject(
         ObjectsFem.makeConstraintForce(doc, name="ConstraintForce")
     )[0]
-    force_constraint.References = [(rcwall, "Edge7")]
+    force_constraint.References = [(geom_obj, "Edge7")]
     force_constraint.Force = 1000000.0
-    force_constraint.Direction = (rcwall, ["Edge8"])
+    force_constraint.Direction = (geom_obj, ["Edge8"])
     force_constraint.Reversed = False
 
     # displacement_constraint
     displacement_constraint = doc.Analysis.addObject(
         ObjectsFem.makeConstraintDisplacement(doc, name="ConstraintDisplacmentPrescribed")
     )[0]
-    displacement_constraint.References = [(rcwall, "Face1")]
+    displacement_constraint.References = [(geom_obj, "Face1")]
     displacement_constraint.zFix = True
 
     # mesh
-    from femexamples.meshes.mesh_rc_wall_2d_tria6 import create_nodes, create_elements
+    from .meshes.mesh_rc_wall_2d_tria6 import create_nodes, create_elements
     fem_mesh = Fem.FemMesh()
     control = create_nodes(fem_mesh)
     if not control:
@@ -148,16 +177,11 @@ def setup_rcwall2d(doc=None, solver="ccxtools"):
     if not control:
         FreeCAD.Console.PrintError("Error on creating elements.\n")
     femmesh_obj = analysis.addObject(
-        doc.addObject("Fem::FemMeshObject", mesh_name)
+        ObjectsFem.makeMeshGmsh(doc, mesh_name)
     )[0]
     femmesh_obj.FemMesh = fem_mesh
+    femmesh_obj.Part = geom_obj
+    femmesh_obj.SecondOrderLinear = False
 
     doc.recompute()
     return doc
-
-
-"""
-from femexamples import rc_wall_2d as rc
-rc.setup_rcwall2d()
-
-"""

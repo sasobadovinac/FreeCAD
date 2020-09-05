@@ -3,6 +3,7 @@
 # ***************************************************************************
 # *                                                                         *
 # *   Copyright (c) 2018 sliptonic <shopinthewoods@gmail.com>               *
+# *   Copyright (c) 2020 Schildkroet                                        *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -23,7 +24,6 @@
 # ***************************************************************************
 
 import FreeCAD
-import Part
 import PathScripts.PathEngraveBase as PathEngraveBase
 import PathScripts.PathLog as PathLog
 import PathScripts.PathOp as PathOp
@@ -32,13 +32,17 @@ import math
 
 from PySide import QtCore
 
-LOGLEVEL = False
+# lazily loaded modules
+from lazy_loader.lazy_loader import LazyLoader
+Part = LazyLoader('Part', globals(), 'Part')
 
-if LOGLEVEL:
-    PathLog.setLevel(PathLog.Level.DEBUG, PathLog.thisModule())
-    PathLog.trackModule(PathLog.thisModule())
-else:
-    PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+__title__ = "Path Deburr Operation"
+__author__ = "sliptonic (Brad Collette), Schildkroet"
+__url__ = "http://www.freecadweb.org"
+__doc__ = "Deburr operation."
+
+PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+#PathLog.trackModule(PathLog.thisModule())
 
 
 # Qt translation handling
@@ -48,16 +52,17 @@ def translate(context, text, disambig=None):
 
 def toolDepthAndOffset(width, extraDepth, tool):
     '''toolDepthAndOffset(width, extraDepth, tool) ... return tuple for given parameters.'''
-    angle = tool.CuttingEdgeAngle
+    angle = float(tool.CuttingEdgeAngle)
     if 0 == angle:
         angle = 180
     tan = math.tan(math.radians(angle / 2))
 
     toolDepth = 0 if 0 == tan else width / tan
     depth = toolDepth + extraDepth
-    toolOffset = tool.FlatRadius
-    extraOffset = tool.Diameter / 2 - width if 180 == angle else extraDepth / tan
+    toolOffset = float(tool.FlatRadius)
+    extraOffset = float(tool.Diameter) / 2 - width if 180 == angle else extraDepth / tan
     offset = toolOffset + extraOffset
+    
     return (depth, offset)
 
 
@@ -74,6 +79,12 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
         obj.addProperty('App::PropertyEnumeration', 'Join', 'Deburr', QtCore.QT_TRANSLATE_NOOP('PathDeburr', 'How to join chamfer segments'))
         obj.Join = ['Round', 'Miter']
         obj.setEditorMode('Join', 2)  # hide for now
+        obj.addProperty('App::PropertyEnumeration', 'Direction',  'Deburr', QtCore.QT_TRANSLATE_NOOP('PathDeburr', 'Direction of Operation'))
+        obj.Direction = ['CW', 'CCW']
+        obj.addProperty('App::PropertyEnumeration', 'Side',  'Deburr', QtCore.QT_TRANSLATE_NOOP('PathDeburr', 'Side of Operation'))
+        obj.Side = ['Outside', 'Inside']
+        obj.setEditorMode('Side', 2) # Hide property, it's calculated by op
+        obj.addProperty('App::PropertyInteger', 'EntryPoint',  'Deburr', QtCore.QT_TRANSLATE_NOOP('PathDeburr', 'Select the segment, there the operations starts'))
 
     def opOnDocumentRestored(self, obj):
         obj.setEditorMode('Join', 2)  # hide for now
@@ -102,13 +113,24 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
                 basewires.append(Part.Wire(edgelist))
 
             self.basewires.extend(basewires)
-
+            
+            # Set default value
+            side = ["Outside"]
+            
             for w in basewires:
                 self.adjusted_basewires.append(w)
-                wire = PathOpTools.offsetWire(w, base.Shape, offset, True)
+                wire = PathOpTools.offsetWire(w, base.Shape, offset, True, side)
                 if wire:
                     wires.append(wire)
-
+        
+        # Save Outside or Inside
+        obj.Side = side[0]
+        
+        # Set direction of op
+        forward = True
+        if obj.Direction == 'CCW':
+            forward = False
+        
         zValues = []
         z = 0
         if obj.StepDown.Value != 0:
@@ -117,9 +139,12 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
                 zValues.append(z)
         zValues.append(depth)
         PathLog.track(obj.Label, depth, zValues)
-
+        
+        if obj.EntryPoint < 0:
+            obj.EntryPoint = 0;
+        
         self.wires = wires # pylint: disable=attribute-defined-outside-init
-        self.buildpathocc(obj, wires, zValues, True)
+        self.buildpathocc(obj, wires, zValues, True, forward, obj.EntryPoint)
 
         # the last command is a move to clearance, which is automatically added by PathOp
         if self.commandlist:
@@ -132,10 +157,13 @@ class ObjectDeburr(PathEngraveBase.ObjectOp):
     def opSetDefaultValues(self, obj, job):
         PathLog.track(obj.Label, job.Label)
         obj.Width = '1 mm'
-        obj.ExtraDepth = '0.1 mm'
+        obj.ExtraDepth = '0.5 mm'
         obj.Join = 'Round'
         obj.setExpression('StepDown', '0 mm')
         obj.StepDown = '0 mm'
+        obj.Direction = 'CW'
+        obj.Side = "Outside"
+        obj.EntryPoint = 0;
 
 
 def SetupProperties():

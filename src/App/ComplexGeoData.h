@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -162,9 +162,9 @@ public:
     static const std::string &elementMapPrefix();
     /// Special postfix to mark the following tag
     static const std::string &tagPostfix();
-    /// Speical postfix to mark the index of an array element
+    /// Special postfix to mark the index of an array element
     static const std::string &indexPostfix();
-    /// Speical prefix to mark a missing element
+    /// Special prefix to mark a missing element
     static const std::string &missingPrefix();
     /// Check if a subname contains missing element
     static bool hasMissingElement(const char *subname);

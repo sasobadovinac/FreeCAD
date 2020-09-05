@@ -44,6 +44,10 @@
 # include <QGLContext>
 #endif
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+# include <QScreen>
+#endif
+
 #include <LibraryVersions.h>
 #include <zlib.h>
 #include <boost/version.hpp>
@@ -63,7 +67,7 @@ namespace Gui {
 /** Displays all messages at startup inside the splash screen.
  * \author Werner Mayer
  */
-class SplashObserver : public Base::ConsoleObserver
+class SplashObserver : public Base::ILogger
 {
 public:
     SplashObserver(QSplashScreen* splasher=0)
@@ -106,32 +110,19 @@ public:
     {
         Base::Console().DetachObserver(this);
     }
-    const char* Name()
+    const char* Name() override
     {
         return "SplashObserver";
     }
-    void Warning(const char * s)
+    void SendLog(const std::string& msg, Base::LogStyle level) override
     {
 #ifdef FC_DEBUG
-        Log(s);
+        Log(msg.c_str());
+        Q_UNUSED(level)
 #else
-        Q_UNUSED(s);
-#endif
-    }
-    void Message(const char * s)
-    {
-#ifdef FC_DEBUG
-        Log(s);
-#else
-        Q_UNUSED(s);
-#endif
-    }
-    void Error  (const char * s)
-    {
-#ifdef FC_DEBUG
-        Log(s);
-#else
-        Q_UNUSED(s);
+        if (level == Base::LogStyle::Log) {
+            Log(msg.c_str());
+        }
 #endif
     }
     void Log (const char * s)
@@ -247,7 +238,11 @@ AboutDialog::AboutDialog(bool showLic, QWidget* parent)
 
     setModal(true);
     ui->setupUi(this);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    QRect rect = QApplication::primaryScreen()->availableGeometry();
+#else
     QRect rect = QApplication::desktop()->availableGeometry();
+#endif
     QPixmap image = getMainWindow()->splashImage();
 
     // Make sure the image is not too big
@@ -281,6 +276,7 @@ AboutDialog::AboutDialog(bool showLic, QWidget* parent)
     ui->tabWidget->setCurrentIndex(0); // always start on the About tab
     setupLabels();
     showLicenseInformation();
+    showCollectionInformation();
 }
 
 /**
@@ -706,6 +702,23 @@ void AboutDialog::showLicenseInformation()
     textField->setHtml(html);
 
     connect(textField, SIGNAL(anchorClicked(QUrl)), this, SLOT(linkActivated(QUrl)));
+}
+
+void AboutDialog::showCollectionInformation()
+{
+    QString doc = QString::fromUtf8(App::Application::getHelpDir().c_str());
+    QString path = doc + QLatin1String("Collection.html");
+    if (!QFile::exists(path))
+        return;
+
+    QWidget *tab_collection = new QWidget();
+    tab_collection->setObjectName(QString::fromLatin1("tab_collection"));
+    ui->tabWidget->addTab(tab_collection, tr("Collection"));
+    QVBoxLayout* hlayout = new QVBoxLayout(tab_collection);
+    QTextBrowser* textField = new QTextBrowser(tab_collection);
+    textField->setOpenExternalLinks(true);
+    hlayout->addWidget(textField);
+    textField->setSource(path);
 }
 
 void AboutDialog::linkActivated(const QUrl& link)

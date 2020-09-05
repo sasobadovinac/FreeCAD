@@ -1,6 +1,6 @@
 # ***************************************************************************
-# *   Copyright (c) 2010 - Juergen Riegel <juergen.riegel@web.de>           *
-# *   Copyright (c) 2018 - Bernd Hahnebach <bernd@bimstatik.org>            *
+# *   Copyright (c) 2010 Juergen Riegel <juergen.riegel@web.de>             *
+# *   Copyright (c) 2018 Bernd Hahnebach <bernd@bimstatik.org>              *
 # *                                                                         *
 # *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
@@ -10,23 +10,30 @@
 # *   the License, or (at your option) any later version.                   *
 # *   for detail see the LICENCE text file.                                 *
 # *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful,            *
+# *   This program is distributed in the hope that it will be useful,       *
 # *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
 # *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-# *   GNU Lesser General Public License for more details.                   *
+# *   GNU Library General Public License for more details.                  *
 # *                                                                         *
 # *   You should have received a copy of the GNU Library General Public     *
-# *   License along with FreeCAD; if not, write to the Free Software        *
+# *   License along with this program; if not, write to the Free Software   *
 # *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
 # *   USA                                                                   *
 # *                                                                         *
-# *   Juergen Riegel 2002                                                   *
-# ***************************************************************************/
+# ***************************************************************************
 
+__title__ = "FreeCAD tetgen exporter"
+__author__ = "Juergen Riegel"
+__url__ = "http://www.freecadweb.org"
+
+## \addtogroup FEM
+#  @{
 
 # Make mesh of pn junction in TetGen format
 import FreeCAD
+from FreeCAD import Console
 import Mesh
+
 App = FreeCAD  # shortcut
 if FreeCAD.GuiUp:
     import FreeCADGui
@@ -40,7 +47,7 @@ def exportMeshToTetGenPoly(meshToExport, filePath, beVerbose=1):
     """Export mesh to TetGen *.poly file format"""
     # ********** Part 1 - write node list to output file
     if beVerbose == 1:
-            FreeCAD.Console.PrintMessage("\nExport of mesh to TetGen file ...")
+            Console.PrintMessage("\nExport of mesh to TetGen file ...")
     (allVertices, allFacets) = meshToExport.Topology
     f = open(filePath, "w")
     f.write("# This file was generated from FreeCAD geometry\n")
@@ -91,7 +98,7 @@ def exportMeshToTetGenPoly(meshToExport, filePath, beVerbose=1):
     EdgeKeys = EdgeFacets.keys()
     # disconnectedEdges = len(EdgeKeys)
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage(
+        Console.PrintMessage(
             "\nBoundaryMarker:" + repr(BoundaryMarker) + " " + repr(len(EdgeFacets))
         )
     searchForPair = 1
@@ -143,7 +150,7 @@ def exportMeshToTetGenPoly(meshToExport, filePath, beVerbose=1):
         searchForPair = 0
     # End of main loop
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage(
+        Console.PrintMessage(
             "\nNew BoundaryMarker:" + repr(BoundaryMarker) + " " + repr(len(EdgeFacets))
         )
 
@@ -182,7 +189,7 @@ def createMesh():
     # ========================  Script beginning...  ========================
     beVerbose = 1
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage("\n\n\n\n\n\n\n\nScript starts...")
+        Console.PrintMessage("\n\n\n\n\n\n\n\nScript starts...")
     # Geometry definition
     # Define objects names
     PyDocumentName = "pnJunction"
@@ -196,7 +203,7 @@ def createMesh():
 
     # Init objects
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage("\nInit Objects...")
+        Console.PrintMessage("\nInit Objects...")
     # closeDocument after restart of macro. Needs any ActiveDocument.
     # App.closeDocument(App.ActiveDocument.Label)
     AppPyDoc = App.newDocument(PyDocumentName)
@@ -232,13 +239,13 @@ def createMesh():
     ]
     if beVerbose == 1:
         if len(BoxList) != len(BoxMeshList):
-            FreeCAD.Console.PrintMessage(
+            Console.PrintMessage(
                 "\n ERROR! Input len() of BoxList and BoxMeshList is not the same! "
             )
 
     # Set sizes in nanometers
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage("\nSet sizes...")
+        Console.PrintMessage("\nSet sizes...")
     tessellationTollerance = 0.05
     ModelWidth = 300
     BulkHeight = 300
@@ -300,7 +307,7 @@ def createMesh():
 
     # Unite
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage("\nFuse objects...")
+        Console.PrintMessage("\nFuse objects...")
     fuseShape = BoxList[0].Shape
     for index in range(1, len(BoxList), 1):
         fuseShape = fuseShape.fuse(BoxList[index].Shape)
@@ -335,10 +342,10 @@ def createMesh():
     # exportMeshToTetGenPoly(pnMesh.Mesh,filePath,beVerbose)
 
     if FreeCAD.GuiUp:
-        Gui.activeDocument().activeView().viewAxometric()
-        Gui.SendMsgToActiveView("ViewFit")
+        pnMesh.ViewObject.Document.activeView().viewAxonometric()
+        pnMesh.ViewObject.Document.activeView().fitAll()
 
     if beVerbose == 1:
-        FreeCAD.Console.PrintMessage("\nScript finished without errors.")
+        Console.PrintMessage("\nScript finished without errors.")
 
 ##  @}

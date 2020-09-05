@@ -25,6 +25,8 @@
 #ifndef _PreComp_
 #endif
 
+#include <QLocale>
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include "Cell.h"
@@ -32,13 +34,15 @@
 #include <boost/tokenizer.hpp>
 #include <Base/Reader.h>
 #include <Base/Quantity.h>
+#include <Base/Tools.h>
+#include <Base/UnitsApi.h>
 #include <Base/Writer.h>
 #include <Base/Console.h>
-#include <App/Expression.h>
+#include <App/ExpressionParser.h>
 #include "Sheet.h"
 #include <iomanip>
 
-FC_LOG_LEVEL_INIT("Spreadsheet",true,true);
+FC_LOG_LEVEL_INIT("Spreadsheet",true,true)
 
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
@@ -293,14 +297,16 @@ void Cell::setContent(const char * value)
                 setParseException(e.what());
             }
         }
-        else if (*value == '\'')
+        else if (*value == '\'') {
             expr = new App::StringExpression(owner->sheet(), value + 1);
+        }
         else if (*value != '\0') {
             char * end;
             errno = 0;
             double float_value = strtod(value, &end);
-            if (!*end && errno == 0)
+            if (!*end && errno == 0) {
                 expr = new App::NumberExpression(owner->sheet(), Quantity(float_value));
+            }
             else {
                 try {
                     expr = ExpressionParser::parse(owner->sheet(), value);
@@ -317,15 +323,15 @@ void Cell::setContent(const char * value)
     try {
         setExpression(App::ExpressionPtr(expr));
         signaller.tryInvoke();
-    } catch (Base::Exception &e) {
-        if(value) {
-            std::string _value;
-            if(*value != '=') {
-                _value = "=";
-                _value += value;
-                value = _value.c_str();
+    }
+    catch (Base::Exception &e) {
+        if (value) {
+            std::string _value = value;
+            if (_value[0] != '=') {
+                _value.insert (0, 1, '=');
             }
-            setExpression(App::ExpressionPtr(new App::StringExpression(owner->sheet(), value)));
+
+            setExpression(App::ExpressionPtr(new App::StringExpression(owner->sheet(), _value)));
             setParseException(e.what());
         }
     }
@@ -581,9 +587,9 @@ bool Cell::getSpans(int &rows, int &columns) const
     return isUsed(SPANS_SET);
 }
 
-void Cell::setException(const std::string &e)
+void Cell::setException(const std::string &e, bool silent)
 {
-    if(e.size() && owner && owner->sheet()) {
+    if(!silent && e.size() && owner && owner->sheet()) {
         FC_ERR(owner->sheet()->getFullName() << '.' 
                 << address.toString() << ": " << e);
     }
@@ -958,6 +964,60 @@ App::Color Cell::decodeColor(const std::string & color, const App::Color & defau
     }
     else
         return defaultColor;
+}
+
+//roughly based on Spreadsheet/Gui/SheetModel.cpp
+std::string Cell::getFormattedQuantity(void)
+{
+    std::string result;
+    QString qFormatted;
+    App::CellAddress thisCell = getAddress();
+    Property* prop = owner->sheet()->getPropertyByName(thisCell.toString().c_str());
+
+    if (prop->isDerivedFrom(App::PropertyString::getClassTypeId())) {
+        const App::PropertyString * stringProp = static_cast<const App::PropertyString*>(prop);
+        qFormatted = QString::fromUtf8(stringProp->getValue());
+
+    } else if (prop->isDerivedFrom(App::PropertyQuantity::getClassTypeId())) {
+        double rawVal = static_cast<App::PropertyQuantity*>(prop)->getValue();
+        const App::PropertyQuantity * floatProp = static_cast<const App::PropertyQuantity*>(prop);
+        DisplayUnit du;
+        bool hasDisplayUnit = getDisplayUnit(du);
+        double duScale = du.scaler;
+        const Base::Unit& computedUnit = floatProp->getUnit();
+        qFormatted = QLocale().toString(rawVal,'f',Base::UnitsApi::getDecimals());
+        if (hasDisplayUnit) {
+            if (computedUnit.isEmpty() || computedUnit == du.unit) {
+                QString number =
+                    QLocale().toString(rawVal / duScale,'f',Base::UnitsApi::getDecimals());
+                qFormatted = number + Base::Tools::fromStdString(" " + displayUnit.stringRep);
+            }
+        }
+
+    } else if (prop->isDerivedFrom(App::PropertyFloat::getClassTypeId())){
+        double rawVal = static_cast<const App::PropertyFloat*>(prop)->getValue();
+        DisplayUnit du;
+        bool hasDisplayUnit = getDisplayUnit(du);
+        double duScale = du.scaler;
+        qFormatted = QLocale().toString(rawVal,'f',Base::UnitsApi::getDecimals());
+        if (hasDisplayUnit) {
+            QString number = QLocale().toString(rawVal / duScale, 'f',Base::UnitsApi::getDecimals());
+            qFormatted = number + Base::Tools::fromStdString(" " + displayUnit.stringRep);
+        }
+    } else if (prop->isDerivedFrom(App::PropertyInteger::getClassTypeId())) {
+        double rawVal = static_cast<const App::PropertyInteger*>(prop)->getValue();
+        DisplayUnit du;
+        bool hasDisplayUnit = getDisplayUnit(du);
+        double duScale = du.scaler;
+        int iRawVal = std::round(rawVal);
+        qFormatted = QLocale().toString(iRawVal);
+        if (hasDisplayUnit) {
+            QString number = QLocale().toString(rawVal / duScale, 'f',Base::UnitsApi::getDecimals());
+            qFormatted = number + Base::Tools::fromStdString(" " + displayUnit.stringRep);
+        }
+    }
+    result = Base::Tools::toStdString(qFormatted);
+    return result;
 }
 
 

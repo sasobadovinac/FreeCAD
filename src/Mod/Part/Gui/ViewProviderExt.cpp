@@ -97,6 +97,8 @@
 # include <QMenu>
 #endif
 
+#include <boost/algorithm/string/predicate.hpp>
+
 /// Here the FreeCAD includes sorted by Base,App,Gui......
 #include <Base/Console.h>
 #include <Base/Parameter.h>
@@ -124,7 +126,7 @@
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Part/App/PrimitiveFeature.h>
 
-FC_LOG_LEVEL_INIT("Part", true, true);
+FC_LOG_LEVEL_INIT("Part", true, true)
 
 using namespace PartGui;
 
@@ -135,7 +137,6 @@ void ViewProviderPartExt::getNormals(const TopoDS_Face&  theFace,
                                      const Handle(Poly_Triangulation)& aPolyTri,
                                      TColgp_Array1OfDir& theNormals)
 {
-    Poly_Connect thePolyConnect(aPolyTri);
     const TColgp_Array1OfPnt& aNodes = aPolyTri->Nodes();
 
     if(aPolyTri->HasNormals())
@@ -165,6 +166,7 @@ void ViewProviderPartExt::getNormals(const TopoDS_Face&  theFace,
     }
 
     // take in face the surface location
+    Poly_Connect thePolyConnect(aPolyTri);
     const TopoDS_Face      aZeroFace = TopoDS::Face(theFace.Located(TopLoc_Location()));
     Handle(Geom_Surface)   aSurf     = BRep_Tool::Surface(aZeroFace);
     const Standard_Real    aTol      = Precision::Confusion();
@@ -238,16 +240,21 @@ ViewProviderPartExt::ViewProviderPartExt()
     float r,g,b;
     r = ((lcol >> 24) & 0xff) / 255.0; g = ((lcol >> 16) & 0xff) / 255.0; b = ((lcol >> 8) & 0xff) / 255.0;
     int lwidth = Gui::ViewParams::instance()->getDefaultShapeLineWidth();
+    int psize = Gui::ViewParams::instance()->getDefaultShapePointSize();
 
     ParameterGrp::handle hPart = App::GetApplication().GetParameterGroupByPath
         ("User parameter:BaseApp/Preferences/Mod/Part");
     NormalsFromUV = hPart->GetBool("NormalsFromUVNodes", NormalsFromUV);
+
+    long twoside = hPart->GetBool("TwoSideRendering", true) ? 1 : 0;
 
     // Let the user define a custom lower limit but a value less than
     // OCCT's epsilon is not allowed
     double lowerLimit = hPart->GetFloat("MinimumDeviation", tessRange.LowerBound);
     lowerLimit = std::max(lowerLimit, Precision::Confusion());
     tessRange.LowerBound = lowerLimit;
+
+    static const char *osgroup = "Object Style";
 
     App::Material mat;
     mat.ambientColor.set(0.2f,0.2f,0.2f);
@@ -256,24 +263,30 @@ ViewProviderPartExt::ViewProviderPartExt()
     mat.emissiveColor.set(0.0f,0.0f,0.0f);
     mat.shininess = 1.0f;
     mat.transparency = 0.0f;
-    ADD_PROPERTY(LineMaterial,(mat));
-    ADD_PROPERTY(PointMaterial,(mat));
-    ADD_PROPERTY(LineColor,(mat.diffuseColor));
-    ADD_PROPERTY(PointColor,(mat.diffuseColor));
-    ADD_PROPERTY(PointColorArray, (PointColor.getValue()));
-    ADD_PROPERTY(DiffuseColor,(ShapeColor.getValue()));
-    ADD_PROPERTY(LineColorArray,(LineColor.getValue()));
-    ADD_PROPERTY(LineWidth,(lwidth));
+    ADD_PROPERTY_TYPE(LineMaterial,(mat), osgroup, App::Prop_None, "Object line material.");
+    ADD_PROPERTY_TYPE(PointMaterial,(mat), osgroup, App::Prop_None, "Object point material.");
+    ADD_PROPERTY_TYPE(LineColor, (mat.diffuseColor), osgroup, App::Prop_None, "Set object line color.");
+    ADD_PROPERTY_TYPE(PointColor, (mat.diffuseColor), osgroup, App::Prop_None, "Set object point color");
+    ADD_PROPERTY_TYPE(PointColorArray, (PointColor.getValue()), osgroup, App::Prop_None, "Object point color array.");
+    ADD_PROPERTY_TYPE(DiffuseColor,(ShapeColor.getValue()), osgroup, App::Prop_None, "Object diffuse color.");
+    ADD_PROPERTY_TYPE(LineColorArray,(LineColor.getValue()), osgroup, App::Prop_None, "Object line color array.");
+    ADD_PROPERTY_TYPE(LineWidth,(lwidth), osgroup, App::Prop_None, "Set object line width.");
     LineWidth.setConstraints(&sizeRange);
     PointSize.setConstraints(&sizeRange);
-    ADD_PROPERTY(PointSize,(lwidth));
-    ADD_PROPERTY(Deviation,(0.5f));
+    ADD_PROPERTY_TYPE(PointSize,(psize), osgroup, App::Prop_None, "Set object point size.");
+    ADD_PROPERTY_TYPE(Deviation,(0.5f), osgroup, App::Prop_None,
+            "Sets the accuracy of the polygonal representation of the model\n"
+            "in the 3D view (tessellation). Lower values indicate better quality.\n"
+            "The value is in percent of object's size.");
     Deviation.setConstraints(&tessRange);
-    ADD_PROPERTY(AngularDeflection,(28.65));
+    ADD_PROPERTY_TYPE(AngularDeflection,(28.65), osgroup, App::Prop_None,
+            "Specify how finely to generate the mesh for rendering on screen or when exporting.\n"
+            "The default value is 28.5 degrees, or 0.5 radians. The smaller the value\n"
+            "the smoother the appearance in the 3D view, and the finer the mesh that will be exported.");
     AngularDeflection.setConstraints(&angDeflectionRange);
-    ADD_PROPERTY(Lighting,(1));
+    ADD_PROPERTY_TYPE(Lighting,(twoside), osgroup, App::Prop_None, "Set object lighting.");
     Lighting.setEnums(LightingEnums);
-    ADD_PROPERTY(DrawStyle,((long int)0));
+    ADD_PROPERTY_TYPE(DrawStyle,((long int)0), osgroup, App::Prop_None, "Defines the style of the edges in the 3D view.");
     DrawStyle.setEnums(DrawStyleEnums);
 
     coords = new SoCoordinate3();
@@ -467,6 +480,12 @@ void ViewProviderPartExt::onChanged(const App::Property* prop)
     ViewProviderGeometryObject::onChanged(prop);
 }
 
+bool ViewProviderPartExt::allowOverride(const App::DocumentObject &) const {
+    // Many derived view providers still uses static_cast to get object
+    // pointer, so check for exact type here.
+    return getTypeId() == ViewProviderPartExt::getClassTypeId();
+}
+
 void ViewProviderPartExt::attach(App::DocumentObject *pcFeat)
 {
     // call parent attach method
@@ -487,9 +506,11 @@ void ViewProviderPartExt::attach(App::DocumentObject *pcFeat)
         pcPointsRoot->renderCaching =
         wireframe->renderCaching = SoSeparator::OFF;
 
-    // enable two-side rendering
-    pShapeHints->vertexOrdering = SoShapeHints::COUNTERCLOCKWISE;
-    pShapeHints->shapeType = SoShapeHints::UNKNOWN_SHAPE_TYPE;
+    pcNormalRoot->boundingBoxCaching =
+        pcFlatRoot->boundingBoxCaching =
+        pcWireframeRoot->boundingBoxCaching =
+        pcPointsRoot->boundingBoxCaching =
+        wireframe->boundingBoxCaching = SoSeparator::OFF;
 
     // Avoid any Z-buffer artifacts, so that the lines always appear on top of the faces
     // The correct order is Edges, Polygon offset, Faces.
@@ -633,7 +654,7 @@ std::vector<Base::Vector3d> ViewProviderPartExt::getModelPoints(const SoPickedPo
         if (subShape.ShapeType() == TopAbs_VERTEX) {
             const TopoDS_Vertex& v = TopoDS::Vertex(subShape);
             gp_Pnt p = BRep_Tool::Pnt(v);
-            pts.push_back(Base::Vector3d(p.X(),p.Y(),p.Z()));
+            pts.emplace_back(p.X(),p.Y(),p.Z());
         }
         // get the nearest point on the edge
         else if (subShape.ShapeType() == TopAbs_EDGE) {
@@ -642,7 +663,7 @@ std::vector<Base::Vector3d> ViewProviderPartExt::getModelPoints(const SoPickedPo
             BRepExtrema_DistShapeShape distSS(subShape, mkVert.Vertex(), 0.1);
             if (distSS.NbSolution() > 0) {
                 gp_Pnt p = distSS.PointOnShape1(1);
-                pts.push_back(Base::Vector3d(p.X(),p.Y(),p.Z()));
+                pts.emplace_back(p.X(),p.Y(),p.Z());
             }
         }
         // get the nearest point on the face
@@ -652,7 +673,7 @@ std::vector<Base::Vector3d> ViewProviderPartExt::getModelPoints(const SoPickedPo
             BRepExtrema_DistShapeShape distSS(subShape, mkVert.Vertex(), 0.1);
             if (distSS.NbSolution() > 0) {
                 gp_Pnt p = distSS.PointOnShape1(1);
-                pts.push_back(Base::Vector3d(p.X(),p.Y(),p.Z()));
+                pts.emplace_back(p.X(),p.Y(),p.Z());
             }
         }
 
@@ -731,6 +752,91 @@ void ViewProviderPartExt::setHighlightedFaces(const std::vector<App::Material>& 
         pcShapeMaterial->specularColor.setValue(colors[0].specularColor.r, colors[0].specularColor.g, colors[0].specularColor.b);
         pcShapeMaterial->emissiveColor.setValue(colors[0].emissiveColor.r, colors[0].emissiveColor.g, colors[0].emissiveColor.b);
     }
+}
+
+std::map<std::string,App::Color> ViewProviderPartExt::getElementColors(const char *element) const {
+    std::map<std::string,App::Color> ret;
+
+    if(!element || !element[0]) {
+        auto color = ShapeColor.getValue();
+        color.a = Transparency.getValue()/100.0f;
+        ret["Face"] = color;
+        ret["Edge"] = LineColor.getValue();
+        ret["Vertex"] = PointColor.getValue();
+        return ret;
+    }
+
+    if(boost::starts_with(element,"Face")) {
+        auto size = DiffuseColor.getSize();
+        if(element[4]=='*') {
+            auto color = ShapeColor.getValue();
+            color.a = Transparency.getValue()/100.0f;
+            bool singleColor = true;
+            for(int i=0;i<size;++i) {
+                if(DiffuseColor[i]!=color)
+                    ret[std::string(element,4)+std::to_string(i+1)] = DiffuseColor[i];
+                singleColor = singleColor && DiffuseColor[0]==DiffuseColor[i];
+            }
+            if(size && singleColor) {
+                color = DiffuseColor[0];
+                ret.clear();
+            }
+            ret["Face"] = color;
+        }else{
+            int idx = atoi(element+4);
+            if(idx>0 && idx<=size)
+                ret[element] = DiffuseColor[idx-1];
+            else
+                ret[element] = ShapeColor.getValue();
+            if(size==1)
+                ret[element].a = Transparency.getValue()/100.0f;
+        }
+    } else if (boost::starts_with(element,"Edge")) {
+        auto size = LineColorArray.getSize();
+        if(element[4]=='*') {
+            auto color = LineColor.getValue();
+            bool singleColor = true;
+            for(int i=0;i<size;++i) {
+                if(LineColorArray[i]!=color)
+                    ret[std::string(element,4)+std::to_string(i+1)] = LineColorArray[i];
+                singleColor = singleColor && LineColorArray[0]==LineColorArray[i];
+            }
+            if(singleColor && size) {
+                color = LineColorArray[0];
+                ret.clear();
+            }
+            ret["Edge"] = color;
+        }else{
+            int idx = atoi(element+4);
+            if(idx>0 && idx<=size)
+                ret[element] = LineColorArray[idx-1];
+            else
+                ret[element] = LineColor.getValue();
+        }
+    } else if (boost::starts_with(element,"Vertex")) {
+        auto size = PointColorArray.getSize();
+        if(element[5]=='*') {
+            auto color = PointColor.getValue();
+            bool singleColor = true;
+            for(int i=0;i<size;++i) {
+                if(PointColorArray[i]!=color)
+                    ret[std::string(element,5)+std::to_string(i+1)] = PointColorArray[i];
+                singleColor = singleColor && PointColorArray[0]==PointColorArray[i];
+            }
+            if(singleColor && size) {
+                color = PointColorArray[0];
+                ret.clear();
+            }
+            ret["Vertex"] = color;
+        }else{
+            int idx = atoi(element+5);
+            if(idx>0 && idx<=size)
+                ret[element] = PointColorArray[idx-1];
+            else
+                ret[element] = PointColor.getValue();
+        }
+    }
+    return ret;
 }
 
 void ViewProviderPartExt::unsetHighlightedFaces()
@@ -831,11 +937,10 @@ void ViewProviderPartExt::reload()
 
 void ViewProviderPartExt::updateData(const App::Property* prop)
 {
-    const char *propName = prop?prop->getName():"";
-    if(propName  && (strcmp(propName,"Shape")==0 || strstr(propName,"Touched")!=0))
-    {
+    const char *propName = prop->getName();
+    if (propName && (strcmp(propName, "Shape") == 0 || strstr(propName, "Touched") != nullptr)) {
         // calculate the visual only if visible
-        if (isUpdateForced()||Visibility.getValue())
+        if (isUpdateForced() || Visibility.getValue())
             updateVisual();
         else 
             VisualTouched = true;
@@ -881,6 +986,7 @@ bool ViewProviderPartExt::setEdit(int ModNum)
 void ViewProviderPartExt::unsetEdit(int ModNum)
 {
     if (ModNum == ViewProvider::Color) {
+        // Do nothing here
     }
     else {
         Gui::ViewProviderGeometryObject::unsetEdit(ModNum);

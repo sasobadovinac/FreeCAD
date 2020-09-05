@@ -16,8 +16,6 @@ IF(DOCDIR)
     add_definitions(-DDOCDIR="${DOCDIR}")
 ENDIF(DOCDIR)
 
-add_definitions(-DBOOST_${Boost_VERSION})
-
 #if you want to use the old DAG structure uncomment this line
 #add_definitions(-DUSE_OLD_DAG)
 
@@ -184,6 +182,7 @@ SET(Document_HPP_SRCS
     DocumentObserver.h
     DocumentObserverPython.h
     Expression.h
+    ExpressionParser.h
     ExpressionVisitors.h
     FeatureCustom.h
     FeaturePython.h

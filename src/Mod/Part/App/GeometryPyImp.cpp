@@ -274,11 +274,11 @@ PyObject* GeometryPy::getExtensionOfType(PyObject *args)
 
                 return cpy;
             }
-            catch(Base::ValueError e) {
+            catch(const Base::ValueError& e) {
                 PyErr_SetString(PartExceptionOCCError, e.what());
                 return 0;
             }
-            catch(std::bad_weak_ptr e) {
+            catch(const std::bad_weak_ptr&) {
                 PyErr_SetString(PartExceptionOCCError, "Geometry extension does not exist anymore.");
                 return 0;
             }
@@ -308,11 +308,11 @@ PyObject* GeometryPy::getExtensionOfName(PyObject *args)
 
             return cpy;
         }
-        catch(Base::ValueError e) {
+        catch(const Base::ValueError& e) {
             PyErr_SetString(PartExceptionOCCError, e.what());
             return 0;
         }
-        catch(std::bad_weak_ptr e) {
+        catch(const std::bad_weak_ptr&) {
             PyErr_SetString(PartExceptionOCCError, "Geometry extension does not exist anymore.");
             return 0;
         }
@@ -334,7 +334,7 @@ PyObject* GeometryPy::hasExtensionOfType(PyObject *args)
             try {
                 return Py::new_reference_to(Py::Boolean(this->getGeometryPtr()->hasExtension(type)));
             }
-            catch(Base::ValueError e) {
+            catch(const Base::ValueError& e) {
                 PyErr_SetString(PartExceptionOCCError, e.what());
                 return 0;
             }
@@ -359,7 +359,7 @@ PyObject* GeometryPy::hasExtensionOfName(PyObject *args)
         try {
             return Py::new_reference_to(Py::Boolean(this->getGeometryPtr()->hasExtension(std::string(o))));
         }
-        catch(Base::ValueError e) {
+        catch(const Base::ValueError& e) {
             PyErr_SetString(PartExceptionOCCError, e.what());
             return 0;
         }
@@ -382,7 +382,7 @@ PyObject* GeometryPy::deleteExtensionOfType(PyObject *args)
                 this->getGeometryPtr()->deleteExtension(type);
                 Py_Return;
             }
-            catch(Base::ValueError e) {
+            catch(const Base::ValueError& e) {
                 PyErr_SetString(PartExceptionOCCError, e.what());
                 return 0;
             }
@@ -408,7 +408,7 @@ PyObject* GeometryPy::deleteExtensionOfName(PyObject *args)
             this->getGeometryPtr()->deleteExtension(std::string(o));
             Py_Return;
         }
-        catch(Base::ValueError e) {
+        catch(const Base::ValueError& e) {
             PyErr_SetString(PartExceptionOCCError, e.what());
             return 0;
         }
@@ -438,7 +438,6 @@ PyObject* GeometryPy::getExtensions(PyObject *args)
 
             if(p) {
                 // we create a python copy and add it to the list
-                Py::Tuple args(size_t(0));
                 PyObject* cpy = static_cast<GeometryExtensionPy *>(p->getPyObject())->copy(Py::new_reference_to(Py::Tuple(size_t(0))));
 
                 PyList_SetItem( list, i, cpy);
@@ -447,7 +446,7 @@ PyObject* GeometryPy::getExtensions(PyObject *args)
 
         return list;
     }
-    catch(Base::ValueError e) {
+    catch(const Base::ValueError& e) {
         PyErr_SetString(PartExceptionOCCError, e.what());
         return 0;
     }

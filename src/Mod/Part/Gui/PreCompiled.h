@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -79,7 +79,9 @@
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
 
+#if OCC_VERSION_HEX < 0x070400
 #include <BRepMesh.hxx>
+#endif
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <Poly_Connect.hxx>
 #include <Poly_Polygon3D.hxx>
@@ -174,7 +176,7 @@
 
 // Boost
 #include <boost/signals2.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 // Qt Toolkit
 #ifndef __Qt4All__

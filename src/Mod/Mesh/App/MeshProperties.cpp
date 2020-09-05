@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Juergen Riegel         <juergen.riegel@web.de>          *
+ *   Copyright (c) Jürgen Riegel <juergen.riegel@web.de>                   *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -44,9 +44,9 @@
 
 using namespace Mesh;
 
-TYPESYSTEM_SOURCE(Mesh::PropertyNormalList, App::PropertyLists);
-TYPESYSTEM_SOURCE(Mesh::PropertyCurvatureList , App::PropertyLists);
-TYPESYSTEM_SOURCE(Mesh::PropertyMeshKernel , App::PropertyComplexGeoData);
+TYPESYSTEM_SOURCE(Mesh::PropertyNormalList, App::PropertyLists)
+TYPESYSTEM_SOURCE(Mesh::PropertyCurvatureList , App::PropertyLists)
+TYPESYSTEM_SOURCE(Mesh::PropertyMeshKernel , App::PropertyComplexGeoData)
 
 PropertyNormalList::PropertyNormalList()
 {

@@ -1,5 +1,5 @@
 /******************************************************************************
- *   Copyright (c)2012 Konstantinos Poulios <logari81@gmail.com>              *
+ *   Copyright (c) 2012 Konstantinos Poulios <logari81@gmail.com>             *
  *                                                                            *
  *   This file is part of the FreeCAD CAx development system.                 *
  *                                                                            *
@@ -212,15 +212,12 @@ void getReferencedSelection(const App::DocumentObject* thisObj, const Gui::Selec
     
     //check if the selection is an external reference and ask the user what to do
     //of course only if thisObj is in a body, as otherwise the old workflow would not 
-    //be supportet
+    //be supported
     PartDesign::Body* body = PartDesignGui::getBodyFor(thisObj, false);
     bool originfeature = selObj->isDerivedFrom(App::OriginFeature::getClassTypeId());
     if (!originfeature && body) {
         PartDesign::Body* selBody = PartDesignGui::getBodyFor(selObj, false);
-        if(!selBody || body != selBody) {
-            
-            auto* pcActivePart = PartDesignGui::getPartFor(body, false);
-
+        if (!selBody || body != selBody) {
             QDialog dia(Gui::getMainWindow());
             Ui_DlgReference dlg;
             dlg.setupUi(&dia);
@@ -230,14 +227,11 @@ void getReferencedSelection(const App::DocumentObject* thisObj, const Gui::Selec
                 selObj = NULL;
                 return;
             }
-            else if(!dlg.radioXRef->isChecked()) {
+            else if (!dlg.radioXRef->isChecked()) {
                 App::Document* document = thisObj->getDocument();
                 document->openTransaction("Make copy");
                 auto copy = PartDesignGui::TaskFeaturePick::makeCopy(selObj, subname, dlg.radioIndependent->isChecked());
-                if (body)
-                    body->addObject(copy);
-                else if (pcActivePart)
-                    pcActivePart->addObject(copy);
+                body->addObject(copy);
 
                 selObj = copy;
                 subname.erase(std::remove_if(subname.begin(), subname.end(), &isdigit), subname.end());

@@ -27,6 +27,7 @@
 # include <QPushButton>
 # include <sstream>
 # include <Python.h>
+# include <boost_bind_bind.hpp>
 
 # include <TopoDS_Shape.hxx>
 # include <TopoDS_Vertex.hxx>
@@ -78,6 +79,8 @@
 
 #include "TaskDimension.h"
 
+namespace bp = boost::placeholders;
+
 static bool _MeasureInfoInited;
 
 static void slotDeleteDocument(const App::Document &doc);
@@ -91,7 +94,7 @@ struct MeasureInfo {
     {
         if(!_MeasureInfoInited) {
             _MeasureInfoInited = true;
-            App::GetApplication().signalDeleteDocument.connect(boost::bind(slotDeleteDocument, _1));
+            App::GetApplication().signalDeleteDocument.connect(boost::bind(slotDeleteDocument, bp::_1));
         }
     }
 };
@@ -131,7 +134,7 @@ bool PartGui::evaluateLinearPreSelection(TopoDS_Shape &shape1, TopoDS_Shape &sha
     if (shape.IsNull())
       break;
     shapes.push_back(shape);
-    sels[i].selections.push_back(DimSelections::DimSelection());
+    sels[i].selections.emplace_back();
     auto &sel = sels[i].selections[0];
     ++i;
     sel.documentName = it->DocName;
@@ -365,7 +368,7 @@ void PartGui::ensure3dDimensionVisible()
 }
 
 
-SO_KIT_SOURCE(PartGui::DimensionLinear);
+SO_KIT_SOURCE(PartGui::DimensionLinear)
 
 void PartGui::DimensionLinear::initClass()
 {
@@ -841,9 +844,9 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
            sels.back().selections.back().shapeType!=DimSelections::Vertex ||
            sels.back().selections.size()==1) 
         {
-            sels.push_back(PartGui::DimSelections());
+            sels.emplace_back();
         }
-        sels.back().selections.push_back(DimSelections::DimSelection());
+        sels.back().selections.emplace_back();
         auto &sel = sels.back().selections.back();
         sel.documentName = it->DocName;
         sel.objectName = it->FeatName;
@@ -860,7 +863,7 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
       {
 	//need something here for 0 length vector.
 	//create a point half way between to vertices.
-	adapters.push_back(VectorAdapter(currentVertex, lastVertex));
+	adapters.emplace_back(currentVertex, lastVertex);
 	lastVertex = TopoDS_Vertex();
       }
       else
@@ -880,8 +883,8 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
       continue;
     }
 
-    sels.push_back(PartGui::DimSelections());
-    sels.back().selections.push_back(DimSelections::DimSelection());
+    sels.emplace_back();
+    sels.back().selections.emplace_back();
     auto &sel = sels.back().selections.back();
     sel.documentName = it->DocName;
     sel.objectName = it->FeatName;
@@ -908,7 +911,7 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
 	else
 	  edge.Orientation(TopAbs_FORWARD);
       }
-      adapters.push_back(VectorAdapter(edge, pickPoint));
+      adapters.emplace_back(edge, pickPoint);
       continue;
     }
 
@@ -916,7 +919,7 @@ bool PartGui::evaluateAngularPreSelection(VectorAdapter &vector1Out, VectorAdapt
     {
       sel.shapeType = DimSelections::Face;
       TopoDS_Face face = TopoDS::Face(shape);
-      adapters.push_back(VectorAdapter(face, pickPoint));
+      adapters.emplace_back(face, pickPoint);
       continue;
     }
   }
@@ -1110,7 +1113,7 @@ void PartGui::goDimensionAngularNoTask(const VectorAdapter &vector1Adapter, cons
   dimension->unref();
 }
 
-SO_KIT_SOURCE(PartGui::DimensionAngular);
+SO_KIT_SOURCE(PartGui::DimensionAngular)
 
 void PartGui::DimensionAngular::initClass()
 {
@@ -1233,8 +1236,10 @@ void PartGui::DimensionAngular::setupDimension()
 
   //text
   SoSeparator *textSep = static_cast<SoSeparator *>(getPart("textSep", true));
-  if (textSep)
-    textSep->addChild(material);
+  if (!textSep)
+      return;
+
+  textSep->addChild(material);
 
   SoCalculator *textVecCalc = new SoCalculator();
   textVecCalc->a.connectFrom(&angle);
@@ -1272,7 +1277,7 @@ void PartGui::DimensionAngular::setupDimension()
   material->unref();
 }
 
-SO_ENGINE_SOURCE(PartGui::ArcEngine);
+SO_ENGINE_SOURCE(PartGui::ArcEngine)
 
 PartGui::ArcEngine::ArcEngine()
 {

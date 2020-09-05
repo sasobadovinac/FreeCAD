@@ -1,7 +1,5 @@
 #***************************************************************************
-#*                                                                         *
-#*   Copyright (c) 2011                                                    *
-#*   Yorik van Havre <yorik@uncreated.net>                                 *
+#*   Copyright (c) 2011 Yorik van Havre <yorik@uncreated.net>              *
 #*                                                                         *
 #*   This program is free software; you can redistribute it and/or modify  *
 #*   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -248,10 +246,10 @@ class _Axis:
             obj.Shape = sh
             obj.Placement = pl
 
-    #def onChanged(self,obj,prop):
+    def onChanged(self,obj,prop):
 
-    #    if prop in ["Angles","Distances","Placement"]:
-    #        self.execute(obj)
+        if prop in ["Angles","Distances","Placement"]:
+            obj.touch()
 
     def __getstate__(self):
 
@@ -756,7 +754,7 @@ class _AxisTaskPanel:
         l = []
         for i in range(self.tree.topLevelItemCount()):
             it = self.tree.findItems(str(i+1),QtCore.Qt.MatchExactly,0)[0]
-            if (remove == None) or (remove != i):
+            if (remove is None) or (remove != i):
                 if it.text(1):
                     d.append(float(it.text(1)))
                 else:

@@ -758,7 +758,7 @@ class UndoRedoCases(unittest.TestCase):
 
     # undo the first transaction
     self.Doc.undo()
-    self.failUnless(self.Doc.getObject("test1") == None)
+    self.failUnless(self.Doc.getObject("test1") is None)
     self.failUnless(self.Doc.getObject("Del").Integer == 2)
     self.assertEqual(self.Doc.UndoNames,[])
     self.assertEqual(self.Doc.UndoCount,0)
@@ -938,7 +938,7 @@ class DocumentGroupCases(unittest.TestCase):
     self.Doc.openTransaction("Remove")
     self.Doc.removeObject("Label_2")
     self.Doc.commitTransaction()
-    self.failUnless(G1.getObject("Label_2") == None)
+    self.failUnless(G1.getObject("Label_2") is None)
     self.Doc.undo()
     self.failUnless(G1.getObject("Label_2") != None)
 
@@ -954,7 +954,7 @@ class DocumentGroupCases(unittest.TestCase):
     self.Doc.openTransaction("Remove")
     self.Doc.removeObject("Label_2")
     self.Doc.commitTransaction()
-    self.failUnless(G1.getObject("Label_2") == None)
+    self.failUnless(G1.getObject("Label_2") is None)
     self.Doc.openTransaction("Remove")
     self.Doc.removeObject("Group")
     self.Doc.commitTransaction()
@@ -965,7 +965,7 @@ class DocumentGroupCases(unittest.TestCase):
     # Remove first object and then the group in one transaction
     self.Doc.openTransaction("Remove")
     self.Doc.removeObject("Label_2")
-    self.failUnless(G1.getObject("Label_2") == None)
+    self.failUnless(G1.getObject("Label_2") is None)
     self.Doc.removeObject("Group")
     self.Doc.commitTransaction()
     self.Doc.undo()
@@ -977,9 +977,9 @@ class DocumentGroupCases(unittest.TestCase):
     G1.addObject(L3)
     self.Doc.openTransaction("Remove")
     self.Doc.removeObject("Label_2")
-    self.failUnless(G1.getObject("Label_2") == None)
+    self.failUnless(G1.getObject("Label_2") is None)
     self.Doc.removeObject("Label_3")
-    self.failUnless(G1.getObject("Label_3") == None)
+    self.failUnless(G1.getObject("Label_3") is None)
     self.Doc.removeObject("Group")
     self.Doc.commitTransaction()
     self.Doc.undo()
@@ -1001,7 +1001,7 @@ class DocumentGroupCases(unittest.TestCase):
     grp2 = self.Doc.addObject("App::DocumentObjectGroup","Group2")
     grp1.addObject(obj1)
     self.failUnless(obj1.getParentGroup()==grp1)
-    self.failUnless(obj1.getParentGeoFeatureGroup()==None)
+    self.failUnless(obj1.getParentGeoFeatureGroup() is None)
     self.failUnless(grp1.hasObject(obj1))
     grp2.addObject(obj1)
     self.failUnless(grp1.hasObject(obj1)==False)
@@ -1012,8 +1012,8 @@ class DocumentGroupCases(unittest.TestCase):
     prt2 = self.Doc.addObject("App::Part","Part2")
 
     prt1.addObject(grp2)
-    self.failUnless(grp2.getParentGeoFeatureGroup()==prt1)
-    self.failUnless(grp2.getParentGroup()==None)
+    self.failUnless(grp2.getParentGeoFeatureGroup() == prt1)
+    self.failUnless(grp2.getParentGroup() is None)
     self.failUnless(grp2.hasObject(obj1))
     self.failUnless(prt1.hasObject(grp2))
     self.failUnless(prt1.hasObject(obj1))
@@ -1358,6 +1358,21 @@ class DocumentPropertyCases(unittest.TestCase):
     self.Doc.recompute()
     self.assertTrue(not p2 in p1.InList)
 
+  def testRemovePropertyOnChange(self):
+    class Feature:
+      def __init__(self, fp):
+        fp.Proxy = self
+        fp.addProperty("App::PropertyString","Test")
+      def onBeforeChange(self, fp, prop):
+        if prop == "Test":
+          fp.removeProperty("Test")
+      def onChanged(self, fp, prop):
+        getattr(fp, prop)
+
+    obj = self.Doc.addObject("App::FeaturePython")
+    fea = Feature(obj)
+    obj.Test = "test"
+
   def tearDown(self):
     #closing doc
     FreeCAD.closeDocument("PropertyTests")
@@ -1504,6 +1519,16 @@ class DocumentObserverCases(unittest.TestCase):
       self.signal.append('DocFinishSave')
       self.parameter.append(obj)
       self.parameter2.append(name)
+      
+    def slotBeforeAddingDynamicExtension(self, obj, extension):
+      self.signal.append('ObjBeforeDynExt')
+      self.parameter.append(obj)
+      self.parameter2.append(extension)
+      
+    def slotAddedDynamicExtension(self, obj, extension):
+      self.signal.append('ObjDynExt')
+      self.parameter.append(obj)
+      self.parameter2.append(extension)
 
   class GuiObserver():
     
@@ -1777,6 +1802,18 @@ class DocumentObserverCases(unittest.TestCase):
     self.failUnless(self.Obs.parameter2.pop() == 'Prop')
     self.failUnless(not self.Obs.signal and not self.Obs.parameter and not self.Obs.parameter2)
     
+    pyobj.addExtension("App::GroupExtensionPython", None)
+    self.failUnless(self.Obs.signal.pop() == 'ObjDynExt')
+    self.failUnless(self.Obs.parameter.pop() is pyobj)
+    self.failUnless(self.Obs.parameter2.pop() == 'App::GroupExtensionPython')
+    self.failUnless(self.Obs.signal.pop(0) == 'ObjBeforeDynExt')
+    self.failUnless(self.Obs.parameter.pop(0) is pyobj)
+    self.failUnless(self.Obs.parameter2.pop(0) == 'App::GroupExtensionPython')
+    #a proxy property was changed, hence those events are also in the signal list 
+    self.Obs.signal = []
+    self.Obs.parameter = []
+    self.Obs.parameter2 = []
+    
     FreeCAD.closeDocument(self.Doc1.Name)
     self.Obs.signal = []
     self.Obs.parameter = []
@@ -1906,6 +1943,18 @@ class DocumentObserverCases(unittest.TestCase):
     self.failUnless(self.GuiObs.signal.pop(0) == 'ObjResetEdit')
     self.failUnless(self.GuiObs.parameter.pop(0) is obj.ViewObject)
     self.failUnless(not self.GuiObs.signal and not self.GuiObs.parameter and not self.GuiObs.parameter2)
+    
+    obj.ViewObject.addExtension("Gui::ViewProviderGroupExtensionPython", None)
+    self.failUnless(self.Obs.signal.pop() == 'ObjDynExt')
+    self.failUnless(self.Obs.parameter.pop() is obj.ViewObject)
+    self.failUnless(self.Obs.parameter2.pop() == 'Gui::ViewProviderGroupExtensionPython')
+    self.failUnless(self.Obs.signal.pop() == 'ObjBeforeDynExt')
+    self.failUnless(self.Obs.parameter.pop() is obj.ViewObject)
+    self.failUnless(self.Obs.parameter2.pop() == 'Gui::ViewProviderGroupExtensionPython')
+    #a proxy property was changed, hence those events are also in the signal list (but of GUI observer)
+    self.GuiObs.signal = []
+    self.GuiObs.parameter = []
+    self.GuiObs.parameter2 = []
     
     vo = obj.ViewObject
     FreeCAD.ActiveDocument.removeObject(obj.Name)

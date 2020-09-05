@@ -25,7 +25,7 @@
 #define MESH_KERNEL_H
 
 #include <assert.h>
-#include <iostream>
+#include <iosfwd>
 
 #include "Elements.h"
 #include "Helpers.h"
@@ -83,16 +83,16 @@ public:
     //@{
     /// Returns the number of facets
     unsigned long CountFacets (void) const
-    { return (unsigned long)(_aclFacetArray.size()); }
+    { return static_cast<unsigned long>(_aclFacetArray.size()); }
     /// Returns the number of edge
     unsigned long CountEdges (void) const;
     // Returns the number of points
     unsigned long CountPoints (void) const
-    { return (unsigned long)(_aclPointArray.size()); }
+    { return static_cast<unsigned long>(_aclPointArray.size()); }
     /// Returns the number of required memory in bytes
     unsigned int GetMemSize (void) const
-    { return _aclPointArray.size() * sizeof(MeshPoint) +
-           _aclFacetArray.size() * sizeof(MeshFacet); }
+    { return static_cast<unsigned int>(_aclPointArray.size() * sizeof(MeshPoint) +
+                                       _aclFacetArray.size() * sizeof(MeshFacet)); }
     /// Determines the bounding box
     const Base::BoundBox3f& GetBoundBox (void) const
     { return _clBoundBox; }
@@ -112,6 +112,7 @@ public:
      * by summarizing the normals of the associated facets.
      */
     std::vector<Base::Vector3f> CalcVertexNormals() const;
+    std::vector<Base::Vector3f> GetFacetNormals(const std::vector<unsigned long>&) const;
 
     /** Returns the facet at the given index. This method is rather slow and should be
      * called occasionally only. For fast access the MeshFacetIterator interface should
@@ -125,6 +126,8 @@ public:
                                 unsigned long &rclP1, unsigned long &rclP2) const;
     /** Returns the point indices of the given facet indices. */
     std::vector<unsigned long> GetFacetPoints(const std::vector<unsigned long>&) const;
+    /** Returns the facet indices that share the given point indices. */
+    std::vector<unsigned long> GetPointFacets(const std::vector<unsigned long>&) const;
     /** Returns the indices of the neighbour facets of the given facet index. */
     inline void GetFacetNeighbours (unsigned long ulIndex, unsigned long &rulNIdx0, 
                                     unsigned long &rulNIdx1, unsigned long &rulNIdx2) const;

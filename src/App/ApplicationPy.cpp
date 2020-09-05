@@ -1,5 +1,5 @@
 /***************************************************************************
- *   (c) Juergen Riegel (juergen.riegel@web.de) 2002                       *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -19,7 +19,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
  *   USA                                                                   *
  *                                                                         *
- *   Juergen Riegel 2002                                                   *
  ***************************************************************************/
 
 
@@ -73,6 +72,8 @@ PyMethodDef Application::Methods[] = {
      "Dump the configuration to the output."},
     {"addImportType",  (PyCFunction) Application::sAddImportType, METH_VARARGS,
      "Register filetype for import"},
+    {"changeImportModule",  (PyCFunction) Application::sChangeImportModule, METH_VARARGS,
+     "Change the import module name of a registered filetype"},
     {"getImportType",  (PyCFunction) Application::sGetImportType, METH_VARARGS,
      "Get the name of the module that can import the filetype"},
     {"EndingAdd",      (PyCFunction) Application::sAddImportType, METH_VARARGS, // deprecated
@@ -81,6 +82,8 @@ PyMethodDef Application::Methods[] = {
      "deprecated -- use getImportType"},
     {"addExportType",  (PyCFunction) Application::sAddExportType, METH_VARARGS,
      "Register filetype for export"},
+    {"changeExportModule",  (PyCFunction) Application::sChangeExportModule, METH_VARARGS,
+     "Change the export module name of a registered filetype"},
     {"getExportType",  (PyCFunction) Application::sGetExportType, METH_VARARGS,
      "Get the name of the module that can export the filetype"},
     {"getResourceDir", (PyCFunction) Application::sGetResourceDir, METH_VARARGS,
@@ -103,22 +106,25 @@ PyMethodDef Application::Methods[] = {
      "* If no module is given it will be determined by the file extension.\n"
      "* If more than one module can load a file the first one one will be taken.\n"
      "* If no module exists to load the file an exception will be raised."},
-    {"open",   (PyCFunction) Application::sOpenDocument, METH_VARARGS,
+    {"open",   reinterpret_cast<PyCFunction>(reinterpret_cast<void (*) (void)>( Application::sOpenDocument )), METH_VARARGS|METH_KEYWORDS,
      "See openDocument(string)"},
-    {"openDocument",   (PyCFunction) Application::sOpenDocument, METH_VARARGS,
-     "openDocument(string) -> object\n\n"
-     "Create a document and load the project file into the document.\n"
-     "The string argument must point to an existing file. If the file doesn't exist\n"
-     "or the file cannot be loaded an I/O exception is thrown. In this case the\n"
-     "document is kept alive."},
+    {"openDocument",   reinterpret_cast<PyCFunction>(reinterpret_cast<void (*) (void)>( Application::sOpenDocument )), METH_VARARGS|METH_KEYWORDS,
+     "openDocument(filepath,hidden=False) -> object\n"
+     "Create a document and load the project file into the document.\n\n"
+     "filepath: file path to an existing file. If the file doesn't exist\n"
+     "          or the file cannot be loaded an I/O exception is thrown.\n"
+     "          In this case the document is kept alive.\n"
+     "hidden: whether to hide document 3D view."},
 //  {"saveDocument",   (PyCFunction) Application::sSaveDocument, METH_VARARGS,
 //   "saveDocument(string) -- Save the document to a file."},
 //  {"saveDocumentAs", (PyCFunction) Application::sSaveDocumentAs, METH_VARARGS},
-    {"newDocument",    (PyCFunction) Application::sNewDocument, METH_VARARGS,
-     "newDocument([string]) -> object\n\n"
-     "Create a new document with a given name.\n"
-     "The document name must be unique which\n"
-     "is checked automatically."},
+    {"newDocument",    reinterpret_cast<PyCFunction>(reinterpret_cast<void (*) (void)>( Application::sNewDocument )), METH_VARARGS|METH_KEYWORDS,
+     "newDocument(name, label=None, hidden=False, temp=False) -> object\n"
+     "Create a new document with a given name.\n\n"
+     "name: unique document name which is checked automatically.\n"
+     "label: optional user changeable label for the document.\n"
+     "hidden: whether to hide document 3D view.\n"
+     "temp: mark the document as temporary so that it will not be saved"},
     {"closeDocument",  (PyCFunction) Application::sCloseDocument, METH_VARARGS,
      "closeDocument(string) -> None\n\n"
      "Close the document with a given name."},
@@ -218,8 +224,8 @@ PyObject* Application::sLoadFile(PyObject * /*self*/, PyObject *args)
         Py_Return;
     }
     catch (const Base::Exception& e) {
-        PyErr_SetString(PyExc_IOError, e.what());
-        return 0;
+        e.setPyException();
+        return nullptr;
     }
     catch (const std::exception& e) {
         // might be subclass from zipios
@@ -234,16 +240,19 @@ PyObject* Application::sIsRestoring(PyObject * /*self*/, PyObject *args) {
     return Py::new_reference_to(Py::Boolean(GetApplication().isRestoring()));
 }
 
-PyObject* Application::sOpenDocument(PyObject * /*self*/, PyObject *args)
+PyObject* Application::sOpenDocument(PyObject * /*self*/, PyObject *args, PyObject *kwd)
 {
     char* Name;
-    if (!PyArg_ParseTuple(args, "et","utf-8",&Name))
+    PyObject *hidden = Py_False;
+    static char *kwlist[] = {"name","hidden",0};
+    if (!PyArg_ParseTupleAndKeywords(args, kwd, "et|O", kwlist,
+                "utf-8", &Name, &hidden))
         return NULL;
     std::string EncodedName = std::string(Name);
     PyMem_Free(Name);
     try {
         // return new document
-        return (GetApplication().openDocument(EncodedName.c_str())->getPyObject());
+        return (GetApplication().openDocument(EncodedName.c_str(),!PyObject_IsTrue(hidden))->getPyObject());
     }
     catch (const Base::Exception& e) {
         PyErr_SetString(PyExc_IOError, e.what());
@@ -256,15 +265,21 @@ PyObject* Application::sOpenDocument(PyObject * /*self*/, PyObject *args)
     }
 }
 
-PyObject* Application::sNewDocument(PyObject * /*self*/, PyObject *args)
+PyObject* Application::sNewDocument(PyObject * /*self*/, PyObject *args, PyObject *kwd)
 {
     char *docName = 0;
     char *usrName = 0;
-    if (!PyArg_ParseTuple(args, "|etet", "utf-8", &docName, "utf-8", &usrName))
+    PyObject *hidden = Py_False;
+    PyObject *temp = Py_False;
+    static char *kwlist[] = {"name","label","hidden","temp",0};
+    if (!PyArg_ParseTupleAndKeywords(args, kwd, "|etetOO", kwlist,
+                "utf-8", &docName, "utf-8", &usrName, &hidden, &temp))
         return NULL;
 
     PY_TRY {
-        App::Document* doc = GetApplication().newDocument(docName, usrName);
+        App::Document* doc = GetApplication().newDocument(docName, usrName,
+                                                          !PyObject_IsTrue(hidden),
+                                                          PyObject_IsTrue(temp));
         PyMem_Free(docName);
         PyMem_Free(usrName);
         return doc->getPyObject();
@@ -519,6 +534,18 @@ PyObject* Application::sAddImportType(PyObject * /*self*/, PyObject *args)
     Py_Return;
 }
 
+PyObject* Application::sChangeImportModule(PyObject * /*self*/, PyObject *args)
+{
+    char *key,*oldMod,*newMod;
+
+    if (!PyArg_ParseTuple(args, "sss", &key,&oldMod,&newMod))
+        return nullptr;
+
+    GetApplication().changeImportModule(key,oldMod,newMod);
+
+    Py_Return;
+}
+
 PyObject* Application::sGetImportType(PyObject * /*self*/, PyObject *args)
 {
     char*       psKey=0;
@@ -567,6 +594,18 @@ PyObject* Application::sAddExportType(PyObject * /*self*/, PyObject *args)
         return NULL;
 
     GetApplication().addExportType(psKey,psMod);
+
+    Py_Return;
+}
+
+PyObject* Application::sChangeExportModule(PyObject * /*self*/, PyObject *args)
+{
+    char *key,*oldMod,*newMod;
+
+    if (!PyArg_ParseTuple(args, "sss", &key,&oldMod,&newMod))
+        return nullptr;
+
+    GetApplication().changeExportModule(key,oldMod,newMod);
 
     Py_Return;
 }

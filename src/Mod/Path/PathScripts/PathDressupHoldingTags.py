@@ -22,7 +22,6 @@
 # *                                                                         *
 # ***************************************************************************
 import FreeCAD
-import Part
 import Path
 import PathScripts.PathDressup as PathDressup
 import PathScripts.PathGeom as PathGeom
@@ -36,13 +35,12 @@ from PathScripts.PathDressupTagPreferences import HoldingTagPreferences
 from PathScripts.PathUtils import waiting_effects
 from PySide import QtCore
 
-LOGLEVEL = False
+# lazily loaded modules
+from lazy_loader.lazy_loader import LazyLoader
+Part = LazyLoader('Part', globals(), 'Part')
 
-if LOGLEVEL:
-    PathLog.setLevel(PathLog.Level.DEBUG, PathLog.thisModule())
-    PathLog.trackModule()
-else:
-    PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+#PathLog.trackModule()
 
 failures = []
 
@@ -144,7 +142,7 @@ class Tag:
             self.isSquare = True
             self.solid = Part.makeCylinder(r1, height)
             radius = min(min(self.radius, r1), self.height)
-            PathLog.debug("Part.makeCone(%f, %f)" % (r1, height))
+            PathLog.debug("Part.makeCylinder(%f, %f)" % (r1, height))
         elif self.angle > 0.0 and height > 0.0:
             # cone
             rad = math.radians(self.angle)
@@ -207,14 +205,13 @@ class Tag:
         return False
 
     def nextIntersectionClosestTo(self, edge, solid, refPt):
-        # ef = edge.valueAt(edge.FirstParameter)
-        # em = edge.valueAt((edge.FirstParameter+edge.LastParameter)/2)
-        # el = edge.valueAt(edge.LastParameter)
-        # print("-------- intersect %s (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f) - (%.2f, %.2f, %.2f)  refp=(%.2f, %.2f, %.2f)" % (type(edge.Curve), ef.x, ef.y, ef.z, em.x, em.y, em.z, el.x, el.y, el.z, refPt.x, refPt.y, refPt.z))
+        # debugEdge(edge, 'intersects_')
 
         vertexes = edge.common(solid).Vertexes
         if vertexes:
-            return sorted(vertexes, key=lambda v: (v.Point - refPt).Length)[0].Point
+            pt = sorted(vertexes, key=lambda v: (v.Point - refPt).Length)[0].Point
+            debugEdge(edge, "intersects (%.2f, %.2f, %.2f) -> (%.2f, %.2f, %.2f)" % (refPt.x, refPt.y, refPt.z, pt.x, pt.y, pt.z))
+            return pt
         return None
 
     def intersects(self, edge, param):
@@ -512,6 +509,7 @@ class MapWireToTag:
         self.tail = None
         self.finalEdge = edge
         if self.tag.solid.isInside(edge.valueAt(edge.LastParameter), PathGeom.Tolerance, True):
+            PathLog.track('solid.isInside')
             self.addEdge(edge)
         else:
             i = self.tag.intersects(edge, edge.LastParameter)
@@ -522,8 +520,10 @@ class MapWireToTag:
                 PathLog.debug('originAt: (%.2f, %.2f, %.2f)' % (o.x, o.y, o.z))
                 i = edge.valueAt(edge.FirstParameter)
             if PathGeom.pointsCoincide(i, edge.valueAt(edge.FirstParameter)):
+                PathLog.track('tail')
                 self.tail = edge
             else:
+                PathLog.track('split')
                 e, tail = PathGeom.splitEdgeAt(edge, i)
                 self.addEdge(e)
                 self.tail = tail
@@ -557,7 +557,10 @@ class PathData:
         self.obj = obj
         self.wire, rapid = PathGeom.wireForPath(obj.Base.Path)
         self.rapid = _RapidEdges(rapid)
-        self.edges = self.wire.Edges
+        if self.wire:
+            self.edges = self.wire.Edges
+        else:
+            self.edges = []
         self.baseWire = self.findBottomWire(self.edges)
 
     def findBottomWire(self, edges):
@@ -609,9 +612,9 @@ class PathData:
         else:
             tagDistance = self.baseWire.Length / (count if count else 4)
 
-        W = width if width else self.defaultTagWidth()
+        W = width  if width  else self.defaultTagWidth()
         H = height if height else self.defaultTagHeight()
-        A = angle if angle else self.defaultTagAngle()
+        A = angle  if angle  else self.defaultTagAngle()
         R = radius if radius else self.defaultTagRadius()
 
         # start assigning tags on the longest segment
@@ -661,6 +664,31 @@ class PathData:
                     tag = edge.Curve.value((j+0.5) * distance)
                     tags.append(Tag(j, tag.x, tag.y, W, H, A, R, True))
 
+        return tags
+
+    def copyTags(self, obj, fromObj, width, height, angle, radius):
+        print("copyTags(%s, %s, %.2f, %.2f, %.2f, %.2f" % (obj.Label, fromObj.Label, width, height, angle, radius))
+        W = width  if width  else self.defaultTagWidth()
+        H = height if height else self.defaultTagHeight()
+        A = angle  if angle  else self.defaultTagAngle()
+        R = radius if radius else self.defaultTagRadius()
+
+        tags = []
+        j = 0
+        for i, pos in enumerate(fromObj.Positions):
+            print("tag[%d]" % i)
+            if not i in fromObj.Disabled:
+                dist = self.baseWire.distToShape(Part.Vertex(FreeCAD.Vector(pos.x, pos.y, self.minZ)))
+                if True or dist[0] < W:
+                    print("tag[%d/%d]: (%.2f, %.2f, %.2f)" % (i, j, pos.x, pos.y, self.minZ))
+                    at = dist[1][0][0]
+                    tags.append(Tag(j, at.x, at.y,  W, H, A, R, True))
+                    j += 1
+                else:
+                    PathLog.warning("Tag[%d] (%.2f, %.2f, %.2f) is too far away to copy: %.2f (%.2f)" % (i, pos.x, pos.y, self.minZ, dist[0], W))
+            else:
+                PathLog.info("tag[%d]: not enabled, skipping" % i)
+        print("copied %d tags" % len(tags))
         return tags
 
     def processEdge(self, index, edge, currentLength, lastTagLength, tagDistance, minLength, edgeDict):
@@ -739,9 +767,7 @@ class ObjectTagDressup:
         obj.addProperty("App::PropertyIntegerList", "Disabled", "Tag", QtCore.QT_TRANSLATE_NOOP("Path_DressupTag", "IDs of disabled holding tags"))
         obj.addProperty("App::PropertyInteger", "SegmentationFactor", "Tag", QtCore.QT_TRANSLATE_NOOP("Path_DressupTag", "Factor determining the # of segments used to approximate rounded tags."))
 
-        obj.Proxy = self
-        obj.Base = base
-
+        # for pylint ...
         self.obj = obj
         self.solids = []
         self.tags = []
@@ -749,11 +775,23 @@ class ObjectTagDressup:
         self.toolRadius = None
         self.mappers = []
 
+        obj.Proxy = self
+        obj.Base = base
+
     def __getstate__(self):
         return None
 
     def __setstate__(self, state):
+        self.obj = state
+        self.solids = []
+        self.tags = []
+        self.pathData = None
+        self.toolRadius = None
+        self.mappers = []
         return None
+
+    def onDocumentRestored(self, obj):
+        self.obj = obj
 
     def supportsTagGeneration(self, obj):
         if not self.pathData:
@@ -776,6 +814,18 @@ class ObjectTagDressup:
             obj.Positions = []
             obj.Disabled = []
             return False
+
+    def copyTags(self, obj, fromObj):
+        obj.Width  = fromObj.Width
+        obj.Height = fromObj.Height
+        obj.Angle  = fromObj.Angle
+        obj.Radius = fromObj.Radius
+        obj.SegmentationFactor = fromObj.SegmentationFactor
+
+        self.tags = self.pathData.copyTags(obj, fromObj, obj.Width.Value, obj.Height.Value, obj.Angle, obj.Radius.Value)
+        obj.Positions = [tag.originAt(self.pathData.minZ) for tag in self.tags]
+        obj.Disabled = []
+        return False
 
     def isValidTagStartIntersection(self, edge, i):
         if PathGeom.pointsCoincide(i, edge.valueAt(edge.LastParameter)):
@@ -892,7 +942,7 @@ class ObjectTagDressup:
                 PathLog.debug("previousTag = %d [%s]" % (i, prev))
             else:
                 disabled.append(i)
-            tag.nr = i  # assigne final nr
+            tag.nr = i  # assign final nr
             tags.append(tag)
             positions.append(tag.originAt(self.pathData.minZ))
         return (tags, positions, disabled)
@@ -985,7 +1035,7 @@ class ObjectTagDressup:
             #    traceback.print_exc()
             return None
 
-        self.toolRadius = PathDressup.toolController(obj.Base).Tool.Diameter / 2
+        self.toolRadius = float(PathDressup.toolController(obj.Base).Tool.Diameter) / 2
         self.pathData = pathData
         if generate:
             obj.Height = self.pathData.defaultTagHeight()

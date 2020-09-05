@@ -28,7 +28,7 @@
 #include <Gui/Selection.h>
 #include <Gui/TaskView/TaskDialog.h>
 #include <App/DocumentObserver.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include "TaskSketchBasedParameters.h"
 #include "ViewProviderHole.h"
@@ -101,6 +101,7 @@ private Q_SLOTS:
     void drillPointChanged();
     void drillPointAngledValueChanged(double value);
     void taperedChanged();
+    void reversedChanged();
     void taperedAngleChanged(double value);   
 private:
     class Observer : public App::DocumentObserver {

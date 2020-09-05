@@ -192,6 +192,21 @@ private:
                         (pcDoc->addObject("Mesh::Feature", groupName.c_str()));
                     pcFeature->Label.setValue(groupName.c_str());
                     pcFeature->Mesh.swapMesh(*segm);
+
+                    // if colors are set per face
+                    if (mat.binding == MeshCore::MeshIO::PER_FACE &&
+                        mat.diffuseColor.size() == mesh.countFacets()) {
+                        App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
+                            (pcFeature->addDynamicProperty("App::PropertyColorList", "VertexColors"));
+                        if (prop) {
+                            std::vector<App::Color> diffuseColor;
+                            diffuseColor.reserve(group.getIndices().size());
+                            for (const auto& it : group.getIndices()) {
+                                diffuseColor.push_back(mat.diffuseColor[it]);
+                            }
+                            prop->setValues(diffuseColor);
+                        }
+                    }
                     pcFeature->purgeTouched();
                 }
             }
@@ -202,6 +217,20 @@ private:
                 pcFeature->Mesh.swapMesh(mesh);
                 App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
                     (pcFeature->addDynamicProperty("App::PropertyColorList", "VertexColors"));
+                if (prop) {
+                    prop->setValues(mat.diffuseColor);
+                }
+                pcFeature->purgeTouched();
+
+                pcDoc->addObject(pcFeature, file.fileNamePure().c_str());
+            }
+            else if (mat.binding == MeshCore::MeshIO::PER_FACE && 
+                     mat.diffuseColor.size() == mesh.countFacets()) {
+                FeatureCustom *pcFeature = new FeatureCustom();
+                pcFeature->Label.setValue(file.fileNamePure().c_str());
+                pcFeature->Mesh.swapMesh(mesh);
+                App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
+                    (pcFeature->addDynamicProperty("App::PropertyColorList", "FaceColors"));
                 if (prop) {
                     prop->setValues(mat.diffuseColor);
                 }
@@ -257,6 +286,21 @@ private:
                         (pcDoc->addObject("Mesh::Feature", groupName.c_str()));
                     pcFeature->Label.setValue(groupName.c_str());
                     pcFeature->Mesh.swapMesh(*segm);
+
+                    // if colors are set per face
+                    if (mat.binding == MeshCore::MeshIO::PER_FACE &&
+                        mat.diffuseColor.size() == mesh.countFacets()) {
+                        App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
+                            (pcFeature->addDynamicProperty("App::PropertyColorList", "VertexColors"));
+                        if (prop) {
+                            std::vector<App::Color> diffuseColor;
+                            diffuseColor.reserve(group.getIndices().size());
+                            for (const auto& it : group.getIndices()) {
+                                diffuseColor.push_back(mat.diffuseColor[it]);
+                            }
+                            prop->setValues(diffuseColor);
+                        }
+                    }
                     pcFeature->purgeTouched();
                 }
             }
@@ -267,6 +311,20 @@ private:
                 pcFeature->Mesh.swapMesh(mesh);
                 App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
                     (pcFeature->addDynamicProperty("App::PropertyColorList", "VertexColors"));
+                if (prop) {
+                    prop->setValues(mat.diffuseColor);
+                }
+                pcFeature->purgeTouched();
+
+                pcDoc->addObject(pcFeature, file.fileNamePure().c_str());
+            }
+            else if (mat.binding == MeshCore::MeshIO::PER_FACE && 
+                     mat.diffuseColor.size() == mesh.countFacets()) {
+                FeatureCustom *pcFeature = new FeatureCustom();
+                pcFeature->Label.setValue(file.fileNamePure().c_str());
+                pcFeature->Mesh.swapMesh(mesh);
+                App::PropertyColorList* prop = static_cast<App::PropertyColorList*>
+                    (pcFeature->addDynamicProperty("App::PropertyColorList", "FaceColors"));
                 if (prop) {
                     prop->setValues(mat.diffuseColor);
                 }
@@ -303,9 +361,9 @@ private:
 
         if (!PyArg_ParseTupleAndKeywords( args.ptr(), keywds.ptr(),
 #if PY_MAJOR_VERSION >= 3
-                                          "Oet|fp",
+                                          "Oet|dp",
 #else
-                                          "Oet|fi",
+                                          "Oet|di",
 #endif // Python version switch
                                           kwList, &objects, "utf-8", &fileNamePy,
                                           &fTolerance, &exportAmfCompressed )) {
@@ -432,8 +490,8 @@ private:
         float hy = y/2.0f;
 
         std::vector<MeshCore::MeshGeomFacet> TriaList;
-        TriaList.push_back(MeshCore::MeshGeomFacet(Base::Vector3f(-hx, -hy, 0.0),Base::Vector3f(hx, hy, 0.0),Base::Vector3f(-hx, hy, 0.0)));
-        TriaList.push_back(MeshCore::MeshGeomFacet(Base::Vector3f(-hx, -hy, 0.0),Base::Vector3f(hx, -hy, 0.0),Base::Vector3f(hx, hy, 0.0)));
+        TriaList.emplace_back(Base::Vector3f(-hx, -hy, 0.0),Base::Vector3f(hx, hy, 0.0),Base::Vector3f(-hx, hy, 0.0));
+        TriaList.emplace_back(Base::Vector3f(-hx, -hy, 0.0),Base::Vector3f(hx, -hy, 0.0),Base::Vector3f(hx, hy, 0.0));
 
         std::unique_ptr<MeshObject> mesh(new MeshObject);
         mesh->addFacets(TriaList);

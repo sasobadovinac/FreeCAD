@@ -27,8 +27,11 @@ import FreeCAD
 import Path
 from PySide import QtCore
 import math
-import DraftVecUtils as D
 import PathScripts.PathUtils as PathUtils
+
+# lazily loaded modules
+from lazy_loader.lazy_loader import LazyLoader
+D = LazyLoader('DraftVecUtils', globals(), 'DraftVecUtils')
 
 __doc__ = """Dragknife Dressup object and FreeCAD command"""
 
@@ -465,10 +468,12 @@ class ViewProviderDressup:
 
     def onDelete(self, arg1=None, arg2=None):
         # pylint: disable=unused-argument
-        FreeCADGui.ActiveDocument.getObject(arg1.Object.Base.Name).Visibility = True
-        job = PathUtils.findParentJob(arg1.Object.Base)
-        job.Proxy.addOperation(arg1.Object.Base, arg1.Object)
-        arg1.Object.Base = None
+        if arg1.Object and arg1.Object.Base:
+            FreeCADGui.ActiveDocument.getObject(arg1.Object.Base.Name).Visibility = True
+            job = PathUtils.findParentJob(arg1.Object.Base)
+            if job:
+                job.Proxy.addOperation(arg1.Object.Base, arg1.Object)
+            arg1.Object.Base = None
         return True
 
 

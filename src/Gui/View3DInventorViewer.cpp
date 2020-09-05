@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2004 Juergen Riegel <juergen.riegel@web.de>             *
+ *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -146,10 +146,11 @@
 #include "SoTouchEvents.h"
 #include "WinNativeGestureRecognizers.h"
 #include "Document.h"
+#include "ViewParams.h"
 
 #include "ViewProviderLink.h"
 
-FC_LOG_LEVEL_INIT("3DViewer",true,true);
+FC_LOG_LEVEL_INIT("3DViewer",true,true)
 
 //#define FC_LOGGING_CB
 
@@ -506,11 +507,15 @@ void View3DInventorViewer::init()
     pcOnTopMaterial->setOverride(true);
     pcGroupOnTop->addChild(pcOnTopMaterial);
 
-    pcGroupOnTopSel = new SoFCSelectionRoot;
+    auto selRoot = new SoFCSelectionRoot;
+    selRoot->selectionStyle = SoFCSelectionRoot::PassThrough;
+    pcGroupOnTopSel = selRoot;
     pcGroupOnTopSel->setName("GroupOnTopSel");
     pcGroupOnTopSel->ref();
     pcGroupOnTop->addChild(pcGroupOnTopSel);
-    pcGroupOnTopPreSel = new SoFCSelectionRoot;
+    selRoot = new SoFCSelectionRoot;
+    selRoot->selectionStyle = SoFCSelectionRoot::PassThrough;
+    pcGroupOnTopPreSel = selRoot;
     pcGroupOnTopPreSel->setName("GroupOnTopPreSel");
     pcGroupOnTopPreSel->ref();
     pcGroupOnTop->addChild(pcGroupOnTopPreSel);
@@ -607,6 +612,14 @@ View3DInventorViewer::~View3DInventorViewer()
 {
     // to prevent following OpenGL error message: "Texture is not valid in the current context. Texture has not been destroyed"
     aboutToDestroyGLContext();
+
+    // It can happen that a document has several MDI views and when the about to be
+    // closed 3D view is in edit mode the corresponding view provider must be restored
+    // because otherwise it might be left in a broken state
+    // See https://forum.freecadweb.org/viewtopic.php?f=3&t=39720
+    if (restoreEditingRoot) {
+        resetEditingRoot(false);
+    }
 
     // cleanup
     this->backgroundroot->unref();
@@ -797,9 +810,12 @@ void View3DInventorViewer::checkGroupOnTop(const SelectionChanges &Reason) {
     // onTop==2 means on top only if whole object is selected,
     // onTop==3 means on top only if some sub-element is selected
     // onTop==1 means either
-    onTop = Gui::Selection().needPickedList() 
-            || vp->OnTopWhenSelected.getValue() 
-            || svp->OnTopWhenSelected.getValue();
+    if(Gui::Selection().needPickedList())
+        onTop = 1;
+    else if(vp->OnTopWhenSelected.getValue())
+        onTop = vp->OnTopWhenSelected.getValue();
+    else
+        onTop = svp->OnTopWhenSelected.getValue();
     if(Reason.Type == SelectionChanges::SetPreselect) {
         SoHighlightElementAction action;
         action.setHighlighted(true);
@@ -846,7 +862,7 @@ void View3DInventorViewer::checkGroupOnTop(const SelectionChanges &Reason) {
             return;
         }
         if(childRoot->findChild(childVp->getRoot())<0) {
-            FC_WARN("cannot find '" << childVp->getObject()->getFullName() 
+            FC_LOG("cannot find '" << childVp->getObject()->getFullName() 
                     << "' in geo group '" << grp->getNameInDocument() << "'");
             break;
         }
@@ -911,6 +927,7 @@ void View3DInventorViewer::onSelectionChanged(const SelectionChanges &_Reason)
     case SelectionChanges::SetPreselect:
         if(Reason.SubType!=2) // 2 means it is triggered from tree view
             break;
+        // fall through
     case SelectionChanges::RmvPreselect:
     case SelectionChanges::RmvPreselectSignal:
     case SelectionChanges::SetSelection:
@@ -950,6 +967,15 @@ SbBool View3DInventorViewer::searchNode(SoNode* node) const
 SbBool View3DInventorViewer::hasViewProvider(ViewProvider* pcProvider) const
 {
     return _ViewProviderSet.find(pcProvider) != _ViewProviderSet.end();
+}
+
+SbBool View3DInventorViewer::containsViewProvider(const ViewProvider* vp) const
+{
+    SoSearchAction sa;
+    sa.setNode(vp->getRoot());
+    sa.setSearchingAll(false);
+    sa.apply(getSoRenderManager()->getSceneGraph());
+    return sa.getPath() != nullptr;
 }
 
 /// adds an ViewProvider to the view, e.g. from a feature
@@ -1036,7 +1062,8 @@ void View3DInventorViewer::setupEditingRoot(SoNode *node, const Base::Matrix4D *
     ViewProviderLink::updateLinks(editViewProvider);
 }
 
-void View3DInventorViewer::resetEditingRoot(bool updateLinks) {
+void View3DInventorViewer::resetEditingRoot(bool updateLinks)
+{
     if(!editViewProvider || pcEditingRoot->getNumChildren()<=1)
         return;
     if(!restoreEditingRoot) {
@@ -1051,8 +1078,25 @@ void View3DInventorViewer::resetEditingRoot(bool updateLinks) {
     for(int i=1,count=pcEditingRoot->getNumChildren();i<count;++i)
         root->addChild(pcEditingRoot->getChild(i));
     pcEditingRoot->getChildren()->truncate(1);
-    if(updateLinks)
-        ViewProviderLink::updateLinks(editViewProvider);
+
+    // handle exceptions eventually raised by ViewProviderLink
+    try {
+        if (updateLinks)
+            ViewProviderLink::updateLinks(editViewProvider);
+    }
+    catch (const Py::Exception& e) {
+        Py::Object o = Py::type(e);
+        if (o.isString()) {
+            Py::String s(o);
+            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+        }
+        else {
+            Py::String s(o.repr());
+            Base::Console().Warning("%s\n", s.as_std_string("utf-8").c_str());
+        }
+        // Prints message to console window if we are in interactive mode
+        PyErr_Print();
+    }
 }
 
 SoPickedPoint* View3DInventorViewer::getPointOnRay(const SbVec2s& pos, ViewProvider* vp) const
@@ -1223,6 +1267,19 @@ void View3DInventorViewer::updateOverrideMode(const std::string& mode)
         return;
 
     overrideMode = mode;
+
+    if (mode == "No Shading") {
+        this->shading = false;
+        this->getSoRenderManager()->setRenderMode(SoRenderManager::AS_IS);
+    }
+    else if (mode == "Hidden Line") {
+        this->shading = true;
+        this->getSoRenderManager()->setRenderMode(SoRenderManager::HIDDEN_LINE);
+    }
+    else {
+        this->shading = true;
+        this->getSoRenderManager()->setRenderMode(SoRenderManager::AS_IS);
+    }
 }
 
 void View3DInventorViewer::setViewportCB(void*, SoAction* action)
@@ -1307,22 +1364,46 @@ bool View3DInventorViewer::isEnabledVBO() const
 
 void View3DInventorViewer::setRenderCache(int mode)
 {
-    if(mode<0) {
-        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath
-            ("User parameter:BaseApp/Preferences/View");
-        int setting = hGrp->GetInt("RenderCache",0);
-        if(mode==-2) {
-            if(pcViewProviderRoot && setting!=1)
+    static int canAutoCache = -1;
+
+    if (mode<0) {
+        // Work around coin bug of unmatched call of
+        // SoGLLazyElement::begin/endCaching() when on top rendering
+        // transparent object with SORTED_OBJECT_SORTED_TRIANGLE_BLEND
+        // transparency type.
+        //
+        // For more details see:
+        // https://forum.freecadweb.org/viewtopic.php?f=18&t=43305&start=10#p412537
+        coin_setenv("COIN_AUTO_CACHING", "0", TRUE);
+
+        int setting = ViewParams::instance()->getRenderCache();
+        if (mode == -2) {
+            if (pcViewProviderRoot && setting != 1)
                 pcViewProviderRoot->renderCaching = SoSeparator::ON;
             mode = 2;
-        }else{
-            if(pcViewProviderRoot)
+        }
+        else {
+            if (pcViewProviderRoot)
                 pcViewProviderRoot->renderCaching = SoSeparator::AUTO;
             mode = setting;
         }
     }
-    SoFCSeparator::setCacheMode(
-            mode==0?SoSeparator::AUTO:(mode==1?SoSeparator::ON:SoSeparator::OFF));
+
+    if (canAutoCache < 0) {
+        const char *env = coin_getenv("COIN_AUTO_CACHING");
+        canAutoCache = env ? atoi(env) : 1;
+    }
+
+    // If coin auto cache is disabled, do not use 'Auto' render cache mode, but
+    // fallback to 'Distributed' mode.
+    if (!canAutoCache && mode != 2)
+        mode = 1;
+
+    auto caching = mode == 0 ? SoSeparator::AUTO :
+                  (mode == 1 ? SoSeparator::ON :
+                               SoSeparator::OFF);
+
+    SoFCSeparator::setCacheMode(caching);
 }
 
 void View3DInventorViewer::setEnabledNaviCube(bool on)
@@ -1463,10 +1544,14 @@ void View3DInventorViewer::savePicture(int w, int h, int s, const QColor& bg, QI
         ("User parameter:BaseApp/Preferences/View")->GetASCII("SavePicture");
 
     bool useFramebufferObject = false;
+    bool useGrabFramebuffer = false;
     bool usePixelBuffer = false;
     bool useCoinOffscreenRenderer = false;
     if (saveMethod == "FramebufferObject") {
         useFramebufferObject = true;
+    }
+    else if (saveMethod == "GrabFramebuffer") {
+        useGrabFramebuffer = true;
     }
     else if (saveMethod == "PixelBuffer") {
         usePixelBuffer = true;
@@ -1478,6 +1563,13 @@ void View3DInventorViewer::savePicture(int w, int h, int s, const QColor& bg, QI
     if (useFramebufferObject) {
         View3DInventorViewer* self = const_cast<View3DInventorViewer*>(this);
         self->imageFromFramebuffer(w, h, s, bg, img);
+        return;
+    }
+    else if (useGrabFramebuffer) {
+        View3DInventorViewer* self = const_cast<View3DInventorViewer*>(this);
+        img = self->grabFramebuffer();
+        img = img.mirrored();
+        img = img.scaledToWidth(w);
         return;
     }
 
@@ -1557,6 +1649,7 @@ void View3DInventorViewer::savePicture(int w, int h, int s, const QColor& bg, QI
         if (!useCoinOffscreenRenderer) {
             SoQtOffscreenRenderer renderer(vp);
             renderer.setNumPasses(s);
+            renderer.setInternalTextureFormat(getInternalTextureFormat());
             renderer.setPbufferEnable(usePixelBuffer);
             if (bgColor.isValid())
                 renderer.setBackgroundColor(SbColor4f(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), bgColor.alphaF()));
@@ -1571,6 +1664,7 @@ void View3DInventorViewer::savePicture(int w, int h, int s, const QColor& bg, QI
             renderer.setViewportRegion(vp);
             renderer.getGLRenderAction()->setSmoothing(true);
             renderer.getGLRenderAction()->setNumPasses(s);
+            renderer.getGLRenderAction()->setTransparencyType(SoGLRenderAction::SORTED_OBJECT_SORTED_TRIANGLE_BLEND);
             if (bgColor.isValid())
                 renderer.setBackgroundColor(SbColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF()));
             if (!renderer.render(root))
@@ -1578,6 +1672,15 @@ void View3DInventorViewer::savePicture(int w, int h, int s, const QColor& bg, QI
 
             renderer.writeToImage(img);
             root->unref();
+        }
+
+        if (!bgColor.isValid() || bgColor.alphaF() == 1.0) {
+            QImage image(img.width(), img.height(), QImage::Format_RGB32);
+            QPainter painter(&image);
+            painter.fillRect(image.rect(), Qt::black);
+            painter.drawImage(0, 0, img);
+            painter.end();
+            img = image;
         }
     }
     catch (...) {
@@ -1650,6 +1753,18 @@ bool View3DInventorViewer::isSelecting() const
 const std::vector<SbVec2s>& View3DInventorViewer::getPolygon(SelectionRole* role) const
 {
     return navigation->getPolygon(role);
+}
+
+void View3DInventorViewer::setSelectionEnabled(const SbBool enable)
+{
+    SoNode* root = getSceneGraph();
+    static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(enable);
+}
+
+SbBool View3DInventorViewer::isSelectionEnabled(void) const
+{
+    SoNode* root = getSceneGraph();
+    return static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.getValue();
 }
 
 SbVec2f View3DInventorViewer::screenCoordsOfPath(SoPath* path) const
@@ -1859,6 +1974,53 @@ int View3DInventorViewer::getNumSamples()
     }
 }
 
+GLenum View3DInventorViewer::getInternalTextureFormat() const
+{
+#if defined(HAVE_QT5_OPENGL)
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath
+        ("User parameter:BaseApp/Preferences/View");
+    std::string format = hGrp->GetASCII("InternalTextureFormat", "Default");
+
+    if (format == "GL_RGB") {
+        return GL_RGB;
+    }
+    else if (format == "GL_RGBA") {
+        return GL_RGBA;
+    }
+    else if (format == "GL_RGB8") {
+        return GL_RGB8;
+    }
+    else if (format == "GL_RGBA8") {
+        return GL_RGBA8;
+    }
+    else if (format == "GL_RGB10") {
+        return GL_RGB10;
+    }
+    else if (format == "GL_RGB10_A2") {
+        return GL_RGB10_A2;
+    }
+    else if (format == "GL_RGB16") {
+        return GL_RGB16;
+    }
+    else if (format == "GL_RGBA16") {
+        return GL_RGBA16;
+    }
+    else if (format == "GL_RGB32F") {
+        return GL_RGB32F_ARB;
+    }
+    else if (format == "GL_RGBA32F") {
+        return GL_RGBA32F_ARB;
+    }
+    else {
+        QOpenGLFramebufferObjectFormat fboFormat;
+        return fboFormat.internalTextureFormat();
+    }
+#else
+    //return GL_RGBA;
+    return GL_RGB;
+#endif
+}
+
 void View3DInventorViewer::setRenderType(const RenderType type)
 {
     renderType = type;
@@ -1926,7 +2088,7 @@ QImage View3DInventorViewer::grabFramebuffer()
     int w = gl->width();
     int h = gl->height();
     QImage img(QSize(w,h), QImage::Format_RGB32);
-    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
+    glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, img.bits());
     res = img;
 #else
     const SbViewportRegion vp = this->getSoRenderManager()->getViewportRegion();
@@ -1946,12 +2108,19 @@ QImage View3DInventorViewer::grabFramebuffer()
         fboFormat.setSamples(getNumSamples());
         fboFormat.setAttachment(QOpenGLFramebufferObject::Depth);
         fboFormat.setTextureTarget(GL_TEXTURE_2D);
-        fboFormat.setInternalTextureFormat(GL_RGB32F_ARB);
+        fboFormat.setInternalTextureFormat(getInternalTextureFormat());
 
         QOpenGLFramebufferObject fbo(width, height, fboFormat);
         renderToFramebuffer(&fbo);
 
         res = fbo.toImage(false);
+
+        QImage image(res.width(), res.height(), QImage::Format_RGB32);
+        QPainter painter(&image);
+        painter.fillRect(image.rect(),Qt::black);
+        painter.drawImage(0, 0, res);
+        painter.end();
+        res = image;
     }
 #endif
 
@@ -1978,18 +2147,8 @@ void View3DInventorViewer::imageFromFramebuffer(int width, int height, int sampl
     // is to use a certain background color using GL_RGB as texture
     // format and in the output image search for the above color and
     // replaces it with the color requested by the user.
-#if defined(HAVE_QT5_OPENGL)
-    if (App::GetApplication().GetParameterGroupByPath
-        ("User parameter:BaseApp/Preferences/Document")->GetBool("SaveThumbnailFix",false)) {
-        fboFormat.setInternalTextureFormat(GL_RGBA32F_ARB);
-    }
-    else {
-        fboFormat.setInternalTextureFormat(GL_RGB32F_ARB);
-    }
-#else
-    //fboFormat.setInternalTextureFormat(GL_RGBA);
-    fboFormat.setInternalTextureFormat(GL_RGB);
-#endif
+    fboFormat.setInternalTextureFormat(getInternalTextureFormat());
+
     QtGLFramebufferObject fbo(width, height, fboFormat);
 
     const QColor col = backgroundColor();
@@ -2025,6 +2184,13 @@ void View3DInventorViewer::imageFromFramebuffer(int width, int height, int sampl
                 bits++;
             }
         }
+    } else if (alpha == 255) {
+        QImage image(img.width(), img.height(), QImage::Format_RGB32);
+        QPainter painter(&image);
+        painter.fillRect(image.rect(),Qt::black);
+        painter.drawImage(0, 0, img);
+        painter.end();
+        img = image;
     }
 }
 
@@ -2125,6 +2291,9 @@ void View3DInventorViewer::renderFramebuffer()
     for (std::list<GLGraphicsItem*>::iterator it = this->graphicsItems.begin(); it != this->graphicsItems.end(); ++it)
         (*it)->paintGL();
 
+    if (naviCubeEnabled)
+        naviCube->drawNaviCube();
+
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
 }
@@ -2157,6 +2326,9 @@ void View3DInventorViewer::renderGLImage()
 
     for (std::list<GLGraphicsItem*>::iterator it = this->graphicsItems.begin(); it != this->graphicsItems.end(); ++it)
         (*it)->paintGL();
+
+    if (naviCubeEnabled)
+        naviCube->drawNaviCube();
 
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
@@ -3383,6 +3555,7 @@ void View3DInventorViewer::selectCB(void* viewer, SoPath* path)
 {
     ViewProvider* vp = static_cast<View3DInventorViewer*>(viewer)->getViewProviderByPath(path);
     if (vp && vp->useNewSelectionModel()) {
+        // do nothing here
     }
 }
 
@@ -3390,6 +3563,7 @@ void View3DInventorViewer::deselectCB(void* viewer, SoPath* path)
 {
     ViewProvider* vp = static_cast<View3DInventorViewer*>(viewer)->getViewProviderByPath(path);
     if (vp && vp->useNewSelectionModel()) {
+        // do nothing here
     }
 }
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   (c) Jürgen Riegel (juergen.riegel@web.de) 2002                        *   
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *   
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -19,7 +19,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
  *   USA                                                                   *
  *                                                                         *
- *   Juergen Riegel 2002                                                   *
  ***************************************************************************/
 
 #ifndef BASE_INTERPRETER_H
@@ -114,6 +113,8 @@ public:
     const std::string &getErrorType(void) const {return _errorType;}
     virtual PyObject *getPyExceptionType(void) const override {return _exceptionType;}
     void ReportException (void) const override;
+    /// Sets the Python error indicator and an error message
+    virtual void setPyException() const override;
 
 protected:
     std::string _stackTrace;
@@ -144,7 +145,6 @@ class BaseExport SystemExitException : public Exception
 {
 public:
     SystemExitException(void);
-    SystemExitException(const SystemExitException &inst);
     virtual ~SystemExitException() throw() {}
     long getExitCode(void) const { return _exitCode;}
 
@@ -218,6 +218,8 @@ public:
     //@{
     /// Run a statement on the python interpreter and gives back a string with the representation of the result.
     std::string runString(const char *psCmd);
+    /// Run a statement on the python interpreter with a key for exchanging strings
+    std::string runStringWithKey(const char *psCmd, const char *key, const char *key_initial_value="");
     /// Run a statement on the python interpreter and return back the result object.
     Py::Object runStringObject(const char *sCmd);
     /// Run a statement on the python interpreter and gives back a string with the representation of the result.

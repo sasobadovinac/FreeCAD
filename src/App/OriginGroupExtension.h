@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Alexander Golubev (Fat-Zer) <fatzer2@gmail.com> 2015    *
+ *   Copyright (c) 2015 Alexander Golubev (Fat-Zer) <fatzer2@gmail.com>    *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -69,6 +69,8 @@ public:
 
     virtual bool extensionGetSubObject(DocumentObject *&ret, const char *subname, PyObject **pyObj,
             Base::Matrix4D *mat, bool transform, int depth) const override;
+
+    virtual void extensionOnChanged(const Property* p) override;
 
 protected:
     /// Checks integrity of the Origin

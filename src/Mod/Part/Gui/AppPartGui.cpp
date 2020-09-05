@@ -69,8 +69,8 @@
 
 #include <Gui/Language/Translator.h>
 
-#include "Resources/icons/PartFeature.xpm"
-#include "Resources/icons/PartFeatureImport.xpm"
+// #include "Resources/icons/Part_Feature.xpm"
+// #include "Resources/icons/Part_FeatureImport.xpm"
 
 // use a different name to CreateCommand()
 void CreatePartCommands(void);
@@ -162,6 +162,7 @@ PyMOD_INIT_FUNC(PartGui)
     PartGui::ViewProviderExtrusion                  ::init();
     PartGui::ViewProvider2DObject                   ::init();
     PartGui::ViewProvider2DObjectPython             ::init();
+    PartGui::ViewProvider2DObjectGrid               ::init();
     PartGui::ViewProviderMirror                     ::init();
     PartGui::ViewProviderFillet                     ::init();
     PartGui::ViewProviderChamfer                    ::init();
@@ -172,6 +173,7 @@ PyMOD_INIT_FUNC(PartGui)
     PartGui::ViewProviderOffset2D                   ::init();
     PartGui::ViewProviderThickness                  ::init();
     PartGui::ViewProviderRefine                     ::init();
+    PartGui::ViewProviderReverse                    ::init();
     PartGui::ViewProviderCustom                     ::init();
     PartGui::ViewProviderCustomPython               ::init();
     PartGui::ViewProviderBoolean                    ::init();
@@ -213,9 +215,9 @@ PyMOD_INIT_FUNC(PartGui)
     // register preferences pages
     (void)new Gui::PrefPageProducer<PartGui::DlgSettingsGeneral>      ( QT_TRANSLATE_NOOP("QObject","Part design") );
     (void)new Gui::PrefPageProducer<PartGui::DlgSettings3DViewPart>   ( QT_TRANSLATE_NOOP("QObject","Part design") );
+    (void)new Gui::PrefPageProducer<PartGui::DlgSettingsObjectColor>  ( QT_TRANSLATE_NOOP("QObject","Part design") );
     (void)new Gui::PrefPageProducer<PartGui::DlgImportExportIges>     ( QT_TRANSLATE_NOOP("QObject","Import-Export") );
     (void)new Gui::PrefPageProducer<PartGui::DlgImportExportStep>     ( QT_TRANSLATE_NOOP("QObject","Import-Export") );
-    (void)new Gui::PrefPageProducer<PartGui::DlgSettingsObjectColor>  ( QT_TRANSLATE_NOOP("QObject","Display") );
     Gui::ViewProviderBuilder::add(
         Part::PropertyPartShape::getClassTypeId(),
         PartGui::ViewProviderPart::getClassTypeId());
@@ -224,9 +226,9 @@ PyMOD_INIT_FUNC(PartGui)
     loadPartResource();
 
     // register bitmaps
-    Gui::BitmapFactoryInst& rclBmpFactory = Gui::BitmapFactory();
-    rclBmpFactory.addXPM("PartFeature",(const char**) PartFeature_xpm);
-    rclBmpFactory.addXPM("PartFeatureImport",(const char**) PartFeatureImport_xpm);
+    // Gui::BitmapFactoryInst& rclBmpFactory = Gui::BitmapFactory();
+    // rclBmpFactory.addXPM("Part_Feature",(const char**) PartFeature_xpm);
+    // rclBmpFactory.addXPM("Part_FeatureImport",(const char**) PartFeatureImport_xpm);
 
     PyMOD_Return(partGuiModule);
 }

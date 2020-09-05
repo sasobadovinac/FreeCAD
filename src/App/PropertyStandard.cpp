@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -61,7 +61,7 @@ using namespace std;
 // PropertyInteger
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyInteger , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyInteger , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -152,12 +152,14 @@ void PropertyInteger::setPathValue(const ObjectIdentifier &path, const boost::an
 
     if (value.type() == typeid(long))
         setValue(boost::any_cast<long>(value));
-    else if (value.type() == typeid(double))
-        setValue(boost::math::round(boost::any_cast<double>(value)));
-    else if (value.type() == typeid(Quantity))
-        setValue(boost::math::round(boost::any_cast<Quantity>(value).getValue()));
     else if (value.type() == typeid(int))
         setValue(boost::any_cast<int>(value));
+    else if (value.type() == typeid(double))
+        setValue(boost::math::round(boost::any_cast<double>(value)));
+    else if (value.type() == typeid(float))
+        setValue(boost::math::round(boost::any_cast<float>(value)));
+    else if (value.type() == typeid(Quantity))
+        setValue(boost::math::round(boost::any_cast<Quantity>(value).getValue()));
     else
         throw bad_cast();
 }
@@ -168,7 +170,7 @@ void PropertyInteger::setPathValue(const ObjectIdentifier &path, const boost::an
 // PropertyPath
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPath , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyPath , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -294,7 +296,7 @@ unsigned int PropertyPath::getMemSize (void) const
 // PropertyEnumeration
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyEnumeration, App::PropertyInteger);
+TYPESYSTEM_SOURCE(App::PropertyEnumeration, App::PropertyInteger)
 
 //**************************************************************************
 // Construction/Destruction
@@ -430,7 +432,9 @@ void PropertyEnumeration::Restore(Base::XMLReader &reader)
     }
 
     if (val < 0) {
-        Base::Console().Warning("Enumeration index %d is out of range, ignore it\n", val);
+        // If the enum is empty at this stage do not print a warning
+        if (_enum.getEnums())
+            Base::Console().Warning("Enumeration index %d is out of range, ignore it\n", val);
         val = getValue();
     }
 
@@ -669,7 +673,7 @@ void PropertyIntegerConstraint::setPyObject(PyObject *value)
 // PropertyPercent
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPercent , App::PropertyIntegerConstraint);
+TYPESYSTEM_SOURCE(App::PropertyPercent , App::PropertyIntegerConstraint)
 
 const PropertyIntegerConstraint::Constraints percent = {0,100,1};
 
@@ -691,7 +695,7 @@ PropertyPercent::~PropertyPercent()
 // PropertyIntegerList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyIntegerList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyIntegerList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -789,7 +793,7 @@ unsigned int PropertyIntegerList::getMemSize (void) const
 // PropertyIntegerSet
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyIntegerSet , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyIntegerSet , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -934,7 +938,7 @@ unsigned int PropertyIntegerSet::getMemSize (void) const
 // PropertyFloat
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyFloat , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyFloat , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -1026,8 +1030,16 @@ void PropertyFloat::setPathValue(const ObjectIdentifier &path, const boost::any 
 {
     verifyPath(path);
 
-    if (value.type() == typeid(double))
+    if (value.type() == typeid(long))
+        setValue(boost::any_cast<long>(value));
+    else if (value.type() == typeid(unsigned long))
+        setValue(boost::any_cast<unsigned long>(value));
+    else if (value.type() == typeid(int))
+        setValue(boost::any_cast<int>(value));
+    else if (value.type() == typeid(double))
         setValue(boost::any_cast<double>(value));
+    else if (value.type() == typeid(float))
+        setValue(boost::any_cast<float>(value));
     else if (value.type() == typeid(Quantity))
         setValue((boost::any_cast<Quantity>(value)).getValue());
     else
@@ -1159,7 +1171,7 @@ void PropertyFloatConstraint::setPyObject(PyObject *value)
 // PropertyPrecision
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPrecision, App::PropertyFloatConstraint);
+TYPESYSTEM_SOURCE(App::PropertyPrecision, App::PropertyFloatConstraint)
 
 //**************************************************************************
 // Construction/Destruction
@@ -1181,7 +1193,7 @@ PropertyPrecision::~PropertyPrecision()
 // PropertyFloatList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyFloatList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyFloatList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -1313,7 +1325,7 @@ unsigned int PropertyFloatList::getMemSize (void) const
 // PropertyString
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyString , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyString , App::Property)
 
 PropertyString::PropertyString()
 {
@@ -1550,8 +1562,12 @@ void PropertyString::setPathValue(const ObjectIdentifier &path, const boost::any
         setValue(boost::any_cast<bool>(value)?"True":"False");
     else if (value.type() == typeid(int))
         setValue(std::to_string(boost::any_cast<int>(value)));
+    else if (value.type() == typeid(long))
+        setValue(std::to_string(boost::any_cast<long>(value)));
     else if (value.type() == typeid(double))
-        setValue(std::to_string(boost::math::round(App::any_cast<double>(value))));
+        setValue(std::to_string(App::any_cast<double>(value)));
+    else if (value.type() == typeid(float))
+        setValue(std::to_string(App::any_cast<float>(value)));
     else if (value.type() == typeid(Quantity))
         setValue(boost::any_cast<Quantity>(value).getUserString().toUtf8().constData());
     else if (value.type() == typeid(std::string))
@@ -1573,7 +1589,7 @@ const boost::any PropertyString::getPathValue(const ObjectIdentifier &path) cons
 // PropertyUUID
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyUUID , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyUUID , App::Property)
 
 PropertyUUID::PropertyUUID()
 {
@@ -1696,7 +1712,7 @@ unsigned int PropertyUUID::getMemSize (void) const
 // PropertyFont
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyFont , App::PropertyString);
+TYPESYSTEM_SOURCE(App::PropertyFont , App::PropertyString)
 
 PropertyFont::PropertyFont()
 {
@@ -1712,7 +1728,7 @@ PropertyFont::~PropertyFont()
 // PropertyStringList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyStringList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyStringList , App::PropertyLists)
 
 PropertyStringList::PropertyStringList()
 {
@@ -1752,7 +1768,8 @@ PyObject *PropertyStringList::getPyObject(void)
     return list;
 }
 
-std::string PropertyStringList::getPyValue(PyObject *item) const {
+std::string PropertyStringList::getPyValue(PyObject *item) const
+{
     std::string ret;
     if (PyUnicode_Check(item)) {
 #if PY_MAJOR_VERSION >= 3
@@ -1832,7 +1849,7 @@ void PropertyStringList::Paste(const Property &from)
 // PropertyMap
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyMap , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyMap , App::Property)
 
 PropertyMap::PropertyMap()
 {
@@ -2023,7 +2040,7 @@ void PropertyMap::Paste(const Property &from)
 // PropertyBool
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyBool , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyBool , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -2118,8 +2135,12 @@ void PropertyBool::setPathValue(const ObjectIdentifier &path, const boost::any &
         setValue(boost::any_cast<bool>(value));
     else if (value.type() == typeid(int))
         setValue(boost::any_cast<int>(value) != 0);
+    else if (value.type() == typeid(long))
+        setValue(boost::any_cast<long>(value) != 0);
     else if (value.type() == typeid(double))
         setValue(boost::math::round(boost::any_cast<double>(value)));
+    else if (value.type() == typeid(float))
+        setValue(boost::math::round(boost::any_cast<float>(value)));
     else if (value.type() == typeid(Quantity))
         setValue(boost::any_cast<Quantity>(value).getValue() != 0);
     else
@@ -2138,7 +2159,7 @@ const boost::any PropertyBool::getPathValue(const ObjectIdentifier &path) const
 // PropertyBoolList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyBoolList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyBoolList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -2252,7 +2273,7 @@ unsigned int PropertyBoolList::getMemSize (void) const
 // PropertyColor
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyColor , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyColor , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -2401,7 +2422,7 @@ void PropertyColor::Paste(const Property &from)
 // PropertyColorList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyColorList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyColorList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -2514,7 +2535,7 @@ unsigned int PropertyColorList::getMemSize (void) const
 // PropertyMaterial
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyMaterial , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyMaterial , App::Property)
 
 PropertyMaterial::PropertyMaterial()
 {
@@ -2648,7 +2669,7 @@ void PropertyMaterial::Paste(const Property &from)
 // PropertyMaterialList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyMaterialList, App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyMaterialList, App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -2776,7 +2797,7 @@ unsigned int PropertyMaterialList::getMemSize(void) const
 // PropertyPersistentObject
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPersistentObject , App::PropertyString);
+TYPESYSTEM_SOURCE(App::PropertyPersistentObject , App::PropertyString)
 
 PyObject *PropertyPersistentObject::getPyObject(void){
     if(_pObject)

@@ -25,7 +25,7 @@
 
 #ifndef _PreComp_
 # include <boost/signals2.hpp>
-# include <boost/bind.hpp>
+# include <boost_bind_bind.hpp>
 # include <qapplication.h>
 # include <qregexp.h>
 # include <QEvent>
@@ -36,6 +36,7 @@
 
 
 #include "MDIView.h"
+#include "MDIViewPy.h"
 #include "Command.h"
 #include "Document.h"
 #include "Application.h"
@@ -43,12 +44,17 @@
 #include "ViewProviderDocumentObject.h"
 
 using namespace Gui;
+namespace bp = boost::placeholders;
 
-TYPESYSTEM_SOURCE_ABSTRACT(Gui::MDIView,Gui::BaseView);
+TYPESYSTEM_SOURCE_ABSTRACT(Gui::MDIView,Gui::BaseView)
 
 
 MDIView::MDIView(Gui::Document* pcDocument,QWidget* parent, Qt::WindowFlags wflags)
-  : QMainWindow(parent, wflags), BaseView(pcDocument),currentMode(Child), wstate(Qt::WindowNoState)
+  : QMainWindow(parent, wflags)
+  , BaseView(pcDocument)
+  , pythonObject(nullptr)
+  , currentMode(Child)
+  , wstate(Qt::WindowNoState)
   , ActiveObjects(pcDocument)
 {
     setAttribute(Qt::WA_DeleteOnClose);
@@ -56,7 +62,7 @@ MDIView::MDIView(Gui::Document* pcDocument,QWidget* parent, Qt::WindowFlags wfla
     if (pcDocument)
     {
       connectDelObject = pcDocument->signalDeletedObject.connect
-        (boost::bind(&ActiveObjectList::objectDeleted, &ActiveObjects, _1));
+        (boost::bind(&ActiveObjectList::objectDeleted, &ActiveObjects, bp::_1));
       assert(connectDelObject.connected());
     }
 }
@@ -83,6 +89,12 @@ MDIView::~MDIView()
     }
     if (connectDelObject.connected())
       connectDelObject.disconnect();
+
+    if (pythonObject) {
+        Base::PyGILStateLocker lock;
+        Py_DECREF(pythonObject);
+        pythonObject = nullptr;
+    }
 }
 
 void MDIView::deleteSelf()
@@ -109,6 +121,15 @@ void MDIView::deleteSelf()
     if (_pcDocument)
         onClose();
     _pcDocument = 0;
+}
+
+PyObject* MDIView::getPyObject()
+{
+    if (!pythonObject)
+        pythonObject = new MDIViewPy(this);
+
+    Py_INCREF(pythonObject);
+    return pythonObject;
 }
 
 void MDIView::setOverrideCursor(const QCursor& c)

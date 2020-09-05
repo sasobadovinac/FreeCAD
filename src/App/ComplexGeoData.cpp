@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -35,10 +35,10 @@
 
 using namespace Data;
 
-TYPESYSTEM_SOURCE_ABSTRACT(Data::Segment , Base::BaseClass);
+TYPESYSTEM_SOURCE_ABSTRACT(Data::Segment , Base::BaseClass)
 
 
-TYPESYSTEM_SOURCE_ABSTRACT(Data::ComplexGeoData , Base::Persistence);
+TYPESYSTEM_SOURCE_ABSTRACT(Data::ComplexGeoData , Base::Persistence)
 
 
 ComplexGeoData::ComplexGeoData(void)
@@ -202,6 +202,7 @@ std::string ComplexGeoData::oldElementName(const char *name) {
 }
 
 std::string ComplexGeoData::noElementName(const char *name) {
+    if(!name) return std::string();
     auto element = findElementName(name);
     if(element)
         return std::string(name,element-name);

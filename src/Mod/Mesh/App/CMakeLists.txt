@@ -91,8 +91,13 @@ SET(Core_SRCS
     Core/TrimByPlane.cpp
     Core/TrimByPlane.h
     Core/tritritest.h
+    Core/Utilities.h
     Core/Visitor.cpp
     Core/Visitor.h
+    Core/CylinderFit.cpp
+    Core/CylinderFit.h
+    Core/SphereFit.cpp
+    Core/SphereFit.h
 )
 SOURCE_GROUP("Core" FILES ${Core_SRCS})
 
@@ -357,6 +362,8 @@ SET(Mesh_SRCS
     MeshProperties.cpp
     MeshProperties.h
     MeshPyImp.cpp
+    MeshTexture.cpp
+    MeshTexture.h
     PreCompiled.cpp
     PreCompiled.h
     Segment.cpp
@@ -368,6 +375,16 @@ if(FREECAD_USE_PCH)
     GET_MSVC_PRECOMPILED_SOURCE("PreCompiled.cpp" PCH_SRCS ${Core_SRCS} ${Mesh_SRCS})
     ADD_MSVC_PRECOMPILED_HEADER(Mesh PreCompiled.h PreCompiled.cpp PCH_SRCS)
 endif(FREECAD_USE_PCH)
+
+# Suppress some very long Eigen3 warnings of older versions
+if (EIGEN3_NO_DEPRECATED_COPY)
+    set_source_files_properties(
+        Core/Approximation.cpp
+        Core/CylinderFit.cpp
+        Core/SphereFit.cpp
+        Core/KDTree.cpp
+        PROPERTIES COMPILE_FLAGS ${EIGEN3_NO_DEPRECATED_COPY})
+endif ()
 
 add_library(Mesh SHARED ${Core_SRCS} ${WildMagic4_SRCS} ${Mesh_SRCS})
 target_link_libraries(Mesh ${Mesh_LIBS})

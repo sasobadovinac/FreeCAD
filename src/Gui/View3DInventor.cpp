@@ -84,6 +84,7 @@
 #include <Inventor/nodes/SoOrthographicCamera.h>
 
 #include "View3DInventorExamples.h"
+#include "ViewProviderDocumentObject.h"
 #include "SoFCSelectionAction.h"
 #include "View3DPy.h"
 #include "SoFCDB.h"
@@ -105,7 +106,7 @@ void GLOverlayWidget::paintEvent(QPaintEvent*)
 
 /* TRANSLATOR Gui::View3DInventor */
 
-TYPESYSTEM_SOURCE_ABSTRACT(Gui::View3DInventor,Gui::MDIView);
+TYPESYSTEM_SOURCE_ABSTRACT(Gui::View3DInventor,Gui::MDIView)
 
 View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent,
                                const QtGLWidget* sharewidget, Qt::WindowFlags wflags)
@@ -160,6 +161,7 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent,
     // apply the user settings
     OnChange(*hGrp,"EyeDistance");
     OnChange(*hGrp,"CornerCoordSystem");
+    OnChange(*hGrp,"ShowAxisCross");
     OnChange(*hGrp,"UseAutoRotation");
     OnChange(*hGrp,"Gradient");
     OnChange(*hGrp,"BackgroundColor");
@@ -188,6 +190,7 @@ View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent,
     OnChange(*hGrp,"Dimensions3dVisible");
     OnChange(*hGrp,"DimensionsDeltaVisible");
     OnChange(*hGrp,"PickRadius");
+    OnChange(*hGrp,"TransparentObjectRenderType");
 
     stopSpinTimer = new QTimer(this);
     connect(stopSpinTimer, SIGNAL(timeout()), this, SLOT(stopAnimating()));
@@ -364,6 +367,9 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
     else if (strcmp(Reason,"CornerCoordSystem") == 0) {
         _viewer->setFeedbackVisibility(rGrp.GetBool("CornerCoordSystem",true));
     }
+    else if (strcmp(Reason,"ShowAxisCross") == 0) {
+        _viewer->setAxisCross(rGrp.GetBool("ShowAxisCross",false));
+    }
     else if (strcmp(Reason,"UseAutoRotation") == 0) {
         _viewer->setAnimationEnabled(rGrp.GetBool("UseAutoRotation",false));
     }
@@ -412,6 +418,17 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
     }
     else if (strcmp(Reason, "PickRadius") == 0) {
         _viewer->setPickRadius(rGrp.GetFloat("PickRadius", 5.0f));
+    }
+    else if (strcmp(Reason, "TransparentObjectRenderType") == 0) {
+        long renderType = rGrp.GetInt("TransparentObjectRenderType", 0);
+        if (renderType == 0) {
+            _viewer->getSoRenderManager()->getGLRenderAction()
+                   ->setTransparentDelayedObjectRenderType(SoGLRenderAction::ONE_PASS);
+        }
+        else if (renderType == 1) {
+            _viewer->getSoRenderManager()->getGLRenderAction()
+                   ->setTransparentDelayedObjectRenderType(SoGLRenderAction::NONSOLID_SEPARATE_BACKFACE_PASS);
+        }
     }
     else {
         unsigned long col1 = rGrp.GetUnsigned("BackgroundColor",3940932863UL);
@@ -514,6 +531,11 @@ void View3DInventor::print(QPrinter* printer)
     _viewer->imageFromFramebuffer(rect.width(), rect.height(), 8, QColor(255,255,255), img);
     p.drawImage(0,0,img);
     p.end();
+}
+
+bool View3DInventor::containsViewProvider(const ViewProvider* vp) const
+{
+    return _viewer->containsViewProvider(vp);
 }
 
 // **********************************************************************************
@@ -817,16 +839,29 @@ void View3DInventor::restoreOverrideCursor()
     _viewer->getWidget()->setCursor(QCursor(Qt::ArrowCursor));
 }
 
-void View3DInventor::dump(const char* filename)
+// defined in SoFCDB.cpp
+extern SoNode* replaceSwitchesInSceneGraph(SoNode*);
+
+void View3DInventor::dump(const char* filename, bool onlyVisible)
 {
     SoGetPrimitiveCountAction action;
     action.setCanApproximate(true);
     action.apply(_viewer->getSceneGraph());
 
+    SoNode* node = _viewer->getSceneGraph();
+    if (onlyVisible) {
+        node = replaceSwitchesInSceneGraph(node);
+        node->ref();
+    }
+
     if ( action.getTriangleCount() > 100000 || action.getPointCount() > 30000 || action.getLineCount() > 10000 )
-        _viewer->dumpToFile(_viewer->getSceneGraph(), filename, true);
+        _viewer->dumpToFile(node, filename, true);
     else
-        _viewer->dumpToFile(_viewer->getSceneGraph(), filename, false);
+        _viewer->dumpToFile(node, filename, false);
+
+    if (onlyVisible) {
+        node->unref();
+    }
 }
 
 void View3DInventor::windowStateChanged(MDIView* view)

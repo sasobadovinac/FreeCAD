@@ -466,7 +466,7 @@ PyObject* BSplineCurvePy::getPoles(PyObject * args)
             gp_Pnt pnt = p(i);
             Base::VectorPy* vec = new Base::VectorPy(Base::Vector3d(
                 pnt.X(), pnt.Y(), pnt.Z()));
-            poles.append(Py::Object(vec));
+            poles.append(Py::asObject(vec));
         }
         return Py::new_reference_to(poles);
     }
@@ -926,7 +926,7 @@ PyObject* BSplineCurvePy::getCardinalSplineTangents(PyObject *args, PyObject *kw
         for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
             Py::Vector v(*it);
             Base::Vector3d pnt = v.toVector();
-            interpPoints.push_back(gp_Pnt(pnt.x,pnt.y,pnt.z));
+            interpPoints.emplace_back(pnt.x,pnt.y,pnt.z);
         }
 
         GeomBSplineCurve* bspline = this->getGeomBSplineCurvePtr();
@@ -948,7 +948,7 @@ PyObject* BSplineCurvePy::getCardinalSplineTangents(PyObject *args, PyObject *kw
         for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
             Py::Vector v(*it);
             Base::Vector3d pnt = v.toVector();
-            interpPoints.push_back(gp_Pnt(pnt.x,pnt.y,pnt.z));
+            interpPoints.emplace_back(pnt.x,pnt.y,pnt.z);
         }
 
         Py::Sequence list2(tgs);
@@ -1241,7 +1241,15 @@ PyObject* BSplineCurvePy::buildFromPolesMultsKnots(PyObject *args, PyObject *key
                 occmults.SetValue(occmults.Length(), degree+1);
                 sum_of_mults = occmults.Length()+2*degree;
             }
-            else { sum_of_mults = occmults.Length()-1;}
+            else {
+                sum_of_mults = occmults.Length()-1;
+            }
+        }
+        // check multiplicity of inner knots
+        for (Standard_Integer i=2; i < occmults.Length(); i++) {
+            if (occmults(i) > degree) {
+                Standard_Failure::Raise("multiplicity of inner knot higher than degree");
+            }
         }
         if (knots != Py_None) { //knots are given
             Py::Sequence knotssq(knots);

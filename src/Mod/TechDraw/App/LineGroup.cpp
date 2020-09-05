@@ -32,6 +32,7 @@
 #include <Base/Console.h>
 #include <Base/Parameter.h>
 
+#include "Preferences.h"
 #include "LineGroup.h"
 
 using namespace TechDraw;
@@ -89,7 +90,7 @@ void LineGroup::setWeight(std::string s, double weight)
     }
 }
 
-void LineGroup::dump(char* title)
+void LineGroup::dump(const char* title)
 {
     Base::Console().Message( "DUMP: %s\n",title);
     Base::Console().Message( "Name: %s\n", m_name.c_str());
@@ -148,7 +149,7 @@ std::string LineGroup::getRecordFromFile(std::string parmFile, std::string group
              (line.empty()) )  {           //is cr/lf empty?
              continue;
          } else if (nameTag == "*") {
-             commaPos = line.find(",",1);
+             commaPos = line.find(',',1);
              if (commaPos != std::string::npos) {
                   foundName = line.substr(1,commaPos-1);
              } else {
@@ -173,16 +174,7 @@ LineGroup* LineGroup::lineGroupFactory(std::string groupName)
 {
     LineGroup* lg = new LineGroup(groupName);
 
-    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
-        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/Files");
-
-    std::string defaultDir = App::Application::getResourceDir() + "Mod/TechDraw/LineGroup/";
-    std::string defaultFileName = defaultDir + "LineGroup.csv";
-    
-    std::string lgFileName = hGrp->GetASCII("LineGroupFile",defaultFileName.c_str());
-    if (lgFileName.empty()) {
-        lgFileName = defaultFileName;
-    }
+    std::string lgFileName = Preferences::lineGroupFile();
 
     std::string lgRecord = LineGroup::getRecordFromFile(lgFileName, groupName);
 
@@ -196,4 +188,19 @@ LineGroup* LineGroup::lineGroupFactory(std::string groupName)
         lg->setWeight("Extra",values[3]);
     }
     return lg;
+}
+
+//valid weight names: Thick, Thin, Graphic, Extra
+double LineGroup::getDefaultWidth(std::string weightName, std::string groupName)
+{
+    //default line weights
+    std::string lgName = groupName;
+    if (groupName.empty()) {
+        lgName = Preferences::lineGroup();
+    }
+    auto lg = TechDraw::LineGroup::lineGroupFactory(lgName);
+
+    double weight = lg->getWeight(weightName);
+    delete lg;
+    return weight;
 }

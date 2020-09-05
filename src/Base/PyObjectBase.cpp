@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -132,6 +132,9 @@ PyTypeObject PyObjectBase::Type = {
     0                                                       /*tp_version_tag */
 #if PY_MAJOR_VERSION >= 3
     ,0                                                      /*tp_finalize */
+#endif
+#if PY_VERSION_HEX >= 0x03080000
+    ,0                                                      /*tp_vectorcall */
 #endif
 };
 

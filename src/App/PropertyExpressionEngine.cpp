@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Eivind Kvedalen (eivind@kvedalen.name) 2015             *
+ *   Copyright (c) 2015 Eivind Kvedalen <eivind@kvedalen.name>             *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -34,7 +34,7 @@
 #include "PropertyStandard.h"
 #include "PropertyUnits.h"
 #include <CXX/Objects.hxx>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 
@@ -43,7 +43,7 @@ using namespace App;
 using namespace Base;
 using namespace boost;
 
-TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyExpressionContainer , App::PropertyXLinkContainer);
+TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyExpressionContainer , App::PropertyXLinkContainer)
 
 static std::set<PropertyExpressionContainer*> _ExprContainers;
 
@@ -73,7 +73,7 @@ void PropertyExpressionContainer::slotRelabelDocument(const App::Document &doc) 
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-TYPESYSTEM_SOURCE(App::PropertyExpressionEngine , App::PropertyExpressionContainer);
+TYPESYSTEM_SOURCE(App::PropertyExpressionEngine , App::PropertyExpressionContainer)
 
 /**
  * @brief Construct a new PropertyExpressionEngine object.
@@ -147,17 +147,17 @@ void PropertyExpressionEngine::hasSetValue()
 
 void PropertyExpressionEngine::Paste(const Property &from)
 {
-    const PropertyExpressionEngine * fromee = static_cast<const PropertyExpressionEngine*>(&from);
+    const PropertyExpressionEngine &fromee = dynamic_cast<const PropertyExpressionEngine&>(from);
 
     AtomicPropertyChange signaller(*this);
 
     expressions.clear();
-    for(auto &e : fromee->expressions) {
+    for(auto &e : fromee.expressions) {
         expressions[e.first] = ExpressionInfo(
                 boost::shared_ptr<Expression>(e.second.expression->copy()));
         expressionChanged(e.first);
     }
-    validator = fromee->validator;
+    validator = fromee.validator;
     signaller.tryInvoke();
 }
 
@@ -245,7 +245,7 @@ void PropertyExpressionEngine::buildGraphStructures(const ObjectIdentifier & pat
                     int s = nodes.size();
                     nodes[cPath] = s;
                 }
-                edges.push_back(std::make_pair(nodes[path], nodes[cPath]));
+                edges.emplace_back(nodes[path], nodes[cPath]);
             }
         }
     }
@@ -553,8 +553,7 @@ DocumentObjectExecReturn *App::PropertyExpressionEngine::execute(ExecuteOption o
         App::any value;
         try {
             // Evaluate expression
-            std::unique_ptr<Expression> e(expressions[*it].expression->eval());
-            value = e->getValueAsAny();
+            value = expressions[*it].expression->getValueAsAny();
             if(option == ExecuteOnRestore && prop->testStatus(Property::EvalOnRestore)) {
                 if(isAnyEqual(value, prop->getPathValue(*it)))
                     continue;

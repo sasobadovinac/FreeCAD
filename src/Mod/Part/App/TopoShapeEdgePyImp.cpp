@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2008     *
+ *   Copyright (c) 2008 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -44,6 +44,9 @@
 # include <Geom_BezierCurve.hxx>
 # include <Geom_BSplineCurve.hxx>
 # include <Geom_OffsetCurve.hxx>
+# include <Geom_Surface.hxx>
+# include <Geom2d_Curve.hxx>
+# include <TopLoc_Location.hxx>
 # include <gp_Circ.hxx>
 # include <gp_Elips.hxx>
 # include <gp_Hypr.hxx>
@@ -86,6 +89,7 @@
 #include <Mod/Part/App/TopoShapeEdgePy.h>
 #include <Mod/Part/App/TopoShapeEdgePy.cpp>
 
+#include "Geometry2d.h"
 #include "Geometry.h"
 #include <Mod/Part/App/GeometryPy.h>
 #include <Mod/Part/App/LinePy.h>
@@ -747,6 +751,37 @@ PyObject* TopoShapeEdgePy::lastVertex(PyObject *args)
 
 // ====== Attributes ======================================================================
 
+Py::String TopoShapeEdgePy::getContinuity() const
+{
+    BRepAdaptor_Curve adapt(TopoDS::Edge(getTopoShapePtr()->getShape()));
+    std::string cont;
+    switch (adapt.Continuity()) {
+    case GeomAbs_C0:
+        cont = "C0";
+        break;
+    case GeomAbs_G1:
+        cont = "G1";
+        break;
+    case GeomAbs_C1:
+        cont = "C1";
+        break;
+    case GeomAbs_G2:
+        cont = "G2";
+        break;
+    case GeomAbs_C2:
+        cont = "C2";
+        break;
+    case GeomAbs_C3:
+        cont = "C3";
+        break;
+    case GeomAbs_CN:
+        cont = "CN";
+        break;
+    }
+
+    return Py::String(cont);
+}
+
 Py::Float TopoShapeEdgePy::getTolerance(void) const
 {
     const TopoDS_Edge& e = TopoDS::Edge(getTopoShapePtr()->getShape());
@@ -1012,6 +1047,51 @@ Py::Boolean TopoShapeEdgePy::getDegenerated(void) const
 {
     Standard_Boolean ok = BRep_Tool::Degenerated(TopoDS::Edge(getTopoShapePtr()->getShape()));
     return Py::Boolean(ok ? true : false);
+}
+
+PyObject* TopoShapeEdgePy::curveOnSurface(PyObject *args)
+{
+    int idx;
+    if (!PyArg_ParseTuple(args, "i", &idx))
+        return 0;
+
+    try {
+        TopoDS_Edge edge = TopoDS::Edge(getTopoShapePtr()->getShape());
+        Handle(Geom2d_Curve) curve;
+        Handle(Geom_Surface) surf;
+        TopLoc_Location loc;
+        Standard_Real first, last;
+        
+        BRep_Tool::CurveOnSurface(edge, curve, surf, loc, first, last, idx+1);
+        if (curve.IsNull())
+            Py_Return;
+        std::unique_ptr<Part::Geom2dCurve> geo2d(getCurve2dFromGeom2d(curve));
+        if (!geo2d)
+            Py_Return;
+        std::unique_ptr<Part::GeomSurface> geosurf(makeFromSurface(surf));
+        if (!geosurf)
+            Py_Return;
+        
+        gp_Trsf trsf = loc.Transformation();
+        gp_XYZ pos = trsf.TranslationPart();
+        gp_XYZ axis;
+        Standard_Real angle;
+        trsf.GetRotation(axis, angle);
+        Base::Rotation rot(Base::Vector3d(axis.X(), axis.Y(), axis.Z()), angle);
+        Base::Placement placement(Base::Vector3d(pos.X(), pos.Y(), pos.Z()), rot);
+        
+        Py::Tuple tuple(5);
+        tuple.setItem(0, Py::asObject(geo2d->getPyObject()));
+        tuple.setItem(1, Py::asObject(geosurf->getPyObject()));
+        tuple.setItem(2, Py::asObject(new Base::PlacementPy(placement)));
+        tuple.setItem(3, Py::Float(first));
+        tuple.setItem(4, Py::Float(last));
+        return Py::new_reference_to(tuple);
+    }
+    catch (Standard_Failure& e) {
+        PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
+        return 0;
+    }
 }
 
 PyObject *TopoShapeEdgePy::getCustomAttributes(const char* /*attr*/) const

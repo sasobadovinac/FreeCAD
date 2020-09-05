@@ -1,6 +1,7 @@
 # ***************************************************************************
+# *   Copyright (c) 2017 Bernd Hahnebach <bernd@bimstatik.org>              *
 # *                                                                         *
-# *   Copyright (c) 2017 - Bernd Hahnebach <bernd@bimstatik.org>            *
+# *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -29,6 +30,7 @@ __url__ = "http://www.freecadweb.org"
 #  \brief FreeCAD FEM import tools
 
 import FreeCAD
+from FreeCAD import Console
 
 
 def get_FemMeshObjectMeshGroups(
@@ -69,7 +71,7 @@ def get_FemMeshObjectOrder(
         else:
             presumable_order = [el - 1 for el in edges_length_set]
     else:
-        FreeCAD.Console.PrintMessage(
+        Console.PrintMessage(
             "Found no edges in mesh: Element order determination does not work without them.\n"
         )
 
@@ -212,8 +214,8 @@ def make_femmesh(
             for i in elms_seg3:
                 e = elms_seg3[i]
                 mesh.addEdge([e[0], e[1], e[2]], i)
-            FreeCAD.Console.PrintLog(
-                "imported mesh: {} nodes, {} HEXA8, {} PENTA6, {} TETRA4, {} TETRA10, {} PENTA15"
+            Console.PrintLog(
+                "imported mesh: {} nodes, {} HEXA8, {} PENTA6, {} TETRA4, {} TETRA10, {} PENTA15\n"
                 .format(
                     len(nds),
                     len(elms_hexa8),
@@ -223,8 +225,9 @@ def make_femmesh(
                     len(elms_penta15)
                 )
             )
-            FreeCAD.Console.PrintLog(
-                "imported mesh: {} HEXA20, {} TRIA3, {} TRIA6, {} QUAD4, {} QUAD8, {} SEG2, {} SEG3"
+            Console.PrintLog(
+                "imported mesh: {} "
+                "HEXA20, {} TRIA3, {} TRIA6, {} QUAD4, {} QUAD8, {} SEG2, {} SEG3\n"
                 .format(
                     len(elms_hexa20),
                     len(elms_tria3),
@@ -236,9 +239,9 @@ def make_femmesh(
                 )
             )
         else:
-            FreeCAD.Console.PrintError("No Elements found!\n")
+            Console.PrintError("No Elements found!\n")
     else:
-        FreeCAD.Console.PrintError("No Nodes found!\n")
+        Console.PrintError("No Nodes found!\n")
     return mesh
 
 
@@ -412,7 +415,7 @@ def fill_femresult_mechanical(
             if len(Peeq) > 0:
                 if len(Peeq.values()) != len(disp.values()):
                     # how is this possible? An example is needed!
-                    FreeCAD.Console.PrintError("PEEQ seams to have exptra nodes.\n")
+                    Console.PrintError("PEEQ seams to have exptra nodes.\n")
                     Pe = []
                     Pe_extra_nodes = list(Peeq.values())
                     nodes = len(disp.values())
@@ -427,25 +430,26 @@ def fill_femresult_mechanical(
         if eigenmode_number > 0:
             res_obj.Eigenmode = eigenmode_number
 
-    # fill res_obj.Temperature if they exist
-    # TODO, check if it is possible to have Temperature without disp
-    # we would need to set NodeNumbers than
-    if "temp" in result_set:
-        Temperature = result_set["temp"]
-        if len(Temperature) > 0:
-            if len(Temperature.values()) != len(disp.values()):
-                Temp = []
-                Temp_extra_nodes = list(Temperature.values())
-                nodes = len(disp.values())
-                for i in range(nodes):
-                    # how is this possible? An example is needed!
-                    FreeCAD.Console.PrintError("Temperature seams to have exptra nodes.\n")
-                    Temp_value = Temp_extra_nodes[i]
-                    Temp.append(Temp_value)
-                res_obj.Temperature = list(map((lambda x: x), Temp))
-            else:
-                res_obj.Temperature = list(map((lambda x: x), Temperature.values()))
-            res_obj.Time = step_time
+        # it is assumed Temperature can not exist without disp
+        # TODO really proof this
+        # if temperature can exist without disp:
+        # move them out of disp if conditiona and set NodeNumbers
+        if "temp" in result_set:
+            Temperature = result_set["temp"]
+            if len(Temperature) > 0:
+                if len(Temperature.values()) != len(disp.values()):
+                    Temp = []
+                    Temp_extra_nodes = list(Temperature.values())
+                    nodes = len(disp.values())
+                    for i in range(nodes):
+                        # how is this possible? An example is needed!
+                        Console.PrintError("Temperature seams to have exptra nodes.\n")
+                        Temp_value = Temp_extra_nodes[i]
+                        Temp.append(Temp_value)
+                    res_obj.Temperature = list(map((lambda x: x), Temp))
+                else:
+                    res_obj.Temperature = list(map((lambda x: x), Temperature.values()))
+                res_obj.Time = step_time
 
     # fill res_obj.MassFlow
     if "mflow" in result_set:

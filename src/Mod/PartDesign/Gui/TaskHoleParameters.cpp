@@ -25,6 +25,7 @@
 
 #ifndef _PreComp_
 # include <QMessageBox>
+# include <boost_bind_bind.hpp>
 #endif
 
 #include "ui_TaskHoleParameters.h"
@@ -42,6 +43,7 @@
 
 using namespace PartDesignGui;
 using namespace Gui;
+namespace bp = boost::placeholders;
 
 /* TRANSLATOR PartDesignGui::TaskHoleParameters */
 
@@ -97,11 +99,17 @@ TaskHoleParameters::TaskHoleParameters(ViewProviderHole *HoleView, QWidget *pare
     connect(ui->drillPointAngled, SIGNAL(clicked(bool)), this, SLOT(drillPointChanged()));
     connect(ui->DrillPointAngle, SIGNAL(valueChanged(double)), this, SLOT(drillPointAngledValueChanged(double)));
     connect(ui->Tapered, SIGNAL(clicked(bool)), this, SLOT(taperedChanged()));
+    connect(ui->Reversed, SIGNAL(clicked(bool)), this, SLOT(reversedChanged()));
     connect(ui->TaperedAngle, SIGNAL(valueChanged(double)), this, SLOT(taperedAngleChanged(double)));
 
     PartDesign::Hole* pcHole = static_cast<PartDesign::Hole*>(vp->getObject());
 
     pcHole->updateProps();
+
+    ui->Reversed->blockSignals(true);
+    ui->Reversed->setChecked(pcHole->Reversed.getValue());
+    ui->Reversed->blockSignals(false);
+
     vp->show();
 
     ui->ThreadPitch->bind(pcHole->ThreadPitch);
@@ -117,7 +125,7 @@ TaskHoleParameters::TaskHoleParameters(ViewProviderHole *HoleView, QWidget *pare
     ui->TaperedAngle->bind(pcHole->TaperedAngle);
 
     connectPropChanged = App::GetApplication().signalChangePropertyEditor.connect(
-            boost::bind(&TaskHoleParameters::changedObject, this, _1, _2));
+            boost::bind(&TaskHoleParameters::changedObject, this, bp::_1, bp::_2));
 
     this->groupLayout()->addWidget(proxy);
 }
@@ -252,6 +260,14 @@ void TaskHoleParameters::taperedChanged()
     PartDesign::Hole* pcHole = static_cast<PartDesign::Hole*>(vp->getObject());
 
     pcHole->Tapered.setValue(ui->Tapered->isChecked());
+    recomputeFeature();
+}
+
+void TaskHoleParameters::reversedChanged()
+{
+    PartDesign::Hole* pcHole = static_cast<PartDesign::Hole*>(vp->getObject());
+
+    pcHole->Reversed.setValue(ui->Reversed->isChecked());
     recomputeFeature();
 }
 

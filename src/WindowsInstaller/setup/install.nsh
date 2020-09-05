@@ -15,7 +15,7 @@ Section -ProgramFiles SecProgramFiles
   # be installed directly to C:\programs - the uninstaller will then delete the whole
   # C:\programs directory
   StrCpy $String $INSTDIR
-  StrCpy $Search "FreeCAD"
+  StrCpy $Search ${APP_NAME}
   Call StrPoint # function from Utils.nsh
   ${if} $Pointer == "-1"
    StrCpy $INSTDIR "$INSTDIR\${APP_DIR}"
@@ -28,21 +28,31 @@ Section -ProgramFiles SecProgramFiles
   InitPluginsDir
   
   # Binaries
-  SetOutPath "$INSTDIR"
+  SetOutPath "$INSTDIR\bin"
   # recursively copy all files under bin
-  File /r "${FILES_FREECAD}\bin"
+  File /r "${FILES_FREECAD}\bin\*.*"
   
   # MSVC redistributable DLLs
   SetOutPath "$INSTDIR\bin"
   File "${FILES_DEPS}\*.*"
   
   # Others
+  SetOutPath "$INSTDIR\data"
+  File /r "${FILES_FREECAD}\data\*.*"
+  SetOutPath "$INSTDIR\doc"
+  File /r "${FILES_FREECAD}\doc\*.*"
+  SetOutPath "$INSTDIR\Ext"
+  File /r "${FILES_FREECAD}\Ext\*.*"
+  SetOutPath "$INSTDIR\lib"
+  File /r "${FILES_FREECAD}\lib\*.*"
+  SetOutPath "$INSTDIR\Mod"
+  File /r "${FILES_FREECAD}\Mod\*.*"
+  SetOutPath "$INSTDIR\resources"
+  File /r "${FILES_FREECAD}\resources\*.*"
+  SetOutPath "$INSTDIR\translations"
+  File /r "${FILES_FREECAD}\translations\*.*"
   SetOutPath "$INSTDIR"
-  File /r "${FILES_FREECAD}\data"
-  File /r "${FILES_FREECAD}\doc"
-  File /r "${FILES_FREECAD}\Ext"
-  File /r "${FILES_FREECAD}\lib"
-  File /r "${FILES_FREECAD}\Mod"
+  File /r "${FILES_THUMBS}"
     
   # Create uninstaller
   WriteUninstaller "$INSTDIR\${SETUP_UNINSTALLER}"

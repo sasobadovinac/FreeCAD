@@ -18,12 +18,12 @@
 #include <App/DocumentObserver.h>
 #include <App/ObjectIdentifier.h>
 #include "ExpressionCompleter.h"
-#include <App/Expression.h>
+#include <App/ExpressionParser.h>
 #include <App/PropertyLinks.h>
 
-FC_LOG_LEVEL_INIT("Completer",true,true);
+FC_LOG_LEVEL_INIT("Completer",true,true)
 
-Q_DECLARE_METATYPE(App::ObjectIdentifier);
+Q_DECLARE_METATYPE(App::ObjectIdentifier)
 
 using namespace App;
 using namespace Gui;
@@ -34,6 +34,10 @@ public:
         :QAbstractItemModel(parent), noProperty(noProperty)
     {
         setDocumentObject(obj);
+    }
+
+    void setNoProperty(bool enabled) {
+        noProperty = enabled;
     }
 
     void setDocumentObject(const App::DocumentObject *obj) {
@@ -337,6 +341,13 @@ void ExpressionCompleter::setDocumentObject(const App::DocumentObject *obj) {
         static_cast<ExpressionCompleterModel*>(m)->setDocumentObject(obj);
 }
 
+void ExpressionCompleter::setNoProperty(bool enabled) {
+    noProperty = enabled;
+    auto m = model();
+    if(m)
+        static_cast<ExpressionCompleterModel*>(m)->setNoProperty(enabled);
+}
+
 QString ExpressionCompleter::pathFromIndex ( const QModelIndex & index ) const
 {
     auto m = model();
@@ -543,6 +554,12 @@ void ExpressionLineEdit::setDocumentObject(const App::DocumentObject * currentDo
         connect(completer, SIGNAL(highlighted(QString)), this, SLOT(slotCompleteText(QString)));
         connect(this, SIGNAL(textChanged2(QString,int)), completer, SLOT(slotUpdate(QString,int)));
     }
+}
+
+void ExpressionLineEdit::setNoProperty(bool enabled) {
+    noProperty = enabled;
+    if(completer)
+        completer->setNoProperty(enabled);
 }
 
 bool ExpressionLineEdit::completerActive() const

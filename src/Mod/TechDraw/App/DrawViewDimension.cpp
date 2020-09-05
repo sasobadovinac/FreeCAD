@@ -33,6 +33,7 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepBndLib.hxx>
 #include <gp_Pnt.hxx>
 #include <TopoDS_Shape.hxx>
 #include <TopoDS_Edge.hxx>
@@ -51,6 +52,7 @@
 
 #include <Mod/Measure/App/Measurement.h>
 
+#include "Preferences.h"
 #include "Geometry.h"
 #include "DrawViewPart.h"
 #include "DrawViewDimension.h"
@@ -82,34 +84,28 @@ const char* DrawViewDimension::MeasureTypeEnums[]= {"True",
                                                     "Projected",
                                                     NULL};
 
-enum RefType{
-        invalidRef,
-        oneEdge,
-        twoEdge,
-        twoVertex,
-        vertexEdge,
-        threeVertex
-    };
-
 DrawViewDimension::DrawViewDimension(void)
 {
-    ADD_PROPERTY_TYPE(References2D,(0,0),"",(App::PropertyType)(App::Prop_None),"Projected Geometry References");
+    ADD_PROPERTY_TYPE(References2D,(0,0),"",(App::Prop_None),"Projected Geometry References");
     References2D.setScope(App::LinkScope::Global);
-    ADD_PROPERTY_TYPE(References3D,(0,0),"",(App::PropertyType)(App::Prop_None),"3D Geometry References");
+    ADD_PROPERTY_TYPE(References3D,(0,0),"",(App::Prop_None),"3D Geometry References");
     References3D.setScope(App::LinkScope::Global);
-    ADD_PROPERTY_TYPE(FormatSpec,("") , "Format",(App::PropertyType)(App::Prop_None),"Dimension Format");
-    ADD_PROPERTY_TYPE(Arbitrary,(false) ,"Format",(App::PropertyType)(App::Prop_None),"Value overridden by user");
+
+    ADD_PROPERTY_TYPE(FormatSpec,(getDefaultFormatSpec()) , "Format", App::Prop_Output,"Dimension Format");
+    ADD_PROPERTY_TYPE(Arbitrary,(false) ,"Format", App::Prop_Output,"Value overridden by user");
 
     Type.setEnums(TypeEnums);                                          //dimension type: length, radius etc
     ADD_PROPERTY(Type,((long)0));
     MeasureType.setEnums(MeasureTypeEnums);
     ADD_PROPERTY(MeasureType, ((long)1));                             //Projected (or True) measurement
-    ADD_PROPERTY_TYPE(OverTolerance ,(0.0),"",App::Prop_None,"+ Tolerance value");
-    ADD_PROPERTY_TYPE(UnderTolerance ,(0.0),"",App::Prop_None,"- Tolerance value");
+    ADD_PROPERTY_TYPE(TheoreticalExact,(false),"", App::Prop_Output,"Set for theoretical exact (basic) dimension");
+    ADD_PROPERTY_TYPE(OverTolerance ,(0.0),"", App::Prop_Output,"+ Tolerance value");
+    ADD_PROPERTY_TYPE(UnderTolerance ,(0.0),"", App::Prop_Output,"- Tolerance value");
+    ADD_PROPERTY_TYPE(Inverted,(false),"", App::Prop_Output,"The dimensional value is displayed inverted");
 
     //hide the properties the user can't edit in the property editor
 //    References2D.setStatus(App::Property::Hidden,true);
-    References3D.setStatus(App::Property::Hidden,true);
+//    References3D.setStatus(App::Property::Hidden,true);
 
     //hide the DrawView properties that don't apply to Dimensions
     ScaleType.setStatus(App::Property::ReadOnly,true);
@@ -121,9 +117,9 @@ DrawViewDimension::DrawViewDimension(void)
     Caption.setStatus(App::Property::Hidden,true);
 
     measurement = new Measure::Measurement();
-    //TODO: should have better initial datumLabel position than (0,0) in the DVP?? something closer to the object being measured? 
+    //TODO: should have better initial datumLabel position than (0,0) in the DVP?? something closer to the object being measured?
 
-    //initialize the descriptive geometry. 
+    //initialize the descriptive geometry.
     //TODO: should this be more like DVP with a "geometry object"?
     m_linearPoints.first  = Base::Vector3d(0,0,0);
     m_linearPoints.second = Base::Vector3d(0,0,0);
@@ -157,19 +153,26 @@ void DrawViewDimension::onChanged(const App::Property* prop)
                 Base::Console().Warning("%s has no 3D References but is Type: True\n", getNameInDocument());
                 MeasureType.setValue("Projected");
             }
-        }
-        if (prop == &References3D) {                                       //have to rebuild the Measurement object
+        } else if (prop == &References3D) {   //have to rebuild the Measurement object
+//            Base::Console().Message("DVD::onChanged - References3D\n");
             clear3DMeasurements();                                                             //Measurement object
             if (!(References3D.getValues()).empty()) {
                 setAll3DMeasurement();
             } else {
-                if (MeasureType.isValue("True")) {                                 //empty 3dRefs, but True
-                    MeasureType.touch();                                          //run MeasureType logic for this case
+                if (MeasureType.isValue("True")) {             //empty 3dRefs, but True
+                    MeasureType.touch();                       //run MeasureType logic for this case
                 }
             }
-        }
-        if (prop == &Type) {
+        } else if (prop == &Type) {                                    //why??
             FormatSpec.setValue(getDefaultFormatSpec().c_str());
+        } else if ( (prop == &FormatSpec) ||
+             (prop == &Arbitrary) ||
+             (prop == &MeasureType) ||
+             (prop == &TheoreticalExact) ||
+             (prop == &OverTolerance) ||
+             (prop == &UnderTolerance) ||
+             (prop == &Inverted) ) {
+            requestPaint();
         }
     }
 
@@ -188,18 +191,15 @@ short DrawViewDimension::mustExecute() const
 {
     bool result = 0;
     if (!isRestoring()) {
-        result =  (References2D.isTouched() ||
+        result = (References2D.isTouched() ||
                   Type.isTouched() ||
                   FormatSpec.isTouched() ||
-                  MeasureType.isTouched());
-    }
-    if (result) {
-        return result;
-    }
-    
-    auto dvp = getViewPart();
-    if (dvp != nullptr) {
-        result = dvp->isTouched();
+                  Arbitrary.isTouched() ||
+                  MeasureType.isTouched() ||
+                  TheoreticalExact.isTouched() ||
+                  OverTolerance.isTouched() ||
+                  UnderTolerance.isTouched() ||
+                  Inverted.isTouched() );
     }
     if (result) {
         return result;
@@ -214,8 +214,11 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
     if (!keepUpdated()) {
         return App::DocumentObject::StdReturn;
     }
+    DrawViewPart* dvp = getViewPart();
+    if (dvp == nullptr) {
+        return App::DocumentObject::StdReturn;
+    }
 
-    //any empty Reference2D??
     if (!has2DReferences()) {                                            //too soon?
         if (isRestoring() ||
             getDocument()->testStatus(App::Document::Status::Restoring)) {
@@ -228,13 +231,12 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
 
     //can't do anything until Source has geometry
     if (!getViewPart()->hasGeometry()) {                              //happens when loading saved document
-        if (isRestoring() ||
-            getDocument()->testStatus(App::Document::Status::Restoring)) {
+        //if (isRestoring() ||
+        //    getDocument()->testStatus(App::Document::Status::Restoring)) {
             return App::DocumentObject::StdReturn;
-        } else {
-            Base::Console().Warning("%s - target has no geometry\n", getNameInDocument());
-            return App::DocumentObject::StdReturn;
-        }
+        //} else {
+        //    return App::DocumentObject::StdReturn;
+        //}
     }
 
     //now we can check if Reference2ds have valid targets.
@@ -248,7 +250,6 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
     if ( Type.isValue("Distance")  ||
          Type.isValue("DistanceX") ||
          Type.isValue("DistanceY") )  {
-
         if (getRefType() == oneEdge) {
             m_linearPoints = getPointsOneEdge();
         }else if (getRefType() == twoEdge) {
@@ -266,7 +267,7 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
         arcPoints pts;
         pts.center = Base::Vector3d(0.0,0.0,0.0);
         pts.radius = 0.0;
-        if( (base && base->geomType == TechDraw::GeomType::CIRCLE) || 
+        if( (base && base->geomType == TechDraw::GeomType::CIRCLE) ||
            (base && base->geomType == TechDraw::GeomType::ARCOFCIRCLE))  {
             circle = static_cast<TechDraw::Circle*> (base);
             pts.center = Base::Vector3d(circle->center.x,circle->center.y,0.0);
@@ -298,7 +299,7 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
                 pts.isArc = false;
                 pts.onCurve.first  = pts.center + Base::Vector3d(1,0,0) * rAvg;   //arbitrary point on edge
                 pts.onCurve.second = pts.center + Base::Vector3d(-1,0,0) * rAvg;  //arbitrary point on edge
-            } else {    
+            } else {
                 TechDraw::AOE* aoe = static_cast<TechDraw::AOE*> (base);
                 double r1 = aoe->minor;
                 double r2 = aoe->major;
@@ -353,7 +354,7 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
         arcPoints pts;
         pts.center = Base::Vector3d(0.0,0.0,0.0);
         pts.radius = 0.0;
-        if ((base && base->geomType == TechDraw::GeomType::CIRCLE) || 
+        if ((base && base->geomType == TechDraw::GeomType::CIRCLE) ||
            (base && base->geomType == TechDraw::GeomType::ARCOFCIRCLE)) {
             circle = static_cast<TechDraw::Circle*> (base);
             pts.center = Base::Vector3d(circle->center.x,circle->center.y,0.0);
@@ -485,7 +486,7 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
         int idx0 = DrawUtil::getIndexFromName(subElements[0]);
         int idx1 = DrawUtil::getIndexFromName(subElements[1]);
         int idx2 = DrawUtil::getIndexFromName(subElements[2]);
-                               
+
         TechDraw::Vertex* vert0 = getViewPart()->getProjVertexByIndex(idx0);
         TechDraw::Vertex* vert1 = getViewPart()->getProjVertexByIndex(idx1);
         TechDraw::Vertex* vert2 = getViewPart()->getProjVertexByIndex(idx2);
@@ -509,126 +510,218 @@ App::DocumentObjectExecReturn *DrawViewDimension::execute(void)
     return DrawView::execute();
 }
 
-std::string  DrawViewDimension::getFormatedValue(bool obtuse)
+bool DrawViewDimension::isMultiValueSchema(void) const
 {
-//    Base::Console().Message("DVD::getFormatedValue()\n");
+    bool result = false;
+    bool angularMeasure = false;
+    if ( (Type.isValue("Angle")) ||
+         (Type.isValue("Angle3Pt")) ) {
+        angularMeasure = true;
+    }
+
+    Base::UnitSystem uniSys = Base::UnitsApi::getSchema();
+    if ( (uniSys == Base::UnitSystem::ImperialBuilding) &&
+          !angularMeasure ) {
+        result = true;
+    } else if ((uniSys == Base::UnitSystem::ImperialCivil) &&
+         angularMeasure) {
+        result = true;
+    }
+    return result;
+}
+
+std::string  DrawViewDimension::getFormatedValue(int partial)
+{
+//    Base::Console().Message("DVD::getFormatedValue(%d)\n", partial);
     std::string result;
     if (Arbitrary.getValue()) {
         return FormatSpec.getStrValue();
     }
+    bool multiValueSchema = false;
 
-    QString specStr = QString::fromUtf8(FormatSpec.getStrValue().data(),FormatSpec.getStrValue().size());
-    double val = std::abs(getDimValue());    //internal units!
-    
+    QString qFormatSpec = QString::fromUtf8(FormatSpec.getStrValue().data(),FormatSpec.getStrValue().size());
+    double val = getDimValue();
+    QString qUserStringUnits;
+    QString formattedValue;
+
     bool angularMeasure = false;
-    Base::Quantity qVal;
-    qVal.setValue(val);
+    Base::Quantity asQuantity;
+    asQuantity.setValue(val);
     if ( (Type.isValue("Angle")) ||
          (Type.isValue("Angle3Pt")) ) {
         angularMeasure = true;
-        qVal.setUnit(Base::Unit::Angle);
-        if (obtuse) {
-            qVal.setValue(fabs(360.0 - val));
-        }
+        asQuantity.setUnit(Base::Unit::Angle);
     } else {
-        qVal.setUnit(Base::Unit::Length);
+        asQuantity.setUnit(Base::Unit::Length);
     }
 
-    QString userStr = qVal.getUserString();                           // this handles mm to inch/km/parsec etc
-                                                                      // and decimal positions but won't give more than
-                                                                      // Global_Decimals precision
-                                                                      // really should be able to ask units for value
-                                                                      // in appropriate UoM!!
+    QString qUserString = asQuantity.getUserString();      // this handles mm to inch/km/parsec etc
+                                                       // and decimal positions but won't give more than
+                                                       // Global_Decimals precision
+                                                       // really should be able to ask units for value
+                                                       // in appropriate UoM!!
 
     //units api: get schema to figure out if this is multi-value schema(Imperial1, ImperialBuilding, etc)
-    //if it is multi-unit schema, don't even try to use Alt Decimals or format per format spec
-    Base::UnitSystem uniSys = Base::UnitsApi::getSchema();
+    //if it is multi-unit schema, don't even try to use Alt Decimals
+    Base::UnitSystem unitSystem = Base::UnitsApi::getSchema();
 
-//handle multi value schemes
-    std::string pre = getPrefix();
-    QString qPre = QString::fromUtf8(pre.data(),pre.size());
-    if (((uniSys == Base::UnitSystem::Imperial1) ||
-         (uniSys == Base::UnitSystem::ImperialBuilding) ) &&
-         !angularMeasure) {
-        specStr = userStr;
-        if (!pre.empty()) {
-            specStr = qPre + userStr;
+    //get formatSpec prefix/suffix/specifier
+    QStringList qsl = getPrefixSuffixSpec(qFormatSpec);
+    QString formatPrefix    = qsl[0];   //FormatSpec prefix
+    QString formatSuffix    = qsl[1];   //FormatSpec suffix
+    QString formatSpecifier = qsl[2];   //FormatSpec specifier
+
+    //handle multi value schemes (yd/ft/in, dms, etc)
+    std::string genPrefix = getPrefix();     //general prefix - diameter, radius, etc
+    QString qMultiValueStr;
+    QString qGenPrefix = QString::fromUtf8(genPrefix.data(),genPrefix.size());
+    if ( (unitSystem == Base::UnitSystem::ImperialBuilding)  &&
+         !angularMeasure ) {
+        multiValueSchema = true;
+        qMultiValueStr = qUserString;
+        if (!genPrefix.empty()) {
+            //qUserString from Quantity includes units - prefix + R + nnn ft + suffix
+            qMultiValueStr = formatPrefix + qGenPrefix + qUserString + formatSuffix;
         }
-    } else if ((uniSys == Base::UnitSystem::ImperialCivil) &&
-         angularMeasure) {
+    } else if ((unitSystem == Base::UnitSystem::ImperialCivil) &&
+                angularMeasure) {
         QString dispMinute = QString::fromUtf8("\'");
         QString dispSecond = QString::fromUtf8("\"");
         QString schemeMinute = QString::fromUtf8("M");
         QString schemeSecond = QString::fromUtf8("S");
-        specStr = userStr.replace(schemeMinute,dispMinute);
-        specStr = specStr.replace(schemeSecond,dispSecond);
-        if (!pre.empty()) {
-            specStr = qPre + userStr;
+        QString displaySub = qUserString.replace(schemeMinute,dispMinute);
+        displaySub = displaySub.replace(schemeSecond,dispSecond);
+        multiValueSchema = true;
+        qMultiValueStr = displaySub;
+        if (!genPrefix.empty()) {
+            // prefix + 48*30'30" + suffix
+            qMultiValueStr = formatPrefix + qGenPrefix + displaySub + formatSuffix;
         }
     } else {
-//handle single value schemes
-        QRegExp rxUnits(QString::fromUtf8(" \\D*$"));                     //space + any non digits at end of string
-
-        QString userVal = userStr;
-        userVal.remove(rxUnits);                                          //getUserString(defaultDecimals) without units
+    //handle single value schemes
+        if (formatSpecifier.isEmpty()) {
+            Base::Console().Warning("Warning - no numeric format in formatSpec %s - %s\n",
+                                    qPrintable(qFormatSpec), getNameInDocument());
+            return Base::Tools::toStdString(qFormatSpec);
+        }
+        QRegExp rxUnits(QString::fromUtf8(" \\D*$"));   //space + any non digits at end of string
+        QString userVal = qUserString;
+        userVal.remove(rxUnits);                        //getUserString(defaultDecimals) without units
 
         QLocale loc;
         double userValNum = loc.toDouble(userVal);
 
-        QString userUnits;
         int pos = 0;
-        if ((pos = rxUnits.indexIn(userStr, 0)) != -1)  {
-            userUnits = rxUnits.cap(0);                                       //entire capture - non numerics at end of userString
+        if ((pos = rxUnits.indexIn(qUserString, 0)) != -1)  {
+            qUserStringUnits = rxUnits.cap(0);                //entire capture - non numerics at end of qUserString
         }
-
-        //find the %x.y tag in FormatSpec
-        QRegExp rxFormat(QString::fromUtf8("%[0-9]*\\.*[0-9]*[aefgAEFG]"));     //printf double format spec 
-        QString match;
-        QString specVal = userVal;                                             //sensible default
-        pos = 0;
-        if ((pos = rxFormat.indexIn(specStr, 0)) != -1)  {
-            match = rxFormat.cap(0);                                          //entire capture of rx
+        formattedValue = userVal;                            //sensible default
     #if QT_VERSION >= 0x050000
-            specVal = QString::asprintf(Base::Tools::toStdString(match).c_str(),userValNum);
+        formattedValue = QString::asprintf(Base::Tools::toStdString(formatSpecifier).c_str(),userValNum);
     #else
-            QString qs2;
-            specVal = qs2.sprintf(Base::Tools::toStdString(match).c_str(),userValNum);
+        QString qs2;
+        formattedValue = qs2.sprintf(Base::Tools::toStdString(formatSpecifier).c_str(),userValNum);
     #endif
-        } else {       //printf format not found!
-            Base::Console().Warning("Warning - no numeric format in formatSpec - %s\n",getNameInDocument());
-            return Base::Tools::toStdString(specStr);
-        }
 
         QString repl = userVal;
         if (useDecimals()) {
             if (showUnits() || (Type.isValue("Angle")) ||(Type.isValue("Angle3Pt")) ) {
-                repl = userStr;
+                repl = qUserString;
             } else {
                 repl = userVal;
             }
         } else {
             if (showUnits() || (Type.isValue("Angle")) || (Type.isValue("Angle3Pt"))) {
-                repl = specVal + userUnits;
+                repl = formattedValue + qUserStringUnits;
             } else {
-                repl = specVal;
+                repl = formattedValue;
             }
         }
 
-        specStr.replace(match,repl);
+        qFormatSpec.replace(formatSpecifier,repl);
         //this next bit is so inelegant!!!
         QChar dp = QChar::fromLatin1('.');
         if (loc.decimalPoint() != dp) {
-            specStr.replace(dp,loc.decimalPoint());
+            qFormatSpec.replace(dp,loc.decimalPoint());
+            formattedValue.replace(dp,loc.decimalPoint());
         }
         //Remove space between dimension and degree sign
         if ((Type.isValue("Angle")) || (Type.isValue("Angle3Pt"))) {
             QRegExp space(QString::fromUtf8("\\s"));
-            specStr.remove(space);
+            qFormatSpec.remove(space);
+        }
+    }
+    //formattedValue   - formatted numeric value
+    //qUserStringUnits - unit abbrev
+    //qFormatSpec      - prefix + formattedValue w/units + suffix
+
+    //partial = 0 --> prefix + formattedValue w/units +suffix
+    // prefix 4' 11" suffix
+    result = qFormatSpec.toUtf8().constData();
+
+    std::string ssPrefix = Base::Tools::toStdString(formatPrefix);
+    std::string ssSuffix = Base::Tools::toStdString(formatSuffix);
+    std::string ssUnits  = Base::Tools::toStdString(qUserStringUnits);
+    if (multiValueSchema) {
+        result = ssPrefix +
+                 Base::Tools::toStdString(qMultiValueStr) +
+                 ssSuffix +
+                 ssUnits;
+    }
+
+    if (partial == 1)  {                            //prefix number suffix
+        result = ssPrefix +
+                 Base::Tools::toStdString(formattedValue) +
+                 ssSuffix;
+    } else if (partial == 2) {                       //just the unit
+        if ((Type.isValue("Angle")) || (Type.isValue("Angle3Pt"))) {
+            QRegExp space(QString::fromUtf8("\\s"));
+            qUserStringUnits.remove(space);
+            result = Base::Tools::toStdString(qUserStringUnits);
+        } else if (showUnits()) {
+            result = Base::Tools::toStdString(qUserStringUnits);
+        } else {
+            result = "";
         }
     }
 
-    return specStr.toUtf8().constData();
+    return result;
 }
+
+
+QStringList DrawViewDimension::getPrefixSuffixSpec(QString fSpec)
+{
+    QStringList result;
+    QString formatPrefix;
+    QString formatSuffix;
+    QString formatted;
+    //find the %x.y tag in FormatSpec
+    QRegExp rxFormat(QString::fromUtf8("%[0-9]*\\.*[0-9]*[aefgAEFG]"));     //printf double format spec
+    QString match;
+    int pos = 0;
+    if ((pos = rxFormat.indexIn(fSpec, 0)) != -1)  {
+        match = rxFormat.cap(0);                                          //entire capture of rx
+//#if QT_VERSION >= 0x050000
+//        formatted = QString::asprintf(Base::Tools::toStdString(match).c_str(),value);
+//#else
+//        QString qs2;
+//        formatted = qs2.sprintf(Base::Tools::toStdString(match).c_str(),value);
+//#endif
+        formatPrefix = fSpec.left(pos);
+        result.append(formatPrefix);
+        formatSuffix = fSpec.right(fSpec.size() - pos - match.size());
+        result.append(formatSuffix);
+        result.append(match);
+    } else {       //printf format not found!
+        Base::Console().Warning("Warning - no numeric format in formatSpec %s - %s\n",
+                                qPrintable(fSpec), getNameInDocument());
+        result.append(QString());
+        result.append(QString());
+        result.append(fSpec);
+    }
+    return result;
+}
+
 
 //!NOTE: this returns the Dimension value in internal units (ie mm)!!!!
 double DrawViewDimension::getDimValue()
@@ -644,8 +737,11 @@ double DrawViewDimension::getDimValue()
         }
         return result;
     }
+    if  (getViewPart() == nullptr) {
+        return result;
+    }
 
-    if (!getViewPart()->hasGeometry()) {                              //happens when loading saved document
+    if  (!getViewPart()->hasGeometry() ) {                              //happens when loading saved document
         return result;
     }
 
@@ -671,7 +767,7 @@ double DrawViewDimension::getDimValue()
     } else {
         // Projected Values
         if (!checkReferences2D()) {
-            Base::Console().Warning("DVD::getDimValue - %s - 2D references are corrupt\n",getNameInDocument());
+            Base::Console().Warning("DVD::getDimValue - %s - 2D references are corrupt (5)\n",getNameInDocument());
             return result;
         }
         if ( Type.isValue("Distance")  ||
@@ -690,7 +786,7 @@ double DrawViewDimension::getDimValue()
         } else if(Type.isValue("Radius")){
             arcPoints pts = m_arcPoints;
             result = pts.radius / getViewPart()->getScale();            //Projected BaseGeom is scaled for drawing
-            
+
         } else if(Type.isValue("Diameter")){
             arcPoints pts = m_arcPoints;
             result = (pts.radius  * 2.0) / getViewPart()->getScale();   //Projected BaseGeom is scaled for drawing
@@ -712,6 +808,16 @@ double DrawViewDimension::getDimValue()
             result = legAngle;
         }
     }
+
+    result = fabs(result);
+    if (Inverted.getValue()) {
+        if (Type.isValue("Angle") || Type.isValue("Angle3Pt")) {
+            result = 360 - result;
+        }
+        else {
+            result = -result;
+        }
+    }
     return result;
 }
 
@@ -728,7 +834,7 @@ pointPair DrawViewDimension::getPointsOneEdge()
     if (geom && geom->geomType == TechDraw::GeomType::GENERIC) {
         gen = static_cast<TechDraw::Generic*>(geom);
     } else {
-        Base::Console().Error("Error: DVD - %s - 2D references are corrupt\n",getNameInDocument());
+        Base::Console().Error("Error: DVD - %s - 2D references are corrupt (1)\n",getNameInDocument());
         return result;
     }
     result.first = gen->points[0];
@@ -748,7 +854,7 @@ pointPair DrawViewDimension::getPointsTwoEdges()
     TechDraw::BaseGeom* geom1 = getViewPart()->getGeomByIndex(idx1);
     if ((geom0 == nullptr) ||
         (geom1 == nullptr) ) {
-        Base::Console().Error("Error: DVD - %s - 2D references are corrupt\n",getNameInDocument());
+        Base::Console().Error("Error: DVD - %s - 2D references are corrupt (2)\n",getNameInDocument());
         return result;
     }
     result = closestPoints(geom0->occEdge,geom1->occEdge);
@@ -767,20 +873,19 @@ pointPair DrawViewDimension::getPointsTwoVerts()
     TechDraw::Vertex* v1 = getViewPart()->getProjVertexByIndex(idx1);
     if ((v0 == nullptr) ||
         (v1 == nullptr) ) {
-        Base::Console().Error("Error: DVD - %s - 2D references are corrupt\n",getNameInDocument());
+        Base::Console().Error("Error: DVD - %s - 2D references are corrupt (3)\n",getNameInDocument());
         return result;
     }
     result.first  = v0->pnt;
     result.second = v1->pnt;
     return result;
-}    
+}
 
 pointPair DrawViewDimension::getPointsEdgeVert()
 {
 //    Base::Console().Message("DVD::getPointsEdgeVert() - %s\n",getNameInDocument());
     pointPair result;
     const std::vector<std::string> &subElements      = References2D.getSubValues();
-
     int idx0 = DrawUtil::getIndexFromName(subElements[0]);
     int idx1 = DrawUtil::getIndexFromName(subElements[1]);
     TechDraw::BaseGeom* e;
@@ -794,10 +899,32 @@ pointPair DrawViewDimension::getPointsEdgeVert()
     }
     if ((v == nullptr) ||
         (e == nullptr) ) {
-        Base::Console().Error("Error: DVD - %s - 2D references are corrupt\n",getNameInDocument());
+        Base::Console().Error("Error: DVD - %s - 2D references are corrupt (4)\n",getNameInDocument());
         return result;
     }
-    result = closestPoints(e->occEdge,v->occVertex);
+
+    // if DistanceX or DistanceY, needs to be closest horizontal or vertical extent of edge
+    // for Distance the perpendicular distance if fine. 
+    Bnd_Box edgeBox;
+    BRepBndLib::Add(e->occEdge, edgeBox);
+    edgeBox.SetGap(0.0);
+    double minX, minY, minZ, maxX, maxY, maxZ;
+    edgeBox.Get(minX, minY, minZ, maxX, maxY, maxZ);
+    gp_Pnt pnt = BRep_Tool::Pnt(v->occVertex);
+
+    if (Type.isValue("DistanceX") ) {
+        gp_Pnt p0(pnt.X(), minY, 0.0);
+        gp_Pnt p1(pnt.X(), maxY, 0.0);
+        TopoDS_Edge boundary = BRepBuilderAPI_MakeEdge(p0, p1);
+        result = closestPoints(e->occEdge, boundary);
+    } else if (Type.isValue("DistanceY") ) {
+        gp_Pnt p0(minX, pnt.Y(), 0.0);
+        gp_Pnt p1(maxX, pnt.Y(), 0.0);
+        TopoDS_Edge boundary = BRepBuilderAPI_MakeEdge(p0, p1);
+        result = closestPoints(e->occEdge, boundary);
+    } else {
+        result = closestPoints(e->occEdge,v->occVertex);
+    }
     return result;
 }
 
@@ -860,7 +987,7 @@ int DrawViewDimension::getRefType3(const std::string g1,
 {
     int refType = invalidRef;
     if ((DrawUtil::getGeomTypeFromName(g1) == "Vertex") &&
-        (DrawUtil::getGeomTypeFromName(g2) == "Vertex") && 
+        (DrawUtil::getGeomTypeFromName(g2) == "Vertex") &&
         (DrawUtil::getGeomTypeFromName(g3) == "Vertex") ) {
         refType = threeVertex;
     }
@@ -879,7 +1006,7 @@ bool DrawViewDimension::checkReferences2D() const
         const std::vector<std::string> &subElements      = References2D.getSubValues();
         if (!subElements.empty()) {
             for (auto& s: subElements) {
-                if (!s.empty()) { 
+                if (!s.empty()) {
                     int idx = DrawUtil::getIndexFromName(s);
                     if (DrawUtil::getGeomTypeFromName(s) == "Edge") {
                         TechDraw::BaseGeom* geom = getViewPart()->getGeomByIndex(idx);
@@ -948,7 +1075,7 @@ void DrawViewDimension::clear3DMeasurements()
     measurement->clear();
 }
 
-void DrawViewDimension::dumpRefs2D(char* text) const
+void DrawViewDimension::dumpRefs2D(const char* text) const
 {
     Base::Console().Message("DUMP - %s\n",text);
     const std::vector<App::DocumentObject*> &objects = References2D.getValues();
@@ -1015,7 +1142,25 @@ bool DrawViewDimension::leaderIntersectsArc(Base::Vector3d s, Base::Vector3d poi
     return result;
 }
 
-//are there non-blank references?
+void DrawViewDimension::saveArrowPositions(const Base::Vector2d positions[])
+{
+    if (positions == nullptr) {
+        m_arrowPositions.first = Base::Vector3d(0.0, 0.0, 0.0);
+        m_arrowPositions.second = Base::Vector3d(0.0, 0.0, 0.0);
+    } else {
+        double scale = getViewPart()->getScale();
+        m_arrowPositions.first = Base::Vector3d(positions[0].x, positions[0].y, 0.0) / scale;
+        m_arrowPositions.second = Base::Vector3d(positions[1].x, positions[1].y, 0.0) / scale;
+    }
+}
+
+//return position within parent view of dimension arrow heads/dimline endpoints
+//note positions are in apparent coord (inverted y).
+pointPair DrawViewDimension::getArrowPositions(void)
+{
+    return m_arrowPositions;
+}
+
 bool DrawViewDimension::has2DReferences(void) const
 {
 //    Base::Console().Message("DVD::has2DReferences() - %s\n",getNameInDocument());
@@ -1062,17 +1207,13 @@ bool DrawViewDimension::showUnits() const
     bool result = false;
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
         .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/Dimensions");
-    result = hGrp->GetBool("ShowUnits", true);
+    result = hGrp->GetBool("ShowUnits", false);
     return result;
 }
 
 bool DrawViewDimension::useDecimals() const
 {
-    bool result = false;
-    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
-        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/Dimensions");
-    result = hGrp->GetBool("UseGlobalDecimals", true);
-    return result;
+    return Preferences::useGlobalDecimals();
 }
 
 std::string DrawViewDimension::getPrefix() const
@@ -1118,44 +1259,44 @@ std::string DrawViewDimension::getDefaultFormatSpec() const
         QString formatPrecision = QString::number(precision);
 
         std::string prefix = getPrefix();
-        
+
         if (!prefix.empty()) {
             qPrefix = QString::fromUtf8(prefix.data(),prefix.size());
         }
 
         formatSpec = qPrefix + format1 + formatPrecision + format2;
     } else {
-        
+
         std::string prefix = getPrefix();
         qPrefix = QString::fromUtf8(prefix.data(),prefix.size());
         formatSpec = qPrefix + QString::fromStdString(prefFormat);
-        
+
     }
-    
+
     return Base::Tools::toStdString(formatSpec);
 }
 
-//! is refName a target of this Dim (2D references)
-bool DrawViewDimension::references(std::string refName) const
-{
-    Base::Console().Message("DVD::references(%s) - %s\n",refName.c_str(),getNameInDocument());
-    bool result = false;
-    const std::vector<App::DocumentObject*> &objects = References2D.getValues();
-    if (!objects.empty()) {
-        const std::vector<std::string> &subElements = References2D.getSubValues();
-        if (!subElements.empty()) {
-            for (auto& s: subElements) {
-                if (!s.empty()) { 
-                    if (s == refName) {
-                        result = true;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    return result;
-}
+////! is refName a target of this Dim (2D references)
+//bool DrawViewDimension::references(std::string refName) const
+//{
+//    Base::Console().Message("DVD::references(%s) - %s\n",refName.c_str(),getNameInDocument());
+//    bool result = false;
+//    const std::vector<App::DocumentObject*> &objects = References2D.getValues();
+//    if (!objects.empty()) {
+//        const std::vector<std::string> &subElements = References2D.getSubValues();
+//        if (!subElements.empty()) {
+//            for (auto& s: subElements) {
+//                if (!s.empty()) {
+//                    if (s == refName) {
+//                        result = true;
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    return result;
+//}
 
 PyObject *DrawViewDimension::getPyObject(void)
 {

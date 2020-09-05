@@ -50,6 +50,8 @@ namespace MeshIO {
         MGL,
         IV,
         X3D,
+        X3DZ,
+        X3DOM,
         VRML,
         WRZ,
         NAS,
@@ -57,7 +59,8 @@ namespace MeshIO {
         APLY,
         PY,
         AMF,
-        SMF
+        SMF,
+        ASY
     };
     enum Binding {
         OVERALL,
@@ -110,6 +113,8 @@ public:
     bool LoadBinarySTL (std::istream &rstrIn);
     /** Loads an OBJ Mesh file. */
     bool LoadOBJ (std::istream &rstrIn);
+    /** Loads the materials of an OBJ file. */
+    bool LoadMTL (std::istream &rstrIn);
     /** Loads an SMF Mesh file. */
     bool LoadSMF (std::istream &rstrIn);
     /** Loads an OFF Mesh file. */
@@ -127,10 +132,13 @@ public:
     /** Loads a Cadmould FE file. */
     bool LoadCadmouldFE (std::ifstream &rstrIn);
 
+    static std::vector<std::string> supportedMeshFormats();
+
 protected:
     MeshKernel &_rclMesh;   /**< reference to mesh data structure */
     Material* _material;
     std::vector<std::string> _groupNames;
+    std::vector<std::pair<std::string, unsigned long> > _materialNames;
 };
 
 /**
@@ -158,6 +166,10 @@ public:
      * automatically filled up with spaces.
      */
     static void SetSTLHeaderData(const std::string&);
+    /**
+     * Change the image size of the asymptote output.
+     */
+    static void SetAsymptoteSize(const std::string&, const std::string&);
     /// Determine the mesh format by file extension
     static MeshIO::Format GetFormat(const char* FileName);
     /// Saves the file, decided by extension if not explicitly given
@@ -181,6 +193,8 @@ public:
     bool SaveBinaryPLY (std::ostream &rstrOut) const;
     /** Saves the mesh object into an ASCII PLY file. */
     bool SaveAsciiPLY (std::ostream &rstrOut) const;
+    /** Saves the mesh object into an asymptote file. */
+    bool SaveAsymptote (std::ostream &rstrOut) const;
     /** Saves the mesh object into an XML file. */
     void SaveXML (Base::Writer &writer) const;
     /** Saves a node to an OpenInventor file. */
@@ -193,6 +207,8 @@ public:
     bool SaveInventor (std::ostream &rstrOut) const;
     /** Writes an X3D file. */
     bool SaveX3D (std::ostream &rstrOut) const;
+    /** Writes an X3dom file. */
+    bool SaveX3DOM (std::ostream &rstrOut) const;
     /** Writes a VRML file. */
     bool SaveVRML (std::ostream &rstrOut) const;
     /** Writes a Nastran file. */
@@ -202,6 +218,12 @@ public:
     /** Writes a python module which creates a mesh */
     bool SavePython (std::ostream &rstrOut) const;
 
+    static std::vector<std::string> supportedMeshFormats();
+
+protected:
+    /** Writes an X3D file. */
+    bool SaveX3DContent (std::ostream &rstrOut, bool exportViewpoints) const;
+
 protected:
     const MeshKernel &_rclMesh;   /**< reference to mesh data structure */
     const Material* _material;
@@ -210,6 +232,8 @@ protected:
     std::string objectName;
     std::vector<Group> _groups;
     static std::string stl_header;
+    static std::string asyWidth;
+    static std::string asyHeight;
 };
 
 /*!

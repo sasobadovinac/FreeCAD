@@ -188,6 +188,21 @@ public:
         }
         connect(this, &CustomGLWidget::resized, this, &CustomGLWidget::slotResized);
     }
+    // paintGL() is invoked when e.g. using the method grabFramebuffer of this class
+    // \code
+    // from PySide2 import QtWidgets
+    // mw = Gui.getMainWindow()
+    // mdi = mw.findChild(QtWidgets.QMdiArea)
+    // gl = mdi.findChild(QtWidgets.QOpenGLWidget)
+    // img = gl.grabFramebuffer()
+    // \endcode
+    void paintGL()
+    {
+        QuarterWidget* qw = qobject_cast<QuarterWidget*>(parentWidget());
+        if (qw) {
+            qw->redraw();
+        }
+    }
     void aboutToDestroyGLContext()
     {
 #if QT_VERSION >= 0x050900
@@ -886,7 +901,11 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
     glMatrixMode(GL_PROJECTION);
 
     QtGLWidget* w = static_cast<QtGLWidget*>(this->viewport());
-    assert(w->isValid() && "No valid GL context found!");
+    if (!w->isValid()) {
+        qWarning() << "No valid GL context found!";
+        return;
+    }
+    //assert(w->isValid() && "No valid GL context found!");
     // We might have to process the delay queue here since we don't know
     // if paintGL() is called from Qt, and we might have some sensors
     // waiting to trigger (the redraw sensor has a lower priority than a
@@ -980,7 +999,20 @@ bool QuarterWidget::viewportEvent(QEvent* event)
         QMouseEvent* mouse = static_cast<QMouseEvent*>(event);
         QGraphicsItem *item = itemAt(mouse->pos());
         if (!item) {
-            QGraphicsView::viewportEvent(event);
+            bool ok = QGraphicsView::viewportEvent(event);
+            // Avoid that wheel events are handled twice
+            // https://forum.freecadweb.org/viewtopic.php?f=3&t=44822
+            // However, this workaround seems to cause a regression on macOS
+            // so it's disabled for this platform.
+            // https://forum.freecadweb.org/viewtopic.php?f=4&t=44855
+#if defined(Q_OS_MAC)
+            Q_UNUSED(ok)
+#else
+            if (event->type() == QEvent::Wheel) {
+                event->setAccepted(ok);
+                return ok;
+            }
+#endif
             return false;
         }
     }
@@ -1011,11 +1043,33 @@ QuarterWidget::redraw(void)
   // we're triggering the next paintGL(). Set a flag to remember this
   // to avoid that we process the delay queue in paintGL()
   PRIVATE(this)->processdelayqueue = false;
-#if QT_VERSION >= 0x050500 && QT_VERSION < 0x050600
+
+  // When stylesheet is used, there is recursive repaint warning caused by
+  // repaint() here. It happens when switching active documents. Based on call
+  // stacks, it happens like this, the repaint event first triggers a series
+  // calls of QWidgetPrivate::paintSiblingsRecrusive(), and then reaches one of
+  // the QuarterWidget. From its paintEvent(), it calls
+  // SoSensorManager::processDelayQueue(), which triggers redraw() of another
+  // QuarterWidget. And if repaint() is called here, it will trigger another
+  // series call of QWidgetPrivate::paintSiblingRecursive(), and eventually
+  // back to the first QuarterWidget, at which time the "Recursive repaint
+  // detected" Qt warning message will be printed.
+  //
+  // Note that, the recursive repaint is not infinite due to setting
+  // 'processdelayqueue = false' above. However, it does cause annoying
+  // flickering, and actually crash on Windows.
+#if 1
+  this->viewport()->update();
+#else
+
+// #if QT_VERSION >= 0x050500 && QT_VERSION < 0x050600
+#if 1
   // With Qt 5.5.x there is a major performance problem
   this->viewport()->update();
 #else
   this->viewport()->repaint();
+#endif
+
 #endif
 }
 

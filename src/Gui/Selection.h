@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Juergen Riegel         <juergen.riegel@web.de>          *
+ *   Copyright (c) Jürgen Riegel <juergen.riegel@web.de>                   *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -38,7 +38,7 @@
 #include <Base/Type.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
-
+#include <App/DocumentObserver.h>
 #include <Gui/SelectionObject.h>
 
 namespace App
@@ -85,13 +85,11 @@ public:
             float x=0, float y=0, float z=0, int subtype=0)
         : Type(type),SubType(subtype)
         , x(x),y(y),z(z)
+        , Object(docName,objName,subName)
     {
-        if(docName) DocName=docName;
-        pDocName = DocName.c_str();
-        if(objName) ObjName = objName;
-        pObjectName = ObjName.c_str();
-        if(subName) SubName = subName;
-        pSubName = SubName.c_str();
+        pDocName = Object.getDocumentName().c_str();
+        pObjectName = Object.getObjectName().c_str();
+        pSubName = Object.getSubName().c_str();
         if(typeName) TypeName = typeName;
         pTypeName = TypeName.c_str();
     }
@@ -104,14 +102,12 @@ public:
                      float x=0,float y=0,float z=0, int subtype=0)
         : Type(type), SubType(subtype)
         , x(x),y(y),z(z)
-        , DocName(docName)
-        , ObjName(objName)
-        , SubName(subName)
+        , Object(docName.c_str(), objName.c_str(), subName.c_str())
         , TypeName(typeName)
     {
-        pDocName = DocName.c_str();
-        pObjectName = ObjName.c_str();
-        pSubName = SubName.c_str();
+        pDocName = Object.getDocumentName().c_str();
+        pObjectName = Object.getObjectName().c_str();
+        pSubName = Object.getSubName().c_str();
         pTypeName = TypeName.c_str();
     }
 
@@ -125,17 +121,13 @@ public:
         x = other.x;
         y = other.y;
         z = other.z;
-        DocName = other.DocName;
-        ObjName = other.ObjName;
-        SubName = other.SubName;
+        Object = other.Object;
         TypeName = other.TypeName;
-        pDocName = DocName.c_str();
-        pObjectName = ObjName.c_str();
-        pSubName = SubName.c_str();
+        pDocName = Object.getDocumentName().c_str();
+        pObjectName = Object.getObjectName().c_str();
+        pSubName = Object.getSubName().c_str();
         pTypeName = TypeName.c_str();
         pOriginalMsg = other.pOriginalMsg;
-        pSubObject = other.pSubObject;
-        pParentObject = other.pParentObject;
         return *this;
     }
 
@@ -149,17 +141,13 @@ public:
         x = other.x;
         y = other.y;
         z = other.z;
-        DocName = std::move(other.DocName);
-        ObjName = std::move(other.ObjName);
-        SubName = std::move(other.SubName);
+        Object = std::move(other.Object);
         TypeName = std::move(other.TypeName);
-        pDocName = DocName.c_str();
-        pObjectName = ObjName.c_str();
-        pSubName = SubName.c_str();
+        pDocName = Object.getDocumentName().c_str();
+        pObjectName = Object.getObjectName().c_str();
+        pSubName = Object.getSubName().c_str();
         pTypeName = TypeName.c_str();
         pOriginalMsg = other.pOriginalMsg;
-        pSubObject = other.pSubObject;
-        pParentObject = other.pParentObject;
         return *this;
     }
 
@@ -174,18 +162,8 @@ public:
     float y;
     float z;
 
-    // For more robust selection notification (e.g. in case user make selection
-    // change inside selection notification handler), the notification message
-    // shall make a copy of all the strings here.
-    std::string DocName;
-    std::string ObjName;
-    std::string SubName;
+    App::SubObjectT Object;
     std::string TypeName;
-
-    // Resolved sub object in case resolve!=0, otherwise this is null
-    App::DocumentObject *pSubObject = 0;
-    // Resolved parent object in case resolve!=0, otherwise this is null
-    App::DocumentObject *pParentObject = 0;
 
     // Original selection message in case resolve!=0
     const SelectionChanges *pOriginalMsg = 0;
@@ -229,9 +207,29 @@ class GuiExport SelectionObserver
 {
 
 public:
-    /// Constructor
+    /** Constructor
+     * 
+     * @param attach: whether to attach this observer on construction
+     * @param resolve: sub-object resolving mode.
+     *                 0 no resolve,
+     *                 1 resolve sub-object with old style element name
+     *                 2 resolve sub-object with new style element name
+     */
     SelectionObserver(bool attach = true, int resolve = 1);
+    /** Constructor
+     * 
+     * @param vp: filtering view object.
+     * @param attach: whether to attach this observer on construction
+     * @param resolve: sub-object resolving mode.
+     *                 0 no resolve, 
+     *                 1 resolve sub-object with old style element name
+     *                 2 resolve sub-object with new style element name
+     *
+     * Constructs an selection observer that receives only selection event of
+     * objects within the same document as the input view object.
+     */
     SelectionObserver(const Gui::ViewProviderDocumentObject *vp, bool attach=true, int resolve=1);
+
     virtual ~SelectionObserver();
     bool blockConnection(bool block);
     bool isConnectionBlocked() const;
@@ -453,11 +451,21 @@ public:
     template<typename T> inline std::vector<T*> getObjectsOfType(
             const char* pDocName=0, int resolve=1) const;
 
+    /// Visible state used by setVisible()
+    enum VisibleState {
+        /// Hide the selection
+        VisHide = 0,
+        /// Show the selection
+        VisShow = 1,
+        /// Toggle visibility of the selection
+        VisToggle = -1,
+    };
+
     /** Set selection object visibility
      *
-     * @param visible: 1: make visible, 0: make invisible, -1: toggle visibility
+     * @param visible: see VisibleState
      */
-    void setVisible(int visible);
+    void setVisible(VisibleState visible);
 
     /// signal on new object
     boost::signals2::signal<void (const SelectionChanges& msg)> signalSelectionChanged;
@@ -473,7 +481,10 @@ public:
      * of the active are returned. If nothing for this Document is selected an
      * empty vector is returned. If document name is "*", then all document is
      * considered. 
-     * @param resolve: whether to resolve the subname reference of the selection
+     * @param resolve: sub-object resolving mode
+     *                 0 no resolve, 
+     *                 1 resolve sub-object with old style element name
+     *                 2 resolve sub-object with new style element name
      * @param single: if set to true, then it will return an empty vector if
      * there is more than one selections.
      *
@@ -487,13 +498,17 @@ public:
      * empty vector is returned. If document name is "*", then all document is
      * considered. 
      * @param typeId: specify the type of object to be returned.
-     * @param resolve: whether to resolve the subname reference of the selection
+     * @param resolve: sub-object resolving mode.
+     *                 0 no resolve, 
+     *                 1 resolve sub-object with old style element name
+     *                 2 resolve sub-object with new style element name
      * @param single: if set to true, then it will return an empty vector if
      * there is more than one selections.
      *
      * @return The returned vector reflects the sequence of selection.
      */
-    std::vector<Gui::SelectionObject> getSelectionEx(const char* pDocName=0,Base::Type typeId=App::DocumentObject::getClassTypeId(),int resolve=1, bool single=false) const;
+    std::vector<Gui::SelectionObject> getSelectionEx(const char* pDocName=0,
+            Base::Type typeId=App::DocumentObject::getClassTypeId(),int resolve=1, bool single=false) const;
 
     /**
      * @brief getAsPropertyLinkSubList fills PropertyLinkSubList with current selection.
@@ -504,7 +519,22 @@ public:
 
     /** Returns a vector of all selection objects of all documents. */
     std::vector<SelObj> getCompleteSelection(int resolve=1) const;
+
+    /// Check if there is any selection
     bool hasSelection() const;
+
+    /** Check if there is any selection within a given document
+     *
+     * @param doc: specify the document to check for selection. If NULL, then
+     *             check the current active document.
+     * @param resolve: whether to resolve the selected sub-object
+     *
+     * If \c resolve is true, then the selection is first resolved before
+     * matching its owner document. So in case the selected sub-object is
+     * linked from an external document, it may not match the input \c doc.
+     * If \c resolve is false, then the match is only done with the top
+     * level parent object.
+     */
     bool hasSelection(const char* doc, bool resolve=true) const;
 
     /** Check if there is any sub-element selection
@@ -512,7 +542,7 @@ public:
      * @param doc: optional document to check for selection
      * @param subElement: whether to count sub-element only selection
      *
-     * Example sub selections are face, edge or vertex. If \c resolve is false,
+     * Example sub selections are face, edge or vertex. If \c subElement is false,
      * then sub-object (i.e. a group child object) selection is also counted
      * even if it selects the whole sub-object.
      */
@@ -526,18 +556,77 @@ public:
         return static_cast<unsigned int>(_SelList.size());
     }
 
+    /** @name Selection stack functions
+     *
+     * Selection stack is for storing selection history so that the user can go
+     * back and forward to previous selections.
+     */
+    //@{
+    /// Return the current selection stack size
     int selStackBackSize() const {return _SelStackBack.size();}
-    int selStackForwardSize() const {return _SelStackForward.size();}
-    std::vector<Gui::SelectionObject> selStackGet(const char* pDocName=0,int resolve=1,int index=0) const;
-    void selStackGoBack(int count=1);
-    void selStackGoForward(int count=1);
-    void selStackPush(bool clearForward=true, bool overwrite=false);
 
+    /// Return the current forward selection stack size
+    int selStackForwardSize() const {return _SelStackForward.size();}
+
+    /** Obtain selected objects from stack
+     * 
+     * @param pDocName: optional filtering document, NULL for current active
+     *                  document
+     * @param resolve: sub-object resolving mode.
+     *                 0 no resolve, 
+     *                 1 resolve sub-object with old style element name
+     *                 2 resolve sub-object with new style element name
+     * @param index: optional position in the stack
+     */
+    std::vector<Gui::SelectionObject> selStackGet(const char* pDocName=0,int resolve=1,int index=0) const;
+
+    /** Go back selection history
+     *
+     * @param count: optional number of steps to go back
+     *
+     * This function pops the selection stack, and populate the current
+     * selection with the content of the last pop'd entry
+     */
+    void selStackGoBack(int count=1);
+
+    /** Go forward selection history 
+     *
+     * @param count: optional number of steps to go back
+     *
+     * This function pops the selection stack, and populate the current
+     * selection with the content of the last pop'd entry
+     */
+    void selStackGoForward(int count=1);
+
+    /** Save the current selection on to the stack
+     *
+     * @param clearForward: whether to clear forward selection stack
+     * @param overwrite: whether to overwrite the current top entry of the
+     *                   stack instead of pushing a new entry.
+     */
+    void selStackPush(bool clearForward=true, bool overwrite=false);
+    //@}
+
+    /** @name Picked list functions
+     *
+     * Picked list stores all selected geometry elements that intersects the
+     * 3D pick point. The list population is done by SoFCUnifiedSelection through
+     * addSelection() with the pickedList argument.
+     */
+    //@{
+    /// Check whether picked list is enabled
     bool needPickedList() const;
+    /// Turn on or off picked list
     void enablePickedList(bool);
+    /// Check if there is any selection inside picked list
     bool hasPickedList() const;
+    /// Return select objects inside picked list
     std::vector<SelectionSingleton::SelObj> getPickedList(const char* pDocName) const;
-    std::vector<Gui::SelectionObject> getPickedListEx(const char* pDocName=0,Base::Type typeId=App::DocumentObject::getClassTypeId()) const;
+    /// Return selected object inside picked list grouped by top level parents
+    std::vector<Gui::SelectionObject> getPickedListEx(
+            const char* pDocName=0, Base::Type typeId=App::DocumentObject::getClassTypeId()) const;
+    //@}
+
     static SelectionSingleton& instance(void);
     static void destruct (void);
     friend class SelectionFilter;
@@ -599,9 +688,11 @@ protected:
         std::string FeatName;
         std::string SubName;
         std::string TypeName;
-        App::Document* pDoc;
-        App::DocumentObject* pObject;
-        float x,y,z;
+        App::Document* pDoc = 0;
+        App::DocumentObject* pObject = 0;
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
         bool logged = false;
 
         std::pair<std::string,std::string> elementName;
@@ -614,7 +705,7 @@ protected:
     mutable std::list<_SelObj> _PickedList;
     bool _needPickedList;
 
-    typedef std::set<std::array<std::string,3> > SelStackItem;
+    typedef std::set<App::SubObjectT> SelStackItem;
     std::deque<SelStackItem> _SelStackBack;
     std::deque<SelStackItem> _SelStackForward;
 
@@ -660,6 +751,8 @@ inline SelectionSingleton& Selection(void)
     return SelectionSingleton::instance();
 }
 
+/** Helper class to disable logging selection action to MacroManager
+ */
 class GuiExport SelectionLogDisabler {
 public:
     SelectionLogDisabler(bool silent=false) :silent(silent) {

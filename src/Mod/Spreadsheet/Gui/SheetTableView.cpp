@@ -33,9 +33,9 @@
 #include <App/Application.h>
 #include <App/AutoTransaction.h>
 #include <App/Document.h>
-#include <Gui/Command.h>
+#include <Gui/CommandT.h>
 #include <Gui/MainWindow.h>
-#include <boost/bind.hpp>
+#include <boost_bind_bind.hpp>
 #include "../App/Utils.h"
 #include "../App/Cell.h"
 #include <App/Range.h>
@@ -46,11 +46,31 @@
 using namespace SpreadsheetGui;
 using namespace Spreadsheet;
 using namespace App;
+namespace bp = boost::placeholders;
 
 void SheetViewHeader::mouseReleaseEvent(QMouseEvent *event)
 {
     QHeaderView::mouseReleaseEvent(event);
     resizeFinished();
+}
+
+bool SheetViewHeader::viewportEvent(QEvent *e) {
+    if(e->type() == QEvent::ContextMenu) {
+        auto *ce = static_cast<QContextMenuEvent*>(e);
+        int section = logicalIndexAt(ce->pos());
+        if(section>=0) {
+            if(orientation() == Qt::Horizontal) {
+                if(!owner->selectionModel()->isColumnSelected(section,owner->rootIndex())) {
+                    owner->clearSelection();
+                    owner->selectColumn(section);
+                }
+            }else if(!owner->selectionModel()->isRowSelected(section,owner->rootIndex())) {
+                owner->clearSelection();
+                owner->selectRow(section);
+            }
+        }
+    }
+    return QHeaderView::viewportEvent(e);
 }
 
 SheetTableView::SheetTableView(QWidget *parent)
@@ -62,8 +82,10 @@ SheetTableView::SheetTableView(QWidget *parent)
     QAction * insertColumns = new QAction(tr("Insert columns"), this);
     QAction * removeColumns = new QAction(tr("Remove columns"), this);
 
-    setHorizontalHeader(new SheetViewHeader(Qt::Horizontal));
-    setVerticalHeader(new SheetViewHeader(Qt::Vertical));
+    setHorizontalHeader(new SheetViewHeader(this,Qt::Horizontal));
+    setVerticalHeader(new SheetViewHeader(this,Qt::Vertical));
+    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
 
     horizontalHeader()->addAction(insertColumns);
     horizontalHeader()->addAction(removeColumns);
@@ -116,8 +138,8 @@ std::vector<Range> SheetTableView::selectedRanges() const
         std::pair<int, int> ul = (*i).first;
         std::pair<int, int> size = (*i).second;
 
-        result.push_back(Range(ul.first, ul.second,
-                                                   ul.first + size.first - 1, ul.second + size.second - 1));
+        result.emplace_back(ul.first, ul.second,
+                                                   ul.first + size.first - 1, ul.second + size.second - 1);
     }
 
     return result;
@@ -154,8 +176,7 @@ void SheetTableView::insertRows()
                 break;
         }
 
-        FCMD_OBJ_CMD2("insertRows('%s', %d)", sheet,
-                                rowName(prev).c_str(), count);
+        Gui::cmdAppObjectArgs(sheet, "insertRows('%s', %d)", rowName(prev).c_str(), count);
     }
     Gui::Command::commitCommand();
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.recompute()");
@@ -176,8 +197,7 @@ void SheetTableView::removeRows()
     /* Remove rows */
     Gui::Command::openCommand("Remove rows");
     for (std::vector<int>::const_iterator it = sortedRows.begin(); it != sortedRows.end(); ++it) {
-        FCMD_OBJ_CMD2("removeRows('%s', %d)", sheet,
-                                rowName(*it).c_str(), 1);
+        Gui::cmdAppObjectArgs(sheet, "removeRows('%s', %d)", rowName(*it).c_str(), 1);
     }
     Gui::Command::commitCommand();
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.recompute()");
@@ -214,8 +234,8 @@ void SheetTableView::insertColumns()
                 break;
         }
 
-        FCMD_OBJ_CMD2("insertColumns('%s', %d)", sheet,
-                                columnName(prev).c_str(), count);
+        Gui::cmdAppObjectArgs(sheet, "insertColumns('%s', %d)",
+                                     columnName(prev).c_str(), count);
     }
     Gui::Command::commitCommand();
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.recompute()");
@@ -236,8 +256,8 @@ void SheetTableView::removeColumns()
     /* Remove columns */
     Gui::Command::openCommand("Remove rows");
     for (std::vector<int>::const_iterator it = sortedColumns.begin(); it != sortedColumns.end(); ++it)
-        FCMD_OBJ_CMD2("removeColumns('%s', %d)", sheet,
-                                columnName(*it).c_str(), 1);
+        Gui::cmdAppObjectArgs(sheet, "removeColumns('%s', %d)",
+                                     columnName(*it).c_str(), 1);
     Gui::Command::commitCommand();
     Gui::Command::doCommand(Gui::Command::Doc, "App.ActiveDocument.recompute()");
 }
@@ -260,7 +280,7 @@ void SheetTableView::updateCellSpan(CellAddress address)
 void SheetTableView::setSheet(Sheet * _sheet)
 {
     sheet = _sheet;
-    cellSpanChangedConnection = sheet->cellSpanChanged.connect(bind(&SheetTableView::updateCellSpan, this, _1));
+    cellSpanChangedConnection = sheet->cellSpanChanged.connect(bind(&SheetTableView::updateCellSpan, this, bp::_1));
 
     // Update row and column spans
     std::vector<std::string> usedCells = sheet->getUsedCells();

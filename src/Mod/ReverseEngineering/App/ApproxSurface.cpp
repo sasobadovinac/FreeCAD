@@ -30,7 +30,7 @@
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QtConcurrentMap>
-#include <boost/bind.hpp>
+#include <boost_bind_bind.hpp>
 
 #include <Mod/Mesh/App/Core/Approximation.h>
 #include <Base/Sequencer.h>
@@ -40,6 +40,7 @@
 #include "ApproxSurface.h"
 
 using namespace Reen;
+namespace bp = boost::placeholders;
 
 // SplineBasisfunction
 
@@ -638,7 +639,7 @@ bool ParameterCorrection::GetUVParameters(double fSizeFactor)
     for (int ii=_pvcPoints->Lower(); ii<=_pvcPoints->Upper(); ii++) {
         const gp_Pnt& pnt = (*_pvcPoints)(ii);
         Wm4::Vector3d clProjPnt = clRotMatTrans * Wm4::Vector3d(pnt.X(), pnt.Y(), pnt.Z());
-        vcProjPts.push_back(Base::Vector2d(clProjPnt.X(), clProjPnt.Y()));
+        vcProjPts.emplace_back(clProjPnt.X(), clProjPnt.Y());
         clBBox.Add(Base::Vector2d(clProjPnt.X(), clProjPnt.Y()));
     }
 
@@ -1090,7 +1091,7 @@ bool BSplineParameterCorrection::SolveWithSmoothing(double fWeight)
     std::generate(columns.begin(), columns.end(), Base::iotaGen<int>(0));
     ScalarProduct scalar(M);
     QFuture< std::vector<double> > future = QtConcurrent::mapped
-        (columns, boost::bind(&ScalarProduct::multiply, &scalar, _1));
+        (columns, boost::bind(&ScalarProduct::multiply, &scalar, bp::_1));
     QFutureWatcher< std::vector<double> > watcher;
     watcher.setFuture(future);
     watcher.waitForFinished();

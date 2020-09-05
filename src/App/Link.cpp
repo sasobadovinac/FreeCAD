@@ -23,6 +23,7 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <boost_bind_bind.hpp>
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -36,15 +37,22 @@
 #include "ComplexGeoData.h"
 #include "ComplexGeoDataPy.h"
 
+//FIXME: ISO C++11 requires at least one argument for the "..." in a variadic macro
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
+
 FC_LOG_LEVEL_INIT("App::Link", true,true)
 
 using namespace App;
 using namespace Base;
+namespace bp = boost::placeholders;
 
 EXTENSION_PROPERTY_SOURCE(App::LinkBaseExtension, App::DocumentObjectExtension)
 
 LinkBaseExtension::LinkBaseExtension(void)
-    :enableLabelCache(false),myOwner(0)
+    :myOwner(0),enableLabelCache(false),hasOldSubElement(false)
 {
     initExtensionType(LinkBaseExtension::getExtensionClassTypeId());
     EXTENSION_ADD_PROPERTY_TYPE(_LinkTouched, (false), " Link", 
@@ -176,8 +184,62 @@ App::DocumentObjectExecReturn *LinkBaseExtension::extensionExecute(void) {
     // recomputed.
     _LinkTouched.touch();
 
-    if(getLinkedObjectProperty() && !getTrueLinkedObject(true))
-        return new App::DocumentObjectExecReturn("Link broken");
+    if(getLinkedObjectProperty()) {
+        DocumentObject *linked = getTrueLinkedObject(true);
+        if(!linked)
+            return new App::DocumentObjectExecReturn("Link broken");
+
+        App::DocumentObject *container = getContainer();
+        PropertyPythonObject *proxy = 0;
+        if(getLinkExecuteProperty()
+                && !boost::iequals(getLinkExecuteValue(), "none")
+                && (!myOwner || !container->getDocument()->getObjectByID(myOwner)))
+        {
+            // Check if this is an element link. Do not invoke appLinkExecute()
+            // if so, because it will be called from the link array.
+            proxy = Base::freecad_dynamic_cast<PropertyPythonObject>(
+                    linked->getPropertyByName("Proxy"));
+        }
+        if(proxy) {
+            Base::PyGILStateLocker lock;
+            const char *errMsg = "Linked proxy execute failed";
+            try {
+                Py::Tuple args(3);
+                Py::Object proxyValue = proxy->getValue();
+                const char *method = getLinkExecuteValue();
+                if(!method || !method[0])
+                    method = "appLinkExecute";
+                if(proxyValue.hasAttr(method)) {
+                    Py::Object attr = proxyValue.getAttr(method);
+                    if(attr.ptr() && attr.isCallable()) {
+                        Py::Tuple args(4);
+                        args.setItem(0, Py::asObject(linked->getPyObject()));
+                        args.setItem(1, Py::asObject(container->getPyObject()));
+                        if(!_getElementCountValue()) {
+                            Py::Callable(attr).apply(args);
+                        } else {
+                            const auto &elements = _getElementListValue();
+                            for(int i=0; i<_getElementCountValue(); ++i) {
+                                args.setItem(2, Py::Int(i));
+                                if(i < (int)elements.size())
+                                    args.setItem(3, Py::asObject(elements[i]->getPyObject()));
+                                else
+                                    args.setItem(3, Py::Object());
+                                Py::Callable(attr).apply(args);
+                            }
+                        }
+                    }
+                }
+            } catch (Py::Exception &) {
+                Base::PyException e;
+                e.ReportException();
+                return new App::DocumentObjectExecReturn(errMsg);
+            } catch (Base::Exception &e) {
+                e.ReportException();
+                return new App::DocumentObjectExecReturn(errMsg);
+            }
+        }
+    }
     return inherited::extensionExecute();
 }
 
@@ -188,8 +250,7 @@ short LinkBaseExtension::extensionMustExecute(void) {
 }
 
 App::GroupExtension *LinkBaseExtension::linkedPlainGroup() const {
-    auto subs = getSubElementsProperty();
-    if(subs && subs->getSize())
+    if(mySubElements.size() && mySubElements[0].size())
         return 0;
     auto linked = getTrueLinkedObject(false);
     if(!linked)
@@ -242,7 +303,8 @@ int LinkBaseExtension::_getElementCountValue() const {
 }
 
 bool LinkBaseExtension::extensionHasChildElement() const {
-    if(_getElementListProperty() || _getElementCountValue())
+    if(_getElementListValue().size() 
+            || (_getElementCountValue() && _getShowElementValue()))
         return true;
     DocumentObject *linked = getTrueLinkedObject(false);
     if(linked) {
@@ -498,7 +560,7 @@ bool LinkBaseExtension::extensionGetSubObjects(std::vector<std::string> &ret, in
         }
         return true;
     }
-    if(mySubElement.empty() && getSubElementsValue().empty()) {
+    if(mySubElements.empty() || mySubElements[0].empty()) {
         DocumentObject *linked = getTrueLinkedObject(true);
         if(linked) {
             if(!_getElementCountValue())
@@ -511,6 +573,8 @@ bool LinkBaseExtension::extensionGetSubObjects(std::vector<std::string> &ret, in
                 }
             }
         }
+    } else if(mySubElements.size()>1) {
+        ret = mySubElements;
     }
     return true;
 }
@@ -519,22 +583,48 @@ bool LinkBaseExtension::extensionGetSubObject(DocumentObject *&ret, const char *
         PyObject **pyObj, Base::Matrix4D *mat, bool transform, int depth) const 
 {
     ret = 0;
-    if(mat) *mat *= getTransform(transform);
     auto obj = getContainer();
     if(!subname || !subname[0]) {
         ret = const_cast<DocumentObject*>(obj);
-        if(pyObj && !_getElementCountValue() && _getElementListValue().empty()) {
-            Base::Matrix4D matNext;
-            if(mat) matNext = *mat;
-            auto linked = getTrueLinkedObject(false,mat?&matNext:0,depth);
+        Base::Matrix4D _mat;
+        if(mat) {
+            // 'mat' here is used as an output to return the accumulated
+            // transformation up until this object. Since 'subname' is empty
+            // here, it means the we are at the end of the hierarchy. We shall
+            // not include scale in the output transformation.
+            //
+            // Think of it this way, the transformation along object hierarchy
+            // is public, while transformation through linkage is private to
+            // link itself.
+            if(transform) {
+                if(getLinkPlacementProperty())
+                    *mat *= getLinkPlacementValue().toMatrix();
+                else if(getPlacementProperty())
+                    *mat *= getPlacementValue().toMatrix();
+            }
+            _mat = *mat;
+        }
+
+        if(pyObj && !_getElementCountValue() 
+                && _getElementListValue().empty() && mySubElements.size()<=1) 
+        {
+            // Scale will be included here
+            if(getScaleProperty() || getScaleVectorProperty()) {
+                Base::Matrix4D s;
+                s.scale(getScaleVector());
+                _mat *= s;
+            }
+            auto linked = getTrueLinkedObject(false,&_mat,depth);
             if(linked && linked!=obj) {
-                if(mat) *mat = matNext;
-                linked->getSubObject(mySubElement.c_str(),pyObj,mat,false,depth+1);
+                linked->getSubObject(mySubElements.empty()?0:mySubElements.front().c_str(),
+                                     pyObj,&_mat,false,depth+1);
                 checkGeoElementMap(obj,linked,pyObj,0);
             }
         }
         return true;
     }
+
+    if(mat) *mat *= getTransform(transform);
 
     DocumentObject *element = 0;
     bool isElement = false;
@@ -544,8 +634,6 @@ bool LinkBaseExtension::extensionGetSubObject(DocumentObject *&ret, const char *
         if(elements.size()) {
             if(idx>=(int)elements.size() || !elements[idx] || !elements[idx]->getNameInDocument())
                 return true;
-            if(!subname || !subname[0])
-                subname = mySubElement.c_str();
             ret = elements[idx]->getSubObject(subname,pyObj,mat,true,depth+1);
             // do not resolve the link if this element is the last referenced object
             if(!subname || Data::ComplexGeoData::isMappedElement(subname) || !strchr(subname,'.'))
@@ -576,8 +664,6 @@ bool LinkBaseExtension::extensionGetSubObject(DocumentObject *&ret, const char *
 
     Base::Matrix4D matNext;
     if(mat) matNext = *mat;
-    if(!subname || !subname[0])
-        subname = mySubElement.c_str();
     ret = linked->getSubObject(subname,pyObj,mat?&matNext:0,false,depth+1);
     std::string postfix;
     if(ret) {
@@ -635,7 +721,7 @@ DocumentObject *LinkBaseExtension::getTrueLinkedObject(
     if(!ret) return 0;
     bool transform = linkTransform();
     const char *subname = getSubName();
-    if(subname) {
+    if(subname || (mat && transform)) {
         ret = ret->getSubObject(subname,0,mat,transform,depth+1);
         transform = false;
     }
@@ -668,15 +754,36 @@ void LinkBaseExtension::extensionOnChanged(const Property *prop) {
 }
 
 void LinkBaseExtension::parseSubName() const {
-    auto xlink = freecad_dynamic_cast<const PropertyXLink>(getLinkedObjectProperty());
-    const char* subname = xlink?xlink->getSubName():0;
+    // If user has ever linked to some sub-element, the Link shall always accept
+    // sub-element linking in the future, which affects how ViewProviderLink
+    // dropObjectEx() behave. So we will push an empty string later even if no
+    // sub-element linking this time.
+    bool hasSubElement = !mySubElements.empty();
+    mySubElements.clear();
     mySubName.clear();
-    mySubElement.clear();
-    if(!subname || !subname[0])
+    auto xlink = freecad_dynamic_cast<const PropertyXLink>(getLinkedObjectProperty());
+    if(!xlink || xlink->getSubValues().empty()) {
+        if(hasSubElement)
+            mySubElements.emplace_back("");
         return;
+    }
+    const auto &subs = xlink->getSubValues();
+    auto subname = subs.front().c_str();
     auto element = Data::ComplexGeoData::findElementName(subname);
+    if(!element || !element[0]) {
+        mySubName = subs[0];
+        if(hasSubElement)
+            mySubElements.emplace_back("");
+        return;
+    }
+    mySubElements.push_back(element);
     mySubName = std::string(subname,element-subname);
-    mySubElement = element;
+    for(std::size_t i=1;i<subs.size();++i) {
+        auto &sub = subs[i];
+        element = Data::ComplexGeoData::findElementName(sub.c_str());
+        if(element && element[0] && boost::starts_with(sub,mySubName))
+            mySubElements.push_back(element);
+    }
 }
 
 void LinkBaseExtension::slotChangedPlainGroup(const App::DocumentObject &obj, const App::Property &prop) {
@@ -714,7 +821,7 @@ void LinkBaseExtension::updateGroup() {
                 FC_LOG("new group connection " << getExtendedObject()->getFullName() 
                         << " -> " << group->getFullName());
                 conn = group->signalChanged.connect(
-                        boost::bind(&LinkBaseExtension::slotChangedPlainGroup,this,_1,_2));
+                        boost::bind(&LinkBaseExtension::slotChangedPlainGroup,this,bp::_1,bp::_2));
             }
             std::size_t count = children.size();
             ext->getAllChildren(children,childSet);
@@ -728,7 +835,7 @@ void LinkBaseExtension::updateGroup() {
                     FC_LOG("new group connection " << getExtendedObject()->getFullName() 
                             << " -> " << child->getFullName());
                     conn = child->signalChanged.connect(
-                            boost::bind(&LinkBaseExtension::slotChangedPlainGroup,this,_1,_2));
+                            boost::bind(&LinkBaseExtension::slotChangedPlainGroup,this,bp::_1,bp::_2));
                 }
             }
         }
@@ -755,13 +862,31 @@ void LinkBaseExtension::update(App::DocumentObject *parent, const Property *prop
             dst->setValue(src->getValue());
             dst->setStatus(Property::User3,false);
         }
+    }else if(prop == getScaleProperty()) {
+        if(!prop->testStatus(Property::User3) && getScaleVectorProperty()) {
+            auto s = getScaleValue();
+            auto p = getScaleVectorProperty();
+            p->setStatus(Property::User3,true);
+            p->setValue(s,s,s);
+            p->setStatus(Property::User3,false);
+        }
+    }else if(prop == getScaleVectorProperty()) {
+        if(!prop->testStatus(Property::User3) && getScaleProperty()) {
+            const auto &v = getScaleVectorValue();
+            if(v.x == v.y && v.x == v.z) {
+                auto p = getScaleProperty();
+                p->setStatus(Property::User3,true);
+                p->setValue(v.x);
+                p->setStatus(Property::User3,false);
+            }
+        }
     }else if(prop == _getShowElementProperty()) {
         if(_getShowElementValue()) 
             update(parent,_getElementCountProperty());
         else {
             auto objs = getElementListValue();
 
-            // preseve element properties in ourself
+            // preserve element properties in ourself
             std::vector<Base::Placement> placements;
             placements.reserve(objs.size());
             std::vector<Base::Vector3d> scales;
@@ -838,17 +963,6 @@ void LinkBaseExtension::update(App::DocumentObject *parent, const Property *prop
                 auto placementProp = getPlacementListProperty();
                 auto scaleProp = getScaleListProperty();
                 const auto &vis = getVisibilityListValue();
-                auto proxy = freecad_dynamic_cast<PropertyPythonObject>(parent->getPropertyByName("Proxy"));
-                Py::Callable method;
-                Py::Tuple args(3);
-                if(proxy) {
-                    Py::Object proxyValue = proxy->getValue();
-                    const char *fname = "onCreateLinkElement";
-                    if (proxyValue.hasAttr(fname)) {
-                        method = proxyValue.getAttr(fname);
-                        args.setItem(0,Py::Object(parent->getPyObject(),true));
-                    }
-                }
 
                 auto owner = getContainer();
                 long ownerID = owner?owner->getID():0;
@@ -864,13 +978,7 @@ void LinkBaseExtension::update(App::DocumentObject *parent, const Property *prop
                     if(obj && (!obj->myOwner || obj->myOwner==ownerID))
                         obj->Visibility.setValue(false);
                     else {
-                        if(!method.isNone()) {
-                            obj = new LinkElementPython;
-                            args.setItem(1,Py::Object(obj->getPyObject(),true));
-                            args.setItem(2,Py::Int((int)i));
-                            method.apply(args);
-                        } else
-                            obj = new LinkElement;
+                        obj = new LinkElement;
                         parent->getDocument()->addObject(obj,name.c_str());
                     }
 
@@ -982,8 +1090,6 @@ void LinkBaseExtension::update(App::DocumentObject *parent, const Property *prop
             _ChildCache.setValue();
         parseSubName();
         syncElementList();
-    }else if(prop == getSubElementsProperty()) {
-        syncElementList();
     }else if(prop == getLinkTransformProperty()) {
         auto linkPlacement = getLinkPlacementProperty();
         auto placement = getPlacementProperty();
@@ -1019,14 +1125,9 @@ bool LinkBaseExtension::linkTransform() const {
 }
 
 void LinkBaseExtension::syncElementList() {
-    const auto &subElements = getSubElementsValue();
-    auto sub = getSubElementsProperty();
     auto transform = getLinkTransformProperty();
     auto link = getLinkedObjectProperty();
     auto xlink = freecad_dynamic_cast<const PropertyXLink>(link);
-    std::string subname;
-    if(xlink) 
-        subname = xlink->getSubName();
 
     auto owner = getContainer();
     auto ownerID = owner?owner->getID():0;
@@ -1038,9 +1139,6 @@ void LinkBaseExtension::syncElementList() {
 
         element->myOwner = ownerID;
 
-        element->SubElements.setStatus(Property::Hidden,sub!=0);
-        element->SubElements.setStatus(Property::Immutable,sub!=0);
-
         element->LinkTransform.setStatus(Property::Hidden,transform!=0);
         element->LinkTransform.setStatus(Property::Immutable,transform!=0);
         if(transform && element->LinkTransform.getValue()!=transform->getValue())
@@ -1048,25 +1146,80 @@ void LinkBaseExtension::syncElementList() {
 
         element->LinkedObject.setStatus(Property::Hidden,link!=0);
         element->LinkedObject.setStatus(Property::Immutable,link!=0);
-        if(link) {
-            if(element->LinkedObject.getValue()!=link->getValue() ||
-               subname != element->LinkedObject.getSubName() ||
-               subElements != element->SubElements.getValue())
+        if(xlink) {
+            if(element->LinkedObject.getValue()!=xlink->getValue() ||
+               element->LinkedObject.getSubValues()!=xlink->getSubValues())
             {
-                element->setLink(-1,link->getValue(),subname.c_str(),subElements);
+                element->LinkedObject.setValue(xlink->getValue(), xlink->getSubValues());
             }
+        } else if(element->LinkedObject.getValue()!=link->getValue() ||
+                  element->LinkedObject.getSubValues().size())
+        {
+            element->setLink(-1,link->getValue());
         }
     }
 }
 
 void LinkBaseExtension::onExtendedDocumentRestored() {
     inherited::onExtendedDocumentRestored();
-    auto parent = getContainer();
     myHiddenElements.clear();
-    if(parent) {
-        update(parent,getVisibilityListProperty());
-        update(parent,getLinkedObjectProperty());
-        update(parent,getElementListProperty());
+    auto parent = getContainer();
+    if(!parent)
+        return;
+    if(hasOldSubElement) {
+        hasOldSubElement = false;
+        // SubElements was stored as a PropertyStringList. It is now migrated to be
+        // stored inside PropertyXLink.
+        auto xlink = freecad_dynamic_cast<PropertyXLink>(getLinkedObjectProperty());
+        if(!xlink) 
+            FC_ERR("Failed to restore SubElements for " << parent->getFullName());
+        else if(!xlink->getValue())
+            FC_ERR("Discard SubElements of " << parent->getFullName() << " due to null link");
+        else if(xlink->getSubValues().size() > 1)
+            FC_ERR("Failed to restore SubElements for " << parent->getFullName() 
+                    << " due to conflict subnames");
+        else if(xlink->getSubValues().empty()) {
+            auto subs = xlink->getSubValues();
+            xlink->setSubValues(std::move(subs));
+        } else {
+            std::set<std::string> subset(mySubElements.begin(),mySubElements.end());
+            auto sub = xlink->getSubValues().front();
+            auto element = Data::ComplexGeoData::findElementName(sub.c_str());
+            if(element && element[0]) {
+                subset.insert(element);
+                sub.resize(element - sub.c_str());
+            }
+            std::vector<std::string> subs;
+            for(auto &s : subset)
+                subs.push_back(sub + s);
+            xlink->setSubValues(std::move(subs));
+        }
+    }
+    if(getScaleVectorProperty() && getScaleProperty()) {
+        // Scale vector is added later. The code here is for migration.
+        const auto &v = getScaleVectorValue();
+        double s = getScaleValue();
+        if(v.x == v.y && v.x == v.z && v.x != s)
+            getScaleVectorProperty()->setValue(s,s,s);
+    }
+    update(parent,getVisibilityListProperty());
+    update(parent,getLinkedObjectProperty());
+    update(parent,getElementListProperty());
+}
+
+void LinkBaseExtension::_handleChangedPropertyName(
+        Base::XMLReader &reader, const char * TypeName, const char *PropName)
+{
+    if(strcmp(PropName,"SubElements")==0
+        && strcmp(TypeName,PropertyStringList::getClassTypeId().getName())==0)
+    {
+        PropertyStringList prop;
+        prop.setContainer(getContainer());
+        prop.Restore(reader);
+        if(prop.getSize()) {
+            mySubElements = prop.getValues();
+            hasOldSubElement = true;
+        }
     }
 }
 
@@ -1167,10 +1320,6 @@ void LinkBaseExtension::setLink(int index, DocumentObject *obj,
     // Here means we are assigning a Link
 
     auto xlink = freecad_dynamic_cast<PropertyXLink>(linkProp);
-    auto subElementProp = getSubElementsProperty();
-    if(subElements.size() && !subElementProp)
-        LINK_THROW(Base::RuntimeError,"No SubElements Property configured");
-
     if(obj) {
         if(!obj->getNameInDocument())
             LINK_THROW(Base::ValueError,"Invalid document object");
@@ -1180,18 +1329,23 @@ void LinkBaseExtension::setLink(int index, DocumentObject *obj,
         }
     }
 
-    if(subname && subname[0] && !xlink)
-        LINK_THROW(Base::RuntimeError,"SubName link requires PropertyXLink");
-
-    if(subElementProp && subElements.size()) {
-        subElementProp->setStatus(Property::User3, true);
-        subElementProp->setValue(subElements);
-        subElementProp->setStatus(Property::User3, false);
-    }
-    if(xlink)
-        xlink->setValue(obj,subname);
-    else
+    if(!xlink) {
+        if(subElements.size() || (subname && subname[0]))
+            LINK_THROW(Base::RuntimeError,"SubName/SubElement link requires PropertyXLink");
         linkProp->setValue(obj);
+        return;
+    }
+
+    std::vector<std::string> subs;
+    if(subElements.size()) {
+        subs.reserve(subElements.size());
+        for(const auto &s : subElements) {
+            subs.emplace_back(subname?subname:"");
+            subs.back() += s;
+        }
+    } else if(subname && subname[0])
+        subs.emplace_back(subname);
+    xlink->setValue(obj,std::move(subs));
 }
 
 void LinkBaseExtension::detachElement(DocumentObject *obj) {
@@ -1322,14 +1476,6 @@ Link::Link() {
 }
 
 bool Link::canLinkProperties() const {
-    auto prop = freecad_dynamic_cast<const PropertyXLink>(getLinkedObjectProperty());
-    const char *subname;
-    if(prop && (subname=prop->getSubName()) && *subname) {
-        auto len = strlen(subname);
-        // Do not link properties when we are linking to a sub-element (i.e.
-        // vertex, edge or face)
-        return subname[len-1]=='.';
-    }
     return true;
 }
 
@@ -1388,3 +1534,8 @@ template<> const char* App::LinkGroupPython::getViewProviderName(void) const {
 }
 template class AppExport FeaturePythonT<App::LinkGroup>;
 }
+
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#endif
+

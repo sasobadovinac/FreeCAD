@@ -45,7 +45,7 @@
 #include "PropertyModel.h"
 #include "PropertyView.h"
 
-FC_LOG_LEVEL_INIT("PropertyView",true,true);
+FC_LOG_LEVEL_INIT("PropertyView",true,true)
 
 using namespace Gui::PropertyEditor;
 
@@ -155,6 +155,11 @@ void PropertyEditor::commitData (QWidget * editor)
 void PropertyEditor::editorDestroyed (QObject * editor)
 {
     QTreeView::editorDestroyed(editor);
+
+    // When editing expression through context menu, the editor (ExpLineEditor)
+    // deletes itself when finished, so it won't trigger closeEditor signal. We
+    // must handle it here to perform auto update.
+    closeTransaction();
 }
 
 void PropertyEditor::currentChanged ( const QModelIndex & current, const QModelIndex & previous )
@@ -220,7 +225,7 @@ void PropertyEditor::setupTransaction(const QModelIndex &index) {
     str << prop->getName();
     if(items.size()>1)
         str << "...";
-    app.setActiveTransaction(str.str().c_str());
+    transactionID = app.setActiveTransaction(str.str().c_str());
     FC_LOG("editor transaction " << app.getActiveTransaction());
 }
 
@@ -232,10 +237,8 @@ void PropertyEditor::onItemActivated ( const QModelIndex & index )
     setupTransaction(index);
 }
 
-void PropertyEditor::closeEditor (QWidget * editor, QAbstractItemDelegate::EndEditHint hint)
+void PropertyEditor::closeTransaction()
 {
-    QTreeView::closeEditor(editor, hint);
-
     if (autoupdate) {
         App::Document* doc = App::GetApplication().getActiveDocument();
         if (doc) {
@@ -246,8 +249,18 @@ void PropertyEditor::closeEditor (QWidget * editor, QAbstractItemDelegate::EndEd
                     doc->recompute();
             }
         }
-        App::GetApplication().closeActiveTransaction();
     }
+
+    int tid = 0;
+    if(App::GetApplication().getActiveTransaction(&tid) && tid == transactionID)
+        App::GetApplication().closeActiveTransaction();
+}
+
+void PropertyEditor::closeEditor (QWidget * editor, QAbstractItemDelegate::EndEditHint hint)
+{
+    QTreeView::closeEditor(editor, hint);
+
+    closeTransaction();
 
     QModelIndex indexSaved = currentIndex();
     FC_LOG("index saved " << indexSaved.row() << ", " << indexSaved.column());
@@ -314,6 +327,8 @@ void PropertyEditor::buildUp(PropertyModel::PropertyList &&props, bool checkDocu
         delaybuild = true;
         return;
     }
+
+    closeTransaction();
 
     QModelIndex index = this->currentIndex();
     QStringList propertyPath = propertyModel->propertyPathFromIndex(index);
@@ -561,6 +576,7 @@ void PropertyEditor::contextMenuEvent(QContextMenuEvent *) {
             closePersistentEditor(contextIndex);
             Base::FlagToggler<> flag(binding);
             edit(contextIndex,AllEditTriggers,0);
+            setupTransaction(contextIndex);
         }
         break;
     case MA_AddProp: {

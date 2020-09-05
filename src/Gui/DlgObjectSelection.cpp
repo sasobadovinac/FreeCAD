@@ -33,7 +33,7 @@
 #include "ViewProviderDocumentObject.h"
 #include "ui_DlgObjectSelection.h"
 
-FC_LOG_LEVEL_INIT("Gui",true,true);
+FC_LOG_LEVEL_INIT("Gui",true,true)
 
 using namespace Gui;
 
@@ -73,7 +73,6 @@ DlgObjectSelection::DlgObjectSelection(
         info.depItem = new QTreeWidgetItem(ui->depList);
         auto vp = Gui::Application::Instance->getViewProvider(obj);
         if(vp) info.depItem->setIcon(0, vp->getIcon());
-        info.depItem->setIcon(0, vp->getIcon());
         info.depItem->setText(0, QString::fromUtf8((obj)->Label.getValue()));
         info.depItem->setText(1, QString::fromUtf8(obj->getDocument()->getName()));
         info.depItem->setText(2, QString::fromLatin1(obj->getNameInDocument()));

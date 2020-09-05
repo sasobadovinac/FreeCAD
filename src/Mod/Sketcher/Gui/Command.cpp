@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2008 Jürgen Riegel (juergen.riegel@web.de)              *
+ *   Copyright (c) 2008 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -36,10 +36,10 @@
 #include <App/OriginFeature.h>
 #include <Gui/Application.h>
 #include <Gui/Document.h>
-#include <Gui/Command.h>
+#include <Gui/CommandT.h>
 #include <Gui/Control.h>
 #include <Gui/MainWindow.h>
-#include <Gui/DlgEditFileIncludeProptertyExternal.h>
+#include <Gui/DlgEditFileIncludePropertyExternal.h>
 #include <Gui/SelectionFilter.h>
 
 #include <Mod/Sketcher/App/SketchObjectSF.h>
@@ -133,7 +133,7 @@ namespace SketcherGui {
 
 
 /* Sketch commands =======================================================*/
-DEF_STD_CMD_A(CmdSketcherNewSketch);
+DEF_STD_CMD_A(CmdSketcherNewSketch)
 
 CmdSketcherNewSketch::CmdSketcherNewSketch()
     :Command("Sketcher_NewSketch")
@@ -251,7 +251,7 @@ bool CmdSketcherNewSketch::isActive(void)
         return false;
 }
 
-DEF_STD_CMD_A(CmdSketcherEditSketch);
+DEF_STD_CMD_A(CmdSketcherEditSketch)
 
 CmdSketcherEditSketch::CmdSketcherEditSketch()
     :Command("Sketcher_EditSketch")
@@ -282,7 +282,7 @@ bool CmdSketcherEditSketch::isActive(void)
     return Gui::Selection().countObjectsOfType(Sketcher::SketchObject::getClassTypeId()) == 1;
 }
 
-DEF_STD_CMD_A(CmdSketcherLeaveSketch);
+DEF_STD_CMD_A(CmdSketcherLeaveSketch)
 
 CmdSketcherLeaveSketch::CmdSketcherLeaveSketch()
   : Command("Sketcher_LeaveSketch")
@@ -328,7 +328,46 @@ bool CmdSketcherLeaveSketch::isActive(void)
     return false;
 }
 
-DEF_STD_CMD_A(CmdSketcherReorientSketch);
+DEF_STD_CMD_A(CmdSketcherStopOperation)
+
+CmdSketcherStopOperation::CmdSketcherStopOperation()
+  : Command("Sketcher_StopOperation")
+{
+    sAppModule      = "Sketcher";
+    sGroup          = QT_TR_NOOP("Sketcher");
+    sMenuText       = QT_TR_NOOP("Stop operation");
+    sToolTipText    = QT_TR_NOOP("Stop current operation");
+    sWhatsThis      = "Sketcher_StopOperation";
+    sStatusTip      = sToolTipText;
+    sPixmap         = "process-stop";
+    eType           = 0;
+}
+
+void CmdSketcherStopOperation::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+    Gui::Document *doc = getActiveGuiDocument();
+
+    if (doc) {
+        SketcherGui::ViewProviderSketch* vp = dynamic_cast<SketcherGui::ViewProviderSketch*>(doc->getInEdit());
+        if (vp) {
+            vp->purgeHandler();
+        }
+    }
+}
+
+bool CmdSketcherStopOperation::isActive(void)
+{
+    Gui::Document *doc = getActiveGuiDocument();
+    if (doc) {
+        SketcherGui::ViewProviderSketch* vp = dynamic_cast<SketcherGui::ViewProviderSketch*>(doc->getInEdit());
+        if (vp)
+            return true;
+    }
+    return false;
+}
+
+DEF_STD_CMD_A(CmdSketcherReorientSketch)
 
 CmdSketcherReorientSketch::CmdSketcherReorientSketch()
     :Command("Sketcher_ReorientSketch")
@@ -400,8 +439,8 @@ void CmdSketcherReorientSketch::activated(int iMsg)
     }
 
     openCommand("Reorient Sketch");
-    FCMD_OBJ_CMD2("Placement = App.Placement(App.Vector(%f,%f,%f),App.Rotation(%f,%f,%f,%f))"
-                 ,sketch,p.x,p.y,p.z,r[0],r[1],r[2],r[3]);
+    Gui::cmdAppObjectArgs(sketch, "Placement = App.Placement(App.Vector(%f,%f,%f),App.Rotation(%f,%f,%f,%f))"
+                                , p.x,p.y,p.z,r[0],r[1],r[2],r[3]);
     doCommand(Gui,"Gui.ActiveDocument.setEdit('%s')",sketch->getNameInDocument());
 }
 
@@ -411,7 +450,7 @@ bool CmdSketcherReorientSketch::isActive(void)
         (Sketcher::SketchObject::getClassTypeId()) == 1;
 }
 
-DEF_STD_CMD_A(CmdSketcherMapSketch);
+DEF_STD_CMD_A(CmdSketcherMapSketch)
 
 CmdSketcherMapSketch::CmdSketcherMapSketch()
   : Command("Sketcher_MapSketch")
@@ -456,7 +495,7 @@ void CmdSketcherMapSketch::activated(int iMsg)
             items, 0, false, &ok);
         if (!ok) return;
         int index = items.indexOf(text);
-        Part2DObject &sketch = *(static_cast<Part2DObject*>(sketches[index]));
+        Part2DObject* sketch = static_cast<Part2DObject*>(sketches[index]);
 
 
         // check circular dependency
@@ -468,7 +507,7 @@ void CmdSketcherMapSketch::activated(int iMsg)
                 throw Base::ValueError("Unexpected null pointer in CmdSketcherMapSketch::activated");
             }
             std::vector<App::DocumentObject*> input = part->getOutList();
-            if (std::find(input.begin(), input.end(), &sketch) != input.end()) {
+            if (std::find(input.begin(), input.end(), sketch) != input.end()) {
                 throw ExceptionWrongInput(QT_TR_NOOP("Some of the selected objects depend on the sketch to be mapped. Circular dependencies are not allowed!"));
             }
         }
@@ -485,7 +524,7 @@ void CmdSketcherMapSketch::activated(int iMsg)
         bool bAttach = true;
         bool bCurIncompatible = false;
         // * find out the modes that are compatible with selection.
-        eMapMode curMapMode = eMapMode(sketch.MapMode.getValue());
+        eMapMode curMapMode = eMapMode(sketch->MapMode.getValue());
         // * Test if current mode is OK.
         if (std::find(validModes.begin(), validModes.end(), curMapMode) == validModes.end())
             bCurIncompatible = true;
@@ -547,13 +586,13 @@ void CmdSketcherMapSketch::activated(int iMsg)
             std::string supportString = support.getPyReprString();
 
             openCommand("Attach Sketch");
-            FCMD_OBJ_CMD2("MapMode = \"%s\"",&sketch,AttachEngine::getModeName(suggMapMode).c_str());
-            FCMD_OBJ_CMD2("Support = %s",&sketch,supportString.c_str());
+            Gui::cmdAppObjectArgs(sketch, "MapMode = \"%s\"",AttachEngine::getModeName(suggMapMode).c_str());
+            Gui::cmdAppObjectArgs(sketch, "Support = %s",supportString.c_str());
             commitCommand();
         } else {
             openCommand("Detach Sketch");
-            FCMD_OBJ_CMD2("MapMode = \"%s\"",&sketch,AttachEngine::getModeName(suggMapMode).c_str());
-            FCMD_OBJ_CMD2("Support = None",&sketch);
+            Gui::cmdAppObjectArgs(sketch, "MapMode = \"%s\"",AttachEngine::getModeName(suggMapMode).c_str());
+            Gui::cmdAppObjectArgs(sketch, "Support = None");
             commitCommand();
         }
     } catch (ExceptionWrongInput &e) {
@@ -569,7 +608,7 @@ bool CmdSketcherMapSketch::isActive(void)
     return getActiveGuiDocument() != 0;
 }
 
-DEF_STD_CMD_A(CmdSketcherViewSketch);
+DEF_STD_CMD_A(CmdSketcherViewSketch)
 
 CmdSketcherViewSketch::CmdSketcherViewSketch()
   : Command("Sketcher_ViewSketch")
@@ -607,7 +646,7 @@ bool CmdSketcherViewSketch::isActive(void)
     return false;
 }
 
-DEF_STD_CMD_A(CmdSketcherValidateSketch);
+DEF_STD_CMD_A(CmdSketcherValidateSketch)
 
 CmdSketcherValidateSketch::CmdSketcherValidateSketch()
   : Command("Sketcher_ValidateSketch")
@@ -641,7 +680,7 @@ bool CmdSketcherValidateSketch::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
-DEF_STD_CMD_A(CmdSketcherMirrorSketch);
+DEF_STD_CMD_A(CmdSketcherMirrorSketch)
 
 CmdSketcherMirrorSketch::CmdSketcherMirrorSketch()
 : Command("Sketcher_MirrorSketch")
@@ -723,8 +762,9 @@ void CmdSketcherMirrorSketch::activated(int iMsg)
         std::vector<Part::Geometry *> tempgeo = tempsketch->getInternalGeometry();
         std::vector<Sketcher::Constraint *> tempconstr = tempsketch->Constraints.getValues();
 
-        std::vector<Part::Geometry *> mirrorgeo (tempgeo.begin()+addedGeometries+1,tempgeo.end());
-        std::vector<Sketcher::Constraint *> mirrorconstr (tempconstr.begin()+addedConstraints+1,tempconstr.end());
+        // If value of addedGeometries or addedConstraints is -1, it gets added to vector begin iterator and that is invalid
+        std::vector<Part::Geometry *> mirrorgeo(tempgeo.begin() + (addedGeometries + 1), tempgeo.end());
+        std::vector<Sketcher::Constraint *> mirrorconstr(tempconstr.begin() + (addedConstraints + 1), tempconstr.end());
 
         for (std::vector<Sketcher::Constraint *>::const_iterator itc=mirrorconstr.begin(); itc != mirrorconstr.end(); ++itc) {
 
@@ -751,7 +791,7 @@ bool CmdSketcherMirrorSketch::isActive(void)
     return (hasActiveDocument() && !Gui::Control().activeDialog());
 }
 
-DEF_STD_CMD_A(CmdSketcherMergeSketches);
+DEF_STD_CMD_A(CmdSketcherMergeSketches)
 
 CmdSketcherMergeSketches::CmdSketcherMergeSketches()
 : Command("Sketcher_MergeSketches")
@@ -831,7 +871,7 @@ bool CmdSketcherMergeSketches::isActive(void)
 // Acknowledgement of idea and original python macro goes to SpritKopf:
 // https://github.com/Spritkopf/freecad-macros/blob/master/clip-sketch/clip_sketch.FCMacro
 // https://forum.freecadweb.org/viewtopic.php?p=231481#p231085
-DEF_STD_CMD_A(CmdSketcherViewSection);
+DEF_STD_CMD_A(CmdSketcherViewSection)
 
 CmdSketcherViewSection::CmdSketcherViewSection()
 : Command("Sketcher_ViewSection")
@@ -871,6 +911,7 @@ void CreateSketcherCommands(void)
     rcCmdMgr.addCommand(new CmdSketcherNewSketch());
     rcCmdMgr.addCommand(new CmdSketcherEditSketch());
     rcCmdMgr.addCommand(new CmdSketcherLeaveSketch());
+    rcCmdMgr.addCommand(new CmdSketcherStopOperation());
     rcCmdMgr.addCommand(new CmdSketcherReorientSketch());
     rcCmdMgr.addCommand(new CmdSketcherMapSketch());
     rcCmdMgr.addCommand(new CmdSketcherViewSketch());

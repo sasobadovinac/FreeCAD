@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2011 Juergen Riegel <FreeCAD@juergen-riegel.net>        *
+ *   Copyright (c) 2011 Jürgen Riegel <FreeCAD@juergen-riegel.net>         *
  *   Copyright (c) 2015 Alexander Golubev (Fat-Zer) <fatzer2@gmail.com>    *
  *   Copyright (c) 2016 Stefan Tröger <stefantroeger@gmx.net>              *
  *                                                                         *
@@ -96,6 +96,13 @@ std::vector<App::DocumentObject*> ViewProviderGeoFeatureGroupExtension::extensio
         }
     }
     return Result;
+}
+
+void ViewProviderGeoFeatureGroupExtension::extensionFinishRestoring()
+{
+    // setup GeoExlcuded flag for children
+    extensionClaimChildren();
+    ViewProviderGroupExtension::extensionFinishRestoring();
 }
 
 void ViewProviderGeoFeatureGroupExtension::extensionAttach(App::DocumentObject* pcObject)

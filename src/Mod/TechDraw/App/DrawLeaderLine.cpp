@@ -36,6 +36,7 @@
 
 #include <Mod/TechDraw/App/DrawLeaderLinePy.h>  // generated from DrawLeaderLinePy.xml
 #include "DrawLeaderLine.h"
+#include "ArrowPropEnum.h"
 
 using namespace TechDraw;
 
@@ -44,6 +45,28 @@ using namespace TechDraw;
 //===========================================================================
 
 PROPERTY_SOURCE(TechDraw::DrawLeaderLine, TechDraw::DrawView)
+
+//TODO: share this between DrawViewBalloon, DrawLeaderLine, QGIArrow, Prefs, etc
+//const char* DrawLeaderLine::ArrowTypeEnums[]= { 
+//                               "FILLED_ARROW",
+//                               "OPEN_ARROW",
+//                               "TICK",
+//                               "DOT",
+//                               "OPEN_CIRCLE",
+//                               "FORK",
+//                               "FILLED_TRIANGLE",
+//                               "NONE"
+//                               NULL};
+//const char* DrawLeaderLine::ArrowTypeEnums2[]= { 
+//                               "FILLED_ARROW",
+//                               "OPEN_ARROW",
+//                               "TICK",
+//                               "DOT",
+//                               "OPEN_CIRCLE",
+//                               "FORK",
+//                               "FILLED_TRIANGLE",
+//                               "NONE"
+//                               NULL};
 
 DrawLeaderLine::DrawLeaderLine(void)
 {
@@ -54,10 +77,21 @@ DrawLeaderLine::DrawLeaderLine(void)
     LeaderParent.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(WayPoints,(Base::Vector3d()) ,group, App::Prop_None,
                       "Intermediate points for Leader line");
-    ADD_PROPERTY_TYPE(StartSymbol, (-1), group, App::Prop_None, "Symbol (arrowhead) for start of line");
-    ADD_PROPERTY_TYPE(EndSymbol, (-1), group, App::Prop_None, "Symbol (arrowhead) for end of line");
+ 
+//    EndType.setEnums(ArrowTypeEnums);
+//    ADD_PROPERTY(EndType,(prefEnd()));
+
+    StartSymbol.setEnums(ArrowPropEnum::ArrowTypeEnums);
+    ADD_PROPERTY(StartSymbol,(0l));              //filled arrow
+
+//    ADD_PROPERTY_TYPE(StartSymbol, (0), group, App::Prop_None, "Symbol (arrowhead) for start of line");
+    EndSymbol.setEnums(ArrowPropEnum::ArrowTypeEnums);
+    ADD_PROPERTY(EndSymbol,(7l));                //no symbol
+//    ADD_PROPERTY_TYPE(EndSymbol, (0), group, App::Prop_None, "Symbol (arrowhead) for end of line");
+
+
     ADD_PROPERTY_TYPE(Scalable ,(false),group,App::Prop_None,"Scale line with LeaderParent");
-    ADD_PROPERTY_TYPE(AutoHorizontal ,(getDefAuto()),group,App::Prop_None,"Forces last line segment horizontal");
+    ADD_PROPERTY_TYPE(AutoHorizontal ,(getDefAuto()),group,App::Prop_None,"Forces last line segment to be horizontal");
 
     //hide the DrawView properties that don't apply to Leader
     ScaleType.setStatus(App::Property::ReadOnly,true);
@@ -68,8 +102,8 @@ DrawLeaderLine::DrawLeaderLine(void)
     Rotation.setStatus(App::Property::Hidden,true);
     Caption.setStatus(App::Property::Hidden,true);
 
-    //generally, lines/leaders are not meant to move around.
     LockPosition.setValue(true);
+    LockPosition.setStatus(App::Property::Hidden,true);
 }
 
 DrawLeaderLine::~DrawLeaderLine()
@@ -104,10 +138,11 @@ short DrawLeaderLine::mustExecute() const
 
 App::DocumentObjectExecReturn *DrawLeaderLine::execute(void)
 { 
-//    Base::Console().Message("DL::execute()\n");
+//    Base::Console().Message("DLL::execute()\n");
     if (!keepUpdated()) {
         return App::DocumentObject::StdReturn;
     }
+    adjustLastSegment();
     return DrawView::execute();
 }
 
@@ -144,6 +179,22 @@ bool DrawLeaderLine::keepUpdated(void)
     return result;
 }
 
+//need separate getParentScale()???
+
+double DrawLeaderLine::getBaseScale(void) const
+{
+//    Base::Console().Message("DLL::getBaseScale()\n");
+    double result = 1.0;
+    DrawView* parent = getBaseView();
+    if (parent != nullptr) {
+        result = parent->getScale();
+    } else {
+        //TARFU
+        Base::Console().Log("DrawLeaderLine - %s - scale not found.  Using 1.0. \n", getNameInDocument());
+    }
+    return result;
+}
+
 double DrawLeaderLine::getScale(void) const
 {
 //    Base::Console().Message("DLL::getScale()\n");
@@ -157,7 +208,6 @@ double DrawLeaderLine::getScale(void) const
             Base::Console().Log("DrawLeaderLine - %s - scale not found.  Using 1.0. \n", getNameInDocument());
         }
     }
-//    Base::Console().Message("DLL::getScale - returns: %.3f\n", result);
     return result;
 }
 

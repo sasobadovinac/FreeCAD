@@ -287,9 +287,9 @@ FillingPanel::~FillingPanel()
 }
 
 // stores object pointer, its old fill type and adjusts radio buttons according to it.
-void FillingPanel::setEditedObject(Surface::Filling* obj)
+void FillingPanel::setEditedObject(Surface::Filling* fea)
 {
-    editedObject = obj;
+    editedObject = fea;
 
     // get the link to the initial surface if set
     App::DocumentObject* initFace = editedObject->InitialFace.getValue();
@@ -621,7 +621,7 @@ void FillingPanel::onSelectionChanged(const Gui::SelectionChanges& msg)
             // extend faces and continuities lists if needed
             auto faces = editedObject->BoundaryFaces.getValues();
             if (count == faces.size()) {
-                faces.push_back(std::string());
+                faces.emplace_back();
                 editedObject->BoundaryFaces.setValues(faces);
             }
             auto conts = editedObject->BoundaryOrder.getValues();

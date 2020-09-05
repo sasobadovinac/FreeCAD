@@ -536,10 +536,20 @@ void Hole::updateDiameterParam()
 
     int threadType = ThreadType.getValue();
     int threadSize = ThreadSize.getValue();
-    if (threadType < 0)
+    if (threadType < 0) {
+        // When restoring the feature it might be in an inconsistent state.
+        // So, just silently ignore it instead of throwing an exception.
+        if (isRestoring())
+            return;
         throw Base::IndexError("Thread type out of range");
-    if (threadSize < 0)
+    }
+    if (threadSize < 0) {
+        // When restoring the feature it might be in an inconsistent state.
+        // So, just silently ignore it instead of throwing an exception.
+        if (isRestoring())
+            return;
         throw Base::IndexError("Thread size out of range");
+    }
     double diameter = threadDescription[threadType][threadSize].diameter;
     double pitch = threadDescription[threadType][threadSize].pitch;
 
@@ -954,10 +964,10 @@ App::DocumentObjectExecReturn *Hole::execute(void)
         base = getBaseShape();
     }
     catch (const Base::Exception&) {
-        std::string text(QT_TR_NOOP("The requested feature cannot be created. The reason may be that:\n\n"
-                                    "  \xe2\x80\xa2 the active Body does not contain a base shape, so there is no\n"
+        std::string text(QT_TR_NOOP("The requested feature cannot be created. The reason may be that:\n"
+                                    "  - the active Body does not contain a base shape, so there is no\n"
                                     "  material to be removed;\n"
-                                    "  \xe2\x80\xa2 the selected sketch does not belong to the active Body."));
+                                    "  - the selected sketch does not belong to the active Body."));
         return new App::DocumentObjectExecReturn(text);
     }
 
@@ -1019,7 +1029,7 @@ App::DocumentObjectExecReturn *Hole::execute(void)
         bool isCountersink = (holeCutType == "Countersink" || holeCutType == "Countersink socket screw");
         bool isCounterbore = (holeCutType == "Counterbore" || holeCutType == "Cheesehead" || holeCutType == "Cap screw");
         double hasTaperedAngle = Tapered.getValue() ? Base::toRadians( TaperedAngle.getValue() ) : Base::toRadians(90.0);
-        double radiusBottom = Diameter.getValue() / 2.0 - length * cos( hasTaperedAngle );
+        double radiusBottom = Diameter.getValue() / 2.0 - length * 1.0 / tan( hasTaperedAngle );
         double radius = Diameter.getValue() / 2.0;
         double holeCutRadius = HoleCutDiameter.getValue() / 2.0;
         gp_Pnt firstPoint(0, 0, 0);
@@ -1260,7 +1270,7 @@ App::DocumentObjectExecReturn *Hole::execute(void)
             base = getSolid(result);
             if (base.IsNull())
                 return new App::DocumentObjectExecReturn("Hole: Resulting shape is not a solid");
-
+            base = refineShapeIfActive(base);
             builder.Add(holes, transformer.Shape() );
         }
 

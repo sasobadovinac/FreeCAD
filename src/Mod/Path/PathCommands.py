@@ -35,6 +35,7 @@ from PathScripts.PathUtils import findParentJob
 if FreeCAD.GuiUp:
     import FreeCADGui
     from PySide import QtCore
+    from PySide import QtGui
 else:
     def translate(ctxt, txt):
         return txt
@@ -68,7 +69,8 @@ class _CommandSelectLoop:
             self.obj = sel.Object
             self.sub = sel.SubElementNames
             if sel.SubObjects:
-                self.active = self.formsPartOfALoop(sel.Object, sel.SubObjects[0], sel.SubElementNames)
+                #self.active = self.formsPartOfALoop(sel.Object, sel.SubObjects[0], sel.SubElementNames)
+                self.active = True
             else:
                 self.active = False
             return self.active
@@ -102,6 +104,10 @@ class _CommandSelectLoop:
                 for i in loopwire.Edges:
                     if e.hashCode() == i.hashCode():
                         FreeCADGui.Selection.addSelection(obj, "Edge" + str(elist.index(e) + 1))
+        elif FreeCAD.GuiUp:
+            QtGui.QMessageBox.information(None,
+                    QtCore.QT_TRANSLATE_NOOP('Path_SelectLoop', 'Feature Completion'),
+                    QtCore.QT_TRANSLATE_NOOP('Path_SelectLoop', 'Closed loop detection failed.'))
 
     def formsPartOfALoop(self, obj, sub, names):
         try: 
@@ -135,14 +141,19 @@ class _ToggleOperation:
         if bool(FreeCADGui.Selection.getSelection()) is False:
             return False
         try:
-            obj = FreeCADGui.Selection.getSelectionEx()[0].Object
-            return isinstance(obj.Proxy, PathScripts.PathOp.ObjectOp)
+            for sel in FreeCADGui.Selection.getSelectionEx():
+                if not isinstance(PathScripts.PathDressup.baseOp(sel.Object).Proxy, PathScripts.PathOp.ObjectOp):
+                    return False
+            return True
         except(IndexError, AttributeError):
             return False
 
     def Activated(self):
-        obj = FreeCADGui.Selection.getSelectionEx()[0].Object
-        obj.Active = not(obj.Active)
+        for sel in FreeCADGui.Selection.getSelectionEx():
+            op = PathScripts.PathDressup.baseOp(sel.Object)
+            op.Active = not op.Active
+            op.ViewObject.Visibility = op.Active
+
         FreeCAD.ActiveDocument.recompute()
 
 
@@ -162,15 +173,17 @@ class _CopyOperation:
         if bool(FreeCADGui.Selection.getSelection()) is False:
             return False
         try:
-            obj = FreeCADGui.Selection.getSelectionEx()[0].Object
-            return isinstance(obj.Proxy, PathScripts.PathOp.ObjectOp)
+            for sel in FreeCADGui.Selection.getSelectionEx():
+                if not isinstance(sel.Object.Proxy, PathScripts.PathOp.ObjectOp):
+                    return False
+            return True
         except(IndexError, AttributeError):
             return False
 
     def Activated(self):
-        obj = FreeCADGui.Selection.getSelectionEx()[0].Object
-        jobname = findParentJob(obj).Name
-        addToJob(FreeCAD.ActiveDocument.copyObject(obj, False), jobname)
+        for sel in FreeCADGui.Selection.getSelectionEx():
+            jobname = findParentJob(sel.Object).Name
+            addToJob(FreeCAD.ActiveDocument.copyObject(sel.Object, False), jobname)
 
 
 if FreeCAD.GuiUp:

@@ -28,6 +28,7 @@
 #include <QFileIconProvider>
 #include <QFileSystemModel>
 #include <QCompleter>
+#include <QPointer>
 
 class QButtonGroup;
 class QGridLayout;
@@ -105,7 +106,10 @@ protected Q_SLOTS:
     void toggleExtension();
 
 private:
+    QSize oldSize;
+    ExtensionPosition extensionPos;
     QPushButton* extensionButton;
+    QPointer<QWidget> extensionWidget;
 };
 
 // ----------------------------------------------------------------------
@@ -138,12 +142,15 @@ class GuiExport FileChooser : public QWidget
 
     Q_ENUMS( Mode )
     Q_PROPERTY( Mode mode READ mode WRITE setMode )
+    Q_ENUMS( AcceptMode )
+    Q_PROPERTY( AcceptMode acceptMode READ acceptMode WRITE setAcceptMode    )
     Q_PROPERTY( QString  fileName  READ fileName      WRITE setFileName      )
     Q_PROPERTY( QString  filter    READ filter        WRITE setFilter        )
     Q_PROPERTY( QString  buttonText  READ buttonText  WRITE setButtonText    )
 
 public:
     enum Mode { File, Directory };
+    enum AcceptMode { AcceptOpen, AcceptSave };
 
     FileChooser ( QWidget * parent = 0 );
     virtual ~FileChooser();
@@ -169,6 +176,19 @@ public:
     */
     QString buttonText() const;
 
+    /**
+     * Sets the accept mode.
+     */
+    void setAcceptMode(AcceptMode mode) {
+        accMode = mode;
+    }
+    /**
+     * Returns the accept mode.
+     */
+    AcceptMode acceptMode() const {
+        return accMode;
+    }
+
 public Q_SLOTS:
     virtual void setFileName( const QString &fn );
     virtual void setMode( Mode m );
@@ -192,6 +212,7 @@ private:
     QFileSystemModel *fs_model;
     QPushButton *button;
     Mode md;
+    AcceptMode accMode;
     QString _filter;
 };
 

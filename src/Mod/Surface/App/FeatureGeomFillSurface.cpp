@@ -116,7 +116,7 @@ void ShapeValidator::checkAndAdd(const Part::TopoShape &ts, const char *subName,
             checkAndAdd(ts.getShape(), aWD);
         }
     }
-    catch (Standard_Failure&) { // any OCC exception means an unappropriate shape in the selection
+    catch (Standard_Failure&) { // any OCC exception means an inappropriate shape in the selection
         Standard_Failure::Raise("Wrong shape type.\n");
     }
 }
@@ -197,7 +197,7 @@ GeomFill_FillingStyle GeomFillSurface::getFillingStyle()
         return static_cast<GeomFill_FillingStyle>(FillType.getValue());
     default:
         Standard_Failure::Raise("Filling style must be 0 (Stretch), 1 (Coons), or 2 (Curved).\n");
-        throw; // this is to shut up the compiler
+        return GeomFill_StretchStyle; // this is to shut up the compiler
     }
 }
 

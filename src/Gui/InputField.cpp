@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2013 Juergen Riegel                                     *
+ *   Copyright (c) 2013 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -34,6 +34,7 @@
 #include <Base/Tools.h>
 #include <App/Application.h>
 #include <App/PropertyUnits.h>
+#include <App/ExpressionParser.h>
 #include <App/DocumentObject.h>
 #include "ExpressionCompleter.h"
 #include "Command.h"
@@ -144,7 +145,7 @@ QPixmap InputField::getValidationIcon(const char* name, const QSize& size) const
         .arg(size.width())
         .arg(size.height());
     QPixmap icon;
-    if (QPixmapCache::find(key, icon))
+    if (QPixmapCache::find(key, &icon))
         return icon;
 
     icon = BitmapFactory().pixmapFromSvg(name, size);

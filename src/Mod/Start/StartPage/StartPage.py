@@ -299,9 +299,37 @@ def handle():
     if FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Start").GetBool("UseStyleSheet",False):
         qssfile = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/MainWindow").GetString("StyleSheet","")
         if qssfile:
-            with open(qssfile, 'r') as f:
-                ALTCSS = encode(f.read())
-            HTML = HTML.replace("<!--QSS-->","<style type=\"text/css\">"+ALTCSS+"</style>")
+            # Search for stylesheet in user, system and resources locations
+            user = os.path.join(FreeCAD.getUserAppDataDir(), "Gui", "Stylesheets")
+            system = os.path.join(FreeCAD.getResourceDir(), "Gui", "Stylesheets")
+            resources = ":/stylesheets"
+
+            res = False
+            if QtCore.QFile.exists(os.path.join(user, qssfile)):
+                path = os.path.join(user, qssfile)
+            elif QtCore.QFile.exists(os.path.join(system, qssfile)):
+                path = os.path.join(system, qssfile)
+            elif QtCore.QFile.exists(os.path.join(resources, qssfile)):
+                res = True
+                path = os.path.join(resources, qssfile)
+            else:
+                path = None
+
+            if path:
+                if res:
+                    f = QtCore.QFile(path)
+                    if f.open(QtCore.QIODevice.ReadOnly | QtCore.QFile.Text):
+                        ALTCSS = encode(QtCore.QTextStream(f).readAll())
+                        HTML = HTML.replace("<!--QSS-->","<style type=\"text/css\">"+ALTCSS+"</style>")
+                else:
+                    with open(path, 'r') as f:
+                        ALTCSS = encode(f.read())
+                        HTML = HTML.replace("<!--QSS-->","<style type=\"text/css\">"+ALTCSS+"</style>")
+
+    # turn tips off if needed
+
+    if not FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Start").GetBool("ShowTips",True):
+        HTML = HTML.replace("display: block; /* footnote tips display */","display: none; /* footnote tips display */")
 
     # get FreeCAD version
 
@@ -394,6 +422,7 @@ def handle():
     HTML = HTML.replace("IMAGE_SRC_POWERHUB",'file:///'+os.path.join(resources_dir, 'images/poweruserhub.png'))
     HTML = HTML.replace("IMAGE_SRC_DEVHUB",'file:///'+os.path.join(resources_dir, 'images/developerhub.png'))
     HTML = HTML.replace("IMAGE_SRC_MANUAL",'file:///'+os.path.join(resources_dir, 'images/manual.png'))
+    HTML = HTML.replace("IMAGE_SRC_SETTINGS",'file:///'+os.path.join(resources_dir, 'images/settings.png'))
     imagepath= 'file:///'+os.path.join(resources_dir, 'images/installed.png')
     imagepath = imagepath.replace('\\','/')  # replace Windows backslash with slash to make the path javascript compatible
     HTML = HTML.replace("IMAGE_SRC_INSTALLED",imagepath)
@@ -567,6 +596,8 @@ def postStart():
 
     # switch workbench
     wb = param.GetString("AutoloadModule","")
+    if "$LastModule" == wb:
+        wb = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/General").GetString("LastModule","")
     if wb:
         # don't switch workbenches if we are not in Start anymore
         if FreeCADGui.activeWorkbench() and (FreeCADGui.activeWorkbench().name() == "StartWorkbench"):

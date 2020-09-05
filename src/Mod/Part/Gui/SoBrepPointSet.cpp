@@ -64,7 +64,7 @@
 
 using namespace PartGui;
 
-SO_NODE_SOURCE(SoBrepPointSet);
+SO_NODE_SOURCE(SoBrepPointSet)
 
 void SoBrepPointSet::initClass()
 {
@@ -72,8 +72,9 @@ void SoBrepPointSet::initClass()
 }
 
 SoBrepPointSet::SoBrepPointSet()
-    :selContext(std::make_shared<SelContext>())
-    ,selContext2(std::make_shared<SelContext>())
+    : selContext(std::make_shared<SelContext>())
+    , selContext2(std::make_shared<SelContext>())
+    , packedColor(0)
 {
     SO_NODE_CONSTRUCTOR(SoBrepPointSet);
 }
@@ -152,6 +153,33 @@ void SoBrepPointSet::GLRender(SoGLRenderAction *action)
 void SoBrepPointSet::GLRenderBelowPath(SoGLRenderAction * action)
 {
     inherited::GLRenderBelowPath(action);
+}
+
+void SoBrepPointSet::getBoundingBox(SoGetBoundingBoxAction * action) {
+
+    SelContextPtr ctx2 = Gui::SoFCSelectionRoot::getSecondaryActionContext<SelContext>(action,this);
+    if(!ctx2 || ctx2->isSelectAll()) {
+        inherited::getBoundingBox(action);
+        return;
+    }
+
+    if(ctx2->selectionIndex.empty())
+        return;
+
+    auto state = action->getState();
+    auto coords = SoCoordinateElement::getInstance(state);
+    const SbVec3f *coords3d = coords->getArrayPtr3();
+    int numverts = coords->getNum();
+    int startIndex = this->startIndex.getValue();
+
+    SbBox3f bbox;
+    for(auto idx : ctx2->selectionIndex) {
+        if(idx >= startIndex && idx < numverts)
+            bbox.extendBy(coords3d[idx]);
+    }
+
+    if(!bbox.isEmpty())
+        action->extendBy(bbox);
 }
 
 void SoBrepPointSet::renderHighlight(SoGLRenderAction *action, SelContextPtr ctx)

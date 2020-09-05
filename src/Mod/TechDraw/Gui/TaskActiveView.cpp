@@ -68,15 +68,21 @@ using namespace TechDrawGui;
 TaskActiveView::TaskActiveView(TechDraw::DrawPage* pageFeat) :
     ui(new Ui_TaskActiveView),
     m_pageFeat(pageFeat),
-    m_symbolFeat(nullptr)
+    m_symbolFeat(nullptr),
+    m_btnOK(nullptr),
+    m_btnCancel(nullptr)
 {
 //    Base::Console().Message("TAV::TAV() - create mode\n");
     if  (m_pageFeat == nullptr)  {
         //should be caught in CMD caller
-        Base::Console().Error("TaskActiveView - bad parameters.  Can not proceed.\n");
+        Base::Console().Error("TaskActiveView - bad parameters. Can not proceed.\n");
         return;
     }
     ui->setupUi(this);
+
+    ui->qsbWidth->setUnit(Base::Unit::Length);
+    ui->qsbHeight->setUnit(Base::Unit::Length);
+    ui->qsbBorder->setUnit(Base::Unit::Length);
 
     setUiPrimary();
 }
@@ -116,7 +122,7 @@ TechDraw::DrawViewSymbol* TaskActiveView::createActiveView(void)
 {
 //    Base::Console().Message("TAV::createActiveView()\n");
 
-    std::string symbolName = m_pageFeat->getDocument()->getUniqueObjectName("DrawActiveView");
+    std::string symbolName = m_pageFeat->getDocument()->getUniqueObjectName("ActiveView");
     std::string symbolType = "TechDraw::DrawViewSymbol";
 
     std::string pageName = m_pageFeat->getNameInDocument();
@@ -135,6 +141,7 @@ TechDraw::DrawViewSymbol* TaskActiveView::createActiveView(void)
     tempFile.close();
 
     std::string fileSpec = Base::Tools::toStdString(tempFile.fileName());
+    fileSpec = Base::Tools::escapeEncodeFilename(fileSpec);
 
     //double estScale = 
     Grabber3d::copyActiveViewToSvgFile(appDoc, fileSpec,
@@ -213,7 +220,7 @@ TaskDlgActiveView::TaskDlgActiveView(TechDraw::DrawPage* page)
     : TaskDialog()
 {
     widget  = new TaskActiveView(page);
-    taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/techdraw-activeview"),
+    taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/techdraw-ActiveView"),
                                              widget->windowTitle(), true, 0);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);

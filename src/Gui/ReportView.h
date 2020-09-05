@@ -120,11 +120,11 @@ private:
 };
 
 /** Output window to show messages.
- * @see Base::ConsoleObserver
+ * @see Base::ILogger
  * @see QTextEdit
  * \author Werner Mayer
  */
-class GuiExport ReportOutput : public QTextEdit, public WindowParameter, public Base::ConsoleObserver
+class GuiExport ReportOutput : public QTextEdit, public WindowParameter, public Base::ILogger
 {
     Q_OBJECT
 
@@ -133,19 +133,12 @@ public:
     virtual ~ReportOutput();
 
     /** Observes its parameter group. */
-    void OnChange(Base::Subject<const char*> &rCaller, const char * sReason);
+    void OnChange(Base::Subject<const char*> &rCaller, const char * sReason) override;
 
-    /** Writes warnings */
-    void Warning(const char * s);
-    /** Writes normal text */
-    void Message(const char * s);
-    /** Writes errors */
-    void Error  (const char * s);
-    /** Does not do anything */
-    void Log (const char * s);
+    void SendLog(const std::string& msg, Base::LogStyle level) override;
 
     /// returns the name for observer handling
-    const char* Name(void){return "ReportOutput";}
+    const char* Name(void) override {return "ReportOutput";}
 
     /** Restore the default font settings. */
     void restoreFont ();
@@ -155,15 +148,17 @@ public:
     /** Returns true whether warnings are reported. */ 
     bool isWarning() const;
     /** Returns true whether log messages are reported. */ 
-    bool isLogging() const;
+    bool isLogMessage() const;
+    /** Returns true whether normal messages are reported. */
+    bool isNormalMessage() const;
 
 protected:
     /** For internal use only */
-    void customEvent ( QEvent* ev );
+    void customEvent ( QEvent* ev ) override;
     /** Handles the change of style sheets */
-    void changeEvent(QEvent *);
+    void changeEvent(QEvent *) override;
     /** Pops up the context menu with some extensions */
-    void contextMenuEvent ( QContextMenuEvent* e );
+    void contextMenuEvent ( QContextMenuEvent* e ) override;
 
 public Q_SLOTS:
     /** Save the report messages into a file. */
@@ -173,9 +168,17 @@ public Q_SLOTS:
     /** Toggles the report of warnings. */
     void onToggleWarning();
     /** Toggles the report of log messages. */
-    void onToggleLogging();
-    /** Toggles whether to show report view on warnings or errors */
-    void onToggleShowReportViewOnWarningOrError();
+    void onToggleLogMessage();
+    /** Toggles the report of normal messages. */
+    void onToggleNormalMessage();
+    /** Toggles whether to show report view on warnings*/
+    void onToggleShowReportViewOnWarning();
+    /** Toggles whether to show report view on errors*/
+    void onToggleShowReportViewOnError();
+    /** Toggles whether to show report view on normal messages*/
+    void onToggleShowReportViewOnNormalMessage();
+    /** Toggles whether to show report view on log messages*/
+    void onToggleShowReportViewOnLogMessage();
     /** Toggles the redirection of Python stdout. */
     void onToggleRedirectPythonStdout();
     /** Toggles the redirection of Python stderr. */
@@ -187,6 +190,7 @@ private:
     class Data;
     Data* d;
     bool gotoEnd;
+    bool blockStart;
     ReportHighlighter* reportHl; /**< Syntax highlighter */
     int messageSize;
     ParameterGrp::handle _prefs; 
@@ -207,6 +211,7 @@ public:
 
 protected:
     QPointer <ReportOutput> reportView;
+    void showReportView(void);
 };
 
 } // namespace DockWnd

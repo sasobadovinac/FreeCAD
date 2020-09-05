@@ -22,8 +22,6 @@
 # *                                                                         *
 # ***************************************************************************
 
-import Draft
-import DraftVecUtils
 import FreeCAD
 import FreeCADGui
 import PathScripts.PathJob as PathJob
@@ -41,6 +39,12 @@ import PathScripts.PathUtil as PathUtil
 import PathScripts.PathUtils as PathUtils
 import math
 import traceback
+
+# lazily loaded modules
+from lazy_loader.lazy_loader import LazyLoader
+Draft = LazyLoader('Draft', globals(), 'Draft')
+Part = LazyLoader('Part', globals(), 'Part')
+DraftVecUtils = LazyLoader('DraftVecUtils', globals(), 'DraftVecUtils')
 
 from PySide import QtCore, QtGui
 from collections import Counter
@@ -401,6 +405,8 @@ class StockFromBaseBoundBoxEdit(StockEdit):
         self.form.stockExtXpos.textChanged.connect(self.checkXpos)
         self.form.stockExtYpos.textChanged.connect(self.checkYpos)
         self.form.stockExtZpos.textChanged.connect(self.checkZpos)
+        if hasattr(self.form, 'linkStockAndModel'):
+            self.form.linkStockAndModel.setChecked(True)
 
     def checkXpos(self):
         self.trackXpos = self.form.stockExtXneg.text() == self.form.stockExtXpos.text()
@@ -527,12 +533,16 @@ class StockFromExistingEdit(StockEdit):
 
     def candidates(self, obj):
         solids = [o for o in obj.Document.Objects if PathUtil.isSolid(o)]
-        for base in obj.Model.Group:
-            if base in solids and PathJob.isResourceClone(obj, base, 'Model'):
+        if hasattr(obj, 'Model'): 
+            job = obj
+        else:
+            job = PathUtils.findParentJob(obj)
+        for base in job.Model.Group:
+            if base in solids and PathJob.isResourceClone(job, base, 'Model'):
                 solids.remove(base)
-        if obj.Stock in solids:
+        if job.Stock in solids:
             # regardless, what stock is/was, it's not a valid choice
-            solids.remove(obj.Stock)
+            solids.remove(job.Stock)
         return sorted(solids, key=lambda c: c.Label)
 
     def setFields(self, obj):
@@ -963,15 +973,25 @@ class TaskPanel:
     def modelSet0(self, axis):
         with selectionEx() as selection:
             for sel in selection:
-                model = sel.Object
+                selObject = sel.Object
                 for name in sel.SubElementNames:
-                    feature = model.Shape.getElement(name)
+                    feature = selObject.Shape.getElement(name)
                     bb = feature.BoundBox
                     offset = FreeCAD.Vector(axis.x * bb.XMax, axis.y * bb.YMax, axis.z * bb.ZMax)
                     PathLog.track(feature.BoundBox.ZMax, offset)
-                    p = model.Placement
+                    p = selObject.Placement
                     p.move(offset)
-                    model.Placement = p
+                    selObject.Placement = p
+
+                    if self.form.linkStockAndModel.isChecked():
+                        # Also move the objects not selected
+                        # if selection is not model, move the model too
+                        # if the selection is not stock and there is a stock, move the stock too
+                        for model in self.obj.Model.Group:
+                            if model != selObject: 
+                                Draft.move(model, offset)
+                            if selObject != self.obj.Stock and self.obj.Stock: 
+                                Draft.move(self.obj.Stock, offset)
 
     def modelMove(self, axis):
         scale = self.form.modelMoveValue.value()
@@ -1016,7 +1036,14 @@ class TaskPanel:
                 sub = sel.Object.Shape.getElement(feature)
                 if 'Vertex' == sub.ShapeType:
                     p = FreeCAD.Vector() - sub.Point
+                if 'Edge' == sub.ShapeType:
+                    p = FreeCAD.Vector() - sub.Curve.Location
+                if 'Face' == sub.ShapeType:
+                    p = FreeCAD.Vector() - sub.BoundBox.Center
+                    
+                if p:
                     Draft.move(sel.Object, p)
+                
         if selObject and selFeature:
             FreeCADGui.Selection.clearSelection()
             FreeCADGui.Selection.addSelection(selObject, selFeature)
@@ -1098,6 +1125,15 @@ class TaskPanel:
             by.z = 0
             Draft.move(sel.Object, by)
 
+    def isValidDatumSelection(self, sel):
+        if sel.ShapeType in ['Vertex', 'Edge', 'Face']:
+            if hasattr(sel, 'Curve') and type(sel.Curve) not in [Part.Circle]:
+                return False
+            return True
+
+        # no valid selection
+        return False
+
     def updateSelection(self):
         # Remove Job object if present in Selection: source of phantom paths
         if self.obj in FreeCADGui.Selection.getSelection():
@@ -1106,7 +1142,8 @@ class TaskPanel:
         sel = FreeCADGui.Selection.getSelectionEx()
 
         if len(sel) == 1 and len(sel[0].SubObjects) == 1:
-            if 'Vertex' == sel[0].SubObjects[0].ShapeType:
+            subObj = sel[0].SubObjects[0]
+            if self.isValidDatumSelection(subObj):
                 self.form.modelSetXAxis.setEnabled(False)
                 self.form.modelSetYAxis.setEnabled(False)
                 self.form.modelSetZAxis.setEnabled(False)

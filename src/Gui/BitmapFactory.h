@@ -77,13 +77,19 @@ public:
     QPixmap pixmap(const char* name) const;
     /** Retrieves a pixmap by name and size created by an
      * scalable vector graphics (SVG).
+     * 
+     * @param colorMapping - a dictionary of substitute colors.
+     * Can be used to customize icon color scheme, e.g. crosshair color
      */
-    QPixmap pixmapFromSvg(const char* name, const QSize& size) const;
+    QPixmap pixmapFromSvg(const char* name, const QSizeF& size,
+                          const std::map<unsigned long, unsigned long>& colorMapping = std::map<unsigned long, unsigned long>()) const;
     /** This method is provided for convenience and does the same
      * as the method above except that it creates the pixmap from
      * a byte array.
+     * @param colorMapping - see above.
      */
-    QPixmap pixmapFromSvg(const QByteArray& contents, const QSize& size) const;
+    QPixmap pixmapFromSvg(const QByteArray& contents, const QSizeF& size,
+                          const std::map<unsigned long, unsigned long>& colorMapping = std::map<unsigned long, unsigned long>()) const;
     /** Returns the names of all registered pixmaps.
     * To get the appropriate pixmaps call pixmap() for each name.
     */
@@ -112,7 +118,7 @@ public:
      */
     QPixmap merge(const QPixmap& p1, const QPixmap& p2, bool vertical) const;
     /** Merges the two pixmaps  \a p1 and \a p2 to one pixmap.
-     * The position of the smaller pimxap \a p2 is drawn into the given
+     * The position of the smaller pixmap \a p2 is drawn into the given
      * position \a pos of the bigger pixmap \a p1. This method does not
      * resize the resulting pixmap.
      */

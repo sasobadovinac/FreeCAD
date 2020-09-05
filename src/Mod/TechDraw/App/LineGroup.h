@@ -25,9 +25,6 @@
 #ifndef _TechDraw_LINEGROUP_H_
 #define _TechDraw_LINEGROUP_H_
 
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include <string>
 
 namespace TechDraw
@@ -42,7 +39,7 @@ public:
     double getWeight(std::string s);
     void setWeight(std::string s, double weight);
 //    void setWeight(const char* s, double weight);
-    void dump(char* title);
+    void dump(const char* title);
     std::string getName(void) { return m_name; }
     void setName(std::string s) { m_name = s; }
 
@@ -54,6 +51,10 @@ public:
 
     //static LineGroup maker
     static LineGroup* lineGroupFactory(std::string groupName);
+
+    static double getDefaultWidth(std::string weightName, 
+                                  std::string groupName = std::string());
+
 
 protected:
     void init(void);

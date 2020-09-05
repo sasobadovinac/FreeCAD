@@ -53,6 +53,7 @@ DlgProjectInformationImp::DlgProjectInformationImp(App::Document* doc, QWidget* 
     ui->lineEditName->setText(QString::fromUtf8(doc->Label.getValue()));
     ui->lineEditPath->setText(QString::fromUtf8(doc->FileName.getValue()));
     ui->lineEditUuid->setText(QString::fromUtf8(doc->Uid.getValueStr().c_str()));
+    ui->lineEditProgramVersion->setText(QString::fromUtf8(doc->getProgramVersion()));
     ui->lineEditCreator->setText(QString::fromUtf8(doc->CreatedBy.getValue()));
     ui->lineEditDate->setText(QString::fromUtf8(doc->CreationDate.getValue()));
     ui->lineEditLastMod->setText(QString::fromUtf8(doc->LastModifiedBy.getValue()));
@@ -61,12 +62,12 @@ DlgProjectInformationImp::DlgProjectInformationImp(App::Document* doc, QWidget* 
 
     QList<QByteArray> rawLicenses; rawLicenses
         << "All rights reserved"
-        << "CreativeCommons Attribution"
-        << "CreativeCommons Attribution-ShareAlike"
-        << "CreativeCommons Attribution-NoDerivatives"
-        << "CreativeCommons Attribution-NonCommercial"
-        << "CreativeCommons Attribution-NonCommercial-ShareAlike"
-        << "CreativeCommons Attribution-NonCommercial-NoDerivatives"
+        << "Creative Commons Attribution"
+        << "Creative Commons Attribution-ShareAlike"
+        << "Creative Commons Attribution-NoDerivatives"
+        << "Creative Commons Attribution-NonCommercial"
+        << "Creative Commons Attribution-NonCommercial-ShareAlike"
+        << "Creative Commons Attribution-NonCommercial-NoDerivatives"
         << "Public Domain"
         << "FreeArt"
         << "Other";

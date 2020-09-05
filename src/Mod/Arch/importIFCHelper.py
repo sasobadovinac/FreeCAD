@@ -1,7 +1,5 @@
 # ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2019                                                    *
-# *   Yorik van Havre <yorik@uncreated.net>                                 *
+# *   Copyright (c) 2019 Yorik van Havre <yorik@uncreated.net>              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -20,7 +18,7 @@
 # *   USA                                                                   *
 # *                                                                         *
 # ***************************************************************************
-
+"""Helper functions that are used by IFC importer and exporters."""
 import six
 import sys
 import math
@@ -29,46 +27,48 @@ import FreeCAD
 import Arch
 import ArchIFC
 
+from draftutils.messages import _wrn
 
-# ************************************************************************************************
-# ********** some helper, used in import and export, or should stay together
-def decode(filename,utf=False):
 
-    "turns unicodes into strings"
-
-    if six.PY2 and isinstance(filename,six.text_type):
-        # workaround since ifcopenshell currently can't handle unicode filenames
+def decode(filename, utf=False):
+    """Turn unicode into strings, only for Python 2."""
+    if six.PY2 and isinstance(filename, six.text_type):
+        # This is a workaround since ifcopenshell 0.6 currently
+        # can't handle unicode filenames
         encoding = "utf8" if utf else sys.getfilesystemencoding()
         filename = filename.encode(encoding)
     return filename
 
 
-# used in export
 def dd2dms(dd):
+    """Convert decimal degrees to degrees, minutes, seconds.
 
-    "converts decimal degrees to degrees,minutes,seconds"
-
+    Used in export.
+    """
+    sign = 1 if dd >= 0 else -1
     dd = abs(dd)
-    minutes,seconds = divmod(dd*3600,60)
-    degrees,minutes = divmod(minutes,60)
+    minutes, seconds = divmod(dd * 3600, 60)
+    degrees, minutes = divmod(minutes, 60)
+
     if dd < 0:
         degrees = -degrees
-    return (int(degrees),int(minutes),int(seconds))
+
+    return (int(degrees) * sign,
+            int(minutes) * sign,
+            int(seconds) * sign)
 
 
-# used in import
 def dms2dd(degrees, minutes, seconds, milliseconds=0):
+    """Convert degrees, minutes, seconds to decimal degrees.
 
-    "converts degrees,minutes,seconds to decimal degrees"
-
-    dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600)
+    Used in import.
+    """
+    dd = float(degrees) + float(minutes)/60 + float(seconds)/3600
     return dd
 
 
-# ************************************************************************************************
-# ********** some helper, mainly used in import
 class ProjectImporter:
-    """A helper class to create a FreeCAD Arch Project object"""
+    """A helper class to create an Arch Project object."""
 
     def __init__(self, file, objects):
         self.file = file
@@ -82,9 +82,9 @@ class ProjectImporter:
         self.setComplexAttributes()
 
     def setAttributes(self):
-        for property in self.object.PropertiesList:
-            if hasattr(self.project, property) and getattr(self.project, property):
-                setattr(self.object, property, getattr(self.project, property))
+        for prop in self.object.PropertiesList:
+            if hasattr(self.project, prop) and getattr(self.project, prop):
+                setattr(self.object, prop, getattr(self.project, prop))
 
     def setComplexAttributes(self):
         try:
@@ -92,10 +92,15 @@ class ProjectImporter:
 
             data = self.extractTargetCRSData(mapConversion.TargetCRS)
             data.update(self.extractMapConversionData(mapConversion))
+            # TODO: review and refactor this piece of code.
+            # Calling a method from a class is a bit strange;
+            # this class should be derived from that class to inherit
+            # this method; otherwise a simple function (not tied to a class)
+            # should be used.
             ArchIFC.IfcRoot.setObjIfcComplexAttributeValue(self, self.object, "RepresentationContexts", data)
         except:
-            # This scenario occurs validly in IFC2X3, as the mapConversion does
-            # not exist
+            # This scenario occurs validly in IFC2X3,
+            # as the mapConversion does not exist
             return
 
     def extractTargetCRSData(self, targetCRS):
@@ -131,86 +136,75 @@ class ProjectImporter:
         for attributeName, ifcName in mappings.items():
             data[attributeName] = str(getattr(mapConversion, ifcName))
 
-        data["true_north"] = str(self.calculateTrueNorthAngle(
-            mapConversion.XAxisAbscissa, mapConversion.XAxisOrdinate))
+        data["true_north"] = str(self.calculateTrueNorthAngle(mapConversion.XAxisAbscissa,
+                                                              mapConversion.XAxisOrdinate))
         return data
 
     def calculateTrueNorthAngle(self, x, y):
         return round(math.degrees(math.atan2(y, x)) - 90, 6)
 
 
-# type tables
-def buildRelProductsAnnotations(ifcfile, root_element):
-    """build the products and annotations relation table and"""
-
-    # products
+def buildRelProductsAnnotations(ifcfile, root_element='IfcProduct'):
+    """Build the products and annotations relation table."""
     products = ifcfile.by_type(root_element)
 
-    # annotations
     annotations = ifcfile.by_type("IfcAnnotation")
     tp = []
     for product in products:
-        if product.is_a("IfcGrid") and not (product in annotations):
+        if product.is_a("IfcGrid") and (product not in annotations):
             annotations.append(product)
-        elif not (product in annotations):
+        elif product not in annotations:
             tp.append(product)
 
     # remove any leftover annotations from products
-    products = sorted(tp,key=lambda prod: prod.id())
+    products = sorted(tp, key=lambda prod: prod.id())
 
     return products, annotations
 
 
-# relation tables
 def buildRelProductRepresentation(ifcfile):
-    """build the product/representations relation table"""
-
+    """Build the product/representations relation table."""
     prodrepr = {}  # product/representations table
 
     for p in ifcfile.by_type("IfcProduct"):
-        if hasattr(p,"Representation"):
-            if p.Representation:
-                for it in p.Representation.Representations:
-                    for it1 in it.Items:
-                        prodrepr.setdefault(p.id(),[]).append(it1.id())
-                        if it1.is_a("IfcBooleanResult"):
-                            prodrepr.setdefault(p.id(),[]).append(it1.FirstOperand.id())
-                        elif it.Items[0].is_a("IfcMappedItem"):
-                            prodrepr.setdefault(p.id(),[]).append(it1.MappingSource.MappedRepresentation.id())
-                            if it1.MappingSource.MappedRepresentation.is_a("IfcShapeRepresentation"):
-                                for it2 in it1.MappingSource.MappedRepresentation.Items:
-                                    prodrepr.setdefault(p.id(),[]).append(it2.id())
-
+        if hasattr(p, "Representation") and p.Representation:
+            for it in p.Representation.Representations:
+                for it1 in it.Items:
+                    prodrepr.setdefault(p.id(), []).append(it1.id())
+                    if it1.is_a("IfcBooleanResult"):
+                        prodrepr.setdefault(p.id(), []).append(it1.FirstOperand.id())
+                    elif it.Items[0].is_a("IfcMappedItem"):
+                        prodrepr.setdefault(p.id(), []).append(it1.MappingSource.MappedRepresentation.id())
+                        if it1.MappingSource.MappedRepresentation.is_a("IfcShapeRepresentation"):
+                            for it2 in it1.MappingSource.MappedRepresentation.Items:
+                                prodrepr.setdefault(p.id(), []).append(it2.id())
     return prodrepr
 
 
 def buildRelAdditions(ifcfile):
-    """build the additions relation table"""
-
+    """Build the additions relation table."""
     additions = {}  # { host:[child,...], ... }
 
     for r in ifcfile.by_type("IfcRelContainedInSpatialStructure"):
-        additions.setdefault(r.RelatingStructure.id(),[]).extend([e.id() for e in r.RelatedElements])
+        additions.setdefault(r.RelatingStructure.id(), []).extend([e.id() for e in r.RelatedElements])
     for r in ifcfile.by_type("IfcRelAggregates"):
-        additions.setdefault(r.RelatingObject.id(),[]).extend([e.id() for e in r.RelatedObjects])
+        additions.setdefault(r.RelatingObject.id(), []).extend([e.id() for e in r.RelatedObjects])
 
     return additions
 
 
 def buildRelGroups(ifcfile):
-    """build the groups relation table"""
-
+    """Build the groups relation table."""
     groups = {}  # { host:[child,...], ... }     # used in structural IFC
 
     for r in ifcfile.by_type("IfcRelAssignsToGroup"):
-        groups.setdefault(r.RelatingGroup.id(),[]).extend([e.id() for e in r.RelatedObjects])
+        groups.setdefault(r.RelatingGroup.id(), []).extend([e.id() for e in r.RelatedObjects])
 
     return groups
 
 
 def buildRelSubtractions(ifcfile):
-    """build the subtractions relation table"""
-
+    """Build the subtractions relation table."""
     subtractions = []  # [ [opening,host], ... ]
 
     for r in ifcfile.by_type("IfcRelVoidsElement"):
@@ -220,8 +214,7 @@ def buildRelSubtractions(ifcfile):
 
 
 def buildRelMattable(ifcfile):
-    """build the mattable relation table"""
-
+    """Build the mattable relation table."""
     mattable = {}  # { objid:matid }
 
     for r in ifcfile.by_type("IfcRelAssociatesMaterial"):
@@ -341,14 +334,28 @@ def buildRelMaterialColors(ifcfile, prodrepr):
     pass
 
 
+def getColorFromMaterial(material):
+
+    if material.HasRepresentation:
+        rep = material.HasRepresentation[0]
+        if hasattr(rep,"Representations") and rep.Representations:
+            rep = rep.Representations[0]
+            if rep.is_a("IfcStyledRepresentation"):
+                return getColorFromStyledItem(rep)
+    return None
+
+
 def getColorFromStyledItem(styled_item):
 
     # styled_item should be a IfcStyledItem
+    if styled_item.is_a("IfcStyledRepresentation"):
+        styled_item = styled_item.Items[0]
+    
     if not styled_item.is_a("IfcStyledItem"):
-        print("Not a IfcStyledItem passed.")
         return None
 
     rgb_color = None
+    transparency = None
 
     # print(styled_item)
     # The IfcStyledItem holds presentation style information for products,
@@ -372,7 +379,11 @@ def getColorFromStyledItem(styled_item):
             # never seen an ifc with more than one Styles in IfcStyledItem
     else:
         # get the IfcPresentationStyleAssignment, there should only be one, see above
-        assign_style = styled_item.Styles[0]
+        if styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
+            assign_style = styled_item.Styles[0]
+        else:
+            # IfcPresentationStyleAssignment is deprecated in IFC4.
+            assign_style = styled_item
         # print(assign_style)  # IfcPresentationStyleAssignment
 
         # IfcPresentationStyleAssignment can hold various kinde and count of styles
@@ -382,6 +393,10 @@ def getColorFromStyledItem(styled_item):
             # print(assign_style.Styles[0].Styles[0])  # IfcSurfaceStyleRendering
             rgb_color = assign_style.Styles[0].Styles[0].SurfaceColour  # IfcColourRgb
             # print(rgb_color)
+            if assign_style.Styles[0].Styles[0].is_a('IfcSurfaceStyleShading') \
+                    and hasattr(assign_style.Styles[0].Styles[0], 'Transparency') \
+                    and assign_style.Styles[0].Styles[0].Transparency:
+                transparency = assign_style.Styles[0].Styles[0].Transparency * 100
         elif assign_style.Styles[0].is_a("IfcCurveStyle"):
             if (
                 len(assign_style.Styles) == 2
@@ -400,7 +415,9 @@ def getColorFromStyledItem(styled_item):
                 rgb_color = assign_style.Styles[0].CurveColour
 
     if rgb_color is not None:
-        col = rgb_color.Red, rgb_color.Green, rgb_color.Blue
+        col = [rgb_color.Red, rgb_color.Green, rgb_color.Blue]
+        col.append(int(transparency) if transparency else 0)
+        col = tuple(col)
         # print(col)
     else:
         col = None
@@ -433,7 +450,7 @@ def buildRelProperties(ifcfile):
 
 
 def getIfcPropertySets(ifcfile, pid):
-    """Returns a dicionary of {pset_id:[prop_id, prop_id...]} for an IFC object"""
+    """Returns a dictionary of {pset_id:[prop_id, prop_id...]} for an IFC object"""
 
     # get psets for this pid
     psets = {}
@@ -478,29 +495,42 @@ def getIfcProperties(ifcfile, pid, psets, d):
     return d
 
 
-# ************************************************************************************************
+def getIfcPsetPoperties(ifcfile, pid):
+    """ directly build the property table from pid and ifcfile for FreeCAD"""
+
+    return getIfcProperties(ifcfile, pid, getIfcPropertySets(ifcfile, pid), {})
+
+
+def getUnit(unit):
+    """Get the unit multiplier for different decimal prefixes.
+
+    Only for when the unit is METRE.
+    When no Prefix is provided, return 1000, that is, mm x 1000 = metre.
+    For other cases, return 1.0.
+    """
+    if unit.Name == "METRE":
+        if unit.Prefix == "KILO":
+            return 1000000.0
+        elif unit.Prefix == "HECTO":
+            return 100000.0
+        elif unit.Prefix == "DECA":
+            return 10000.0
+        elif not unit.Prefix:
+            return 1000.0
+        elif unit.Prefix == "DECI":
+            return 100.0
+        elif unit.Prefix == "CENTI":
+            return 10.0
+    return 1.0
+
+
 def getScaling(ifcfile):
-    """returns a scaling factor from file units to mm"""
-
-    def getUnit(unit):
-        if unit.Name == "METRE":
-            if unit.Prefix == "KILO":
-                return 1000000.0
-            elif unit.Prefix == "HECTO":
-                return 100000.0
-            elif unit.Prefix == "DECA":
-                return 10000.0
-            elif not unit.Prefix:
-                return 1000.0
-            elif unit.Prefix == "DECI":
-                return 100.0
-            elif unit.Prefix == "CENTI":
-                return 10.0
-        return 1.0
-
+    """Return a scaling factor from the IFC file; units to mm."""
     ua = ifcfile.by_type("IfcUnitAssignment")
+
     if not ua:
         return 1.0
+
     ua = ua[0]
     for u in ua.Units:
         if u.UnitType == "LENGTHUNIT":
@@ -521,7 +551,7 @@ def getRotation(entity):
     except AttributeError:
         return FreeCAD.Rotation()
     import WorkingPlane
-    p = WorkingPlane.plane(u=u,v=v,w=w)
+    p = WorkingPlane.plane(u=u, v=v, w=w)
     return p.getRotation().Rotation
 
 
@@ -544,6 +574,8 @@ def getPlacement(entity,scaling=1000):
         loc = getVector(entity.Location,scaling)
         if loc:
             pl.move(loc)
+    elif entity.is_a("IfcAxis2Placement2D"):
+        _wrn("not implemented IfcAxis2Placement2D, ", end="")
     elif entity.is_a("IfcLocalPlacement"):
         pl = getPlacement(entity.PlacementRelTo,1)  # original placement
         relpl = getPlacement(entity.RelativePlacement,1)  # relative transf
@@ -597,6 +629,9 @@ def get2DShape(representation,scaling=1000):
             pts.append(c)
         return Part.makePolygon(pts)
 
+    def getRectangle(ent):
+        return Part.makePlane(ent.XDim,ent.YDim)
+
     def getLine(ent):
         pts = []
         p1 = getVector(ent.Pnt)
@@ -619,11 +654,17 @@ def get2DShape(representation,scaling=1000):
         result = []
         if ent.is_a() in ["IfcGeometricCurveSet","IfcGeometricSet"]:
             elts = ent.Elements
-        elif ent.is_a() in ["IfcLine","IfcPolyline","IfcCircle","IfcTrimmedCurve"]:
+        elif ent.is_a() in ["IfcLine","IfcPolyline","IfcCircle","IfcTrimmedCurve","IfcRectangleProfileDef"]:
             elts = [ent]
+        else:
+            print("getCurveSet: unhandled entity: ", ent)
+            return []
+
         for el in elts:
             if el.is_a("IfcPolyline"):
                 result.append(getPolyline(el))
+            elif el.is_a("IfcRectangleProfileDef"):
+                result.append(getRectangle(el))
             elif el.is_a("IfcLine"):
                 result.append(getLine(el))
             elif el.is_a("IfcCircle"):
@@ -658,6 +699,27 @@ def get2DShape(representation,scaling=1000):
                         a = -DraftVecUtils.angle(v)
                         e.rotate(bc.Curve.Center,FreeCAD.Vector(0,0,1),math.degrees(a))
                         result.append(e)
+            elif el.is_a("IfcIndexedPolyCurve"):
+                coords = el.Points.CoordList
+                def index2points(segment):
+                    pts = []
+                    for i in segment.wrappedValue:
+                        c = coords[i-1]
+                        c = FreeCAD.Vector(c[0],c[1],c[2] if len(c) > 2 else 0)
+                        c.multiply(scaling)
+                        pts.append(c)
+                    return pts
+
+                for s in el.Segments:
+                    if s.is_a("IfcLineIndex"):
+                        result.append(Part.makePolygon(index2points(s)))
+                    elif s.is_a("IfcArcIndex"):
+                        [p1, p2, p3] = index2points(s)
+                        result.append(Part.Arc(p1, p2, p3))
+                    else:
+                        raise RuntimeError("Illegal IfcIndexedPolyCurve segment")
+            else:
+                print("getCurveSet: unhandled element: ", el)
 
         return result
 
@@ -679,8 +741,168 @@ def get2DShape(representation,scaling=1000):
                 else:
                     result = preresult
             elif item.is_a("IfcTextLiteral"):
-                t = Draft.makeText([item.Literal],point=getPlacement(item.Placement,scaling).Base)
-                return t  # dirty hack... Object creation should not be done here
-    elif representation.is_a() in ["IfcPolyline","IfcCircle","IfcTrimmedCurve"]:
+                pl = getPlacement(item.Placement, scaling)
+                if pl:
+                    t = Draft.makeText([item.Literal], point=pl.Base)
+                    return [t]  # dirty hack... Object creation should not be done here
+    elif representation.is_a() in ["IfcPolyline","IfcCircle","IfcTrimmedCurve","IfcRectangleProfileDef"]:
         result = getCurveSet(representation)
     return result
+
+
+def getProfileCenterPoint(sweptsolid):
+    """returns the center point of the profile of an extrusion"""
+    v = FreeCAD.Vector(0,0,0)
+    if hasattr(sweptsolid,"SweptArea"):
+        profile = get2DShape(sweptsolid.SweptArea)
+        if profile:
+            profile = profile[0]
+            if hasattr(profile,"CenterOfMass"):
+                v = profile.CenterOfMass
+            elif hasattr(profile,"BoundBox"):
+                v = profile.BoundBox.Center
+    if hasattr(sweptsolid,"Position"):
+        pos = getPlacement(sweptsolid.Position)
+        v = pos.multVec(v)
+    return v
+
+
+def isRectangle(verts):
+    """returns True if the given 4 vertices form a rectangle"""
+    if len(verts) != 4:
+        return False
+    v1 = verts[1].sub(verts[0])
+    v2 = verts[2].sub(verts[1])
+    v3 = verts[3].sub(verts[2])
+    v4 = verts[0].sub(verts[3])
+    if abs(v2.getAngle(v1)-math.pi/2) > 0.01:
+        return False
+    if abs(v3.getAngle(v2)-math.pi/2) > 0.01:
+        return False
+    if abs(v4.getAngle(v3)-math.pi/2) > 0.01:
+        return False
+    return True
+
+
+def createFromProperties(propsets,ifcfile,parametrics):
+
+    """
+    Creates a FreeCAD parametric object from a set of properties.
+    """
+
+    obj = None
+    sets = []
+    appset = None
+    guiset = None
+    for pset in propsets.keys():
+        if ifcfile[pset].Name == "FreeCADPropertySet":
+            appset = {}
+            for pid in propsets[pset]:
+                p = ifcfile[pid]
+                appset[p.Name] = p.NominalValue.wrappedValue
+        elif ifcfile[pset].Name == "FreeCADGuiPropertySet":
+            guiset = {}
+            for pid in propsets[pset]:
+                p = ifcfile[pid]
+                guiset[p.Name] = p.NominalValue.wrappedValue
+    if appset:
+        oname = None
+        otype = None
+        if "FreeCADType" in appset.keys():
+            if "FreeCADName" in appset.keys():
+                obj = FreeCAD.ActiveDocument.addObject(appset["FreeCADType"],appset["FreeCADName"])
+                if "FreeCADAppObject" in appset:
+                    mod,cla = appset["FreeCADAppObject"].split(".")
+                    if "'" in mod:
+                        mod = mod.split("'")[-1]
+                    if "'" in cla:
+                        cla = cla.split("'")[0]
+                    import importlib
+                    mod = importlib.import_module(mod)
+                    getattr(mod,cla)(obj)
+                sets.append(("App",appset))
+                if FreeCAD.GuiUp:
+                    if guiset:
+                        if "FreeCADGuiObject" in guiset:
+                            mod,cla = guiset["FreeCADGuiObject"].split(".")
+                            if "'" in mod:
+                                mod = mod.split("'")[-1]
+                            if "'" in cla:
+                                cla = cla.split("'")[0]
+                            import importlib
+                            mod = importlib.import_module(mod)
+                            getattr(mod,cla)(obj.ViewObject)
+                        sets.append(("Gui",guiset))
+    if obj and sets:
+        for realm,pset in sets:
+            if realm == "App":
+                target = obj
+            else:
+                target = obj.ViewObject
+            for key,val in pset.items():
+                if key.startswith("FreeCAD_") or key.startswith("FreeCADGui_"):
+                    name = key.split("_")[1]
+                    if name in target.PropertiesList:
+                        if not target.getEditorMode(name):
+                            ptype = target.getTypeIdOfProperty(name)
+                            if ptype in ["App::PropertyString","App::PropertyEnumeration","App::PropertyInteger","App::PropertyFloat"]:
+                                setattr(target,name,val)
+                            elif ptype in ["App::PropertyLength","App::PropertyDistance"]:
+                                setattr(target,name,val*1000)
+                            elif ptype == "App::PropertyBool":
+                                if val in [".T.",True]:
+                                    setattr(target,name,True)
+                                else:
+                                    setattr(target,name,False)
+                            elif ptype == "App::PropertyVector":
+                                setattr(target,name,FreeCAD.Vector([float(s) for s in val.split("(")[1].strip(")").split(",")]))
+                            elif ptype == "App::PropertyArea":
+                                setattr(target,name,val*1000000)
+                            elif ptype == "App::PropertyPlacement":
+                                data = val.split("[")[1].strip("]").split("(")
+                                data = [data[1].split(")")[0],data[2].strip(")")]
+                                v = FreeCAD.Vector([float(s) for s in data[0].split(",")])
+                                r = FreeCAD.Rotation(*[float(s) for s in data[1].split(",")])
+                                setattr(target,name,FreeCAD.Placement(v,r))
+                            elif ptype == "App::PropertyLink":
+                                link = val.split("_")[1]
+                                parametrics.append([target,name,link])
+                            else:
+                                print("Unhandled FreeCAD property:",name," of type:",ptype)
+    return obj,parametrics
+
+
+def applyColorDict(doc,colordict=None):
+
+    """applies the contents of a color dict to the objects in the given doc.
+    If no colordict is given, the doc Meta property is searched for a "colordict" entry."""
+
+    if not colordict:
+        if "colordict" in doc.Meta:
+            import json
+            colordict = json.loads(doc.Meta["colordict"])
+    if colordict:
+        for obj in doc.Objects:
+            if obj.Name in colordict:
+                color = colordict[obj.Name]
+                if hasattr(obj.ViewObject,"ShapeColor"):
+                    obj.ViewObject.ShapeColor = tuple(color[0:3])
+                if hasattr(obj.ViewObject,"Transparency") and (len(color) >= 4):
+                    obj.ViewObject.Transparency = color[3]
+    else:
+        print("No valid color dict to apply")
+
+
+def getParents(ifcobj):
+
+    """finds the parent entities of an IFC entity"""
+
+    parentlist = []
+    if hasattr(ifcobj,"ContainedInStructure"):
+        for rel in ifcobj.ContainedInStructure:
+            parentlist.append(rel.RelatingStructure)
+    elif hasattr(ifcobj,"Decomposes"):
+        for rel in ifcobj.Decomposes:
+            if rel.is_a("IfcRelAggregates"):
+                parentlist.append(rel.RelatingObject)
+    return parentlist

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Juergen Riegel          (juergen.riegel@web.de) 2008    *
+ *   Copyright (c) 2008 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -55,7 +55,7 @@ class SketchAnalysis;
 
 class SketcherExport SketchObject : public Part::Part2DObject
 {
-    PROPERTY_HEADER(Sketcher::SketchObject);
+    PROPERTY_HEADER_WITH_OVERRIDE(Sketcher::SketchObject);
 
 public:
     SketchObject();
@@ -67,12 +67,12 @@ public:
     App     ::PropertyLinkSubList    ExternalGeometry;
     /** @name methods override Feature */
     //@{
-    short mustExecute() const;
+    short mustExecute() const override;
     /// recalculate the Feature (if no recompute is needed see also solve() and solverNeedsUpdate boolean)
-    App::DocumentObjectExecReturn *execute(void);
+    App::DocumentObjectExecReturn *execute(void) override;
 
     /// returns the type name of the ViewProvider
-    const char* getViewProviderName(void) const {
+    const char* getViewProviderName(void) const override {
         return "SketcherGui::ViewProviderSketch";
     }
     //@}
@@ -302,17 +302,17 @@ public:
     int port_reversedExternalArcs(bool justAnalyze);
 
     // from base class
-    virtual PyObject *getPyObject(void);
-    virtual unsigned int getMemSize(void) const;
-    virtual void Save(Base::Writer &/*writer*/) const;
-    virtual void Restore(Base::XMLReader &/*reader*/);
+    virtual PyObject *getPyObject(void) override;
+    virtual unsigned int getMemSize(void) const override;
+    virtual void Save(Base::Writer &/*writer*/) const override;
+    virtual void Restore(Base::XMLReader &/*reader*/) override;
 
     /// returns the number of construction lines (to be used as axes)
-    virtual int getAxisCount(void) const;
+    virtual int getAxisCount(void) const override;
     /// retrieves an axis iterating through the construction lines of the sketch (indices start at 0)
-    virtual Base::Axis getAxis(int axId) const;
+    virtual Base::Axis getAxis(int axId) const override;
     /// verify and accept the assigned geometry
-    virtual void acceptGeometry();
+    virtual void acceptGeometry() override;
     /// Check if constraint has invalid indexes
     bool evaluateConstraint(const Constraint *constraint) const;
     /// Check for constraints with invalid indexes
@@ -378,6 +378,8 @@ public:
     bool isExternalAllowed(App::Document *pDoc, App::DocumentObject *pObj, eReasonList* rsn = 0) const;
 
     bool isCarbonCopyAllowed(App::Document *pDoc, App::DocumentObject *pObj, bool & xinv, bool & yinv, eReasonList* rsn = 0) const;
+
+    bool isPerformingInternalTransaction() const {return internaltransaction;};
 public:
     // Analyser functions
     int autoConstraint(double precision = Precision::Confusion() * 1000, double angleprecision = M_PI/20, bool includeconstruction = true);
@@ -410,11 +412,11 @@ public:
 
 protected:
     /// get called by the container when a property has changed
-    virtual void onChanged(const App::Property* /*prop*/);
-    virtual void onDocumentRestored();
-    virtual void restoreFinished();
+    virtual void onChanged(const App::Property* /*prop*/) override;
+    virtual void onDocumentRestored() override;
+    virtual void restoreFinished() override;
 
-    virtual void setExpression(const App::ObjectIdentifier &path, boost::shared_ptr<App::Expression> expr);
+    virtual void setExpression(const App::ObjectIdentifier &path, boost::shared_ptr<App::Expression> expr) override;
 
     std::string validateExpression(const App::ObjectIdentifier &path, boost::shared_ptr<const App::Expression> expr);
 
@@ -431,6 +433,8 @@ protected:
     // refactoring functions
     // check whether constraint may be changed driving status
     int testDrivingChange(int ConstrId, bool isdriving);
+
+    virtual void onUndoRedoFinished() override;
 
 private:
     /// Flag to allow external geometry from other bodies than the one this sketch belongs to
@@ -466,6 +470,10 @@ private:
     bool AutoLockTangencyAndPerpty(Constraint* cstr, bool bForce = false, bool bLock = true);
 
     SketchAnalysis * analyser;
+
+    bool internaltransaction;
+
+    bool managedoperation; // indicates whether changes to properties are the deed of SketchObject or not (for input validation)
 };
 
 typedef App::FeaturePythonT<SketchObject> SketchObjectPython;

@@ -78,7 +78,7 @@
 using namespace FemGui;
 using namespace Gui;
 
-// ----------------------------------------------------------------------------
+// ***************************************************************************
 
 PointMarker::PointMarker(Gui::View3DInventorViewer* iv, std::string ObjName) : view(iv),
     vp(new ViewProviderPointMarker)
@@ -145,7 +145,7 @@ ViewProviderPointMarker::~ViewProviderPointMarker()
     pCoords->unref();
 }
 
-// ----------------------------------------------------------------------------
+// ***************************************************************************
 
 DataMarker::DataMarker(Gui::View3DInventorViewer* iv, std::string ObjName) : view(iv),
     vp(new ViewProviderDataMarker)
@@ -218,10 +218,10 @@ ViewProviderDataMarker::~ViewProviderDataMarker()
     pMarker->unref();
 }
 
-//**************************************************************************
-//**************************************************************************
+// ***************************************************************************
+// ***************************************************************************
 // TaskDialog
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// ***************************************************************************
 
 TaskDlgPost::TaskDlgPost(Gui::ViewProviderDocumentObject *view)
     : TaskDialog(), m_view(view)
@@ -299,7 +299,7 @@ void TaskDlgPost::modifyStandardButtons(QDialogButtonBox* box) {
         box->button(QDialogButtonBox::Apply)->setDefault(true);
 }
 
-//############################################################################################
+// ***************************************************************************
 // some task box methods
 TaskPostBox::TaskPostBox(Gui::ViewProviderDocumentObject* view, const QPixmap &icon, const QString &title, QWidget* parent)
     : TaskBox(icon, title, true, parent) {
@@ -341,10 +341,10 @@ void TaskPostBox::updateEnumerationList(App::PropertyEnumeration& prop, QComboBo
     box->setCurrentIndex(index);
 }
 
-//###########################################################################################################
+// ***************************************************************************
 // post pipeline results
 TaskPostDisplay::TaskPostDisplay(Gui::ViewProviderDocumentObject* view, QWidget *parent)
-    : TaskPostBox(view, Gui::BitmapFactory().pixmap("fem-post-result-show"), tr("Result display options"), parent)
+    : TaskPostBox(view, Gui::BitmapFactory().pixmap("FEM_ResultShow"), tr("Result display options"), parent)
 {
     //we need a separate container widget to add all controls to
     proxy = new QWidget(this);
@@ -398,7 +398,7 @@ void TaskPostDisplay::applyPythonCode() {
 
 }
 
-//############################################################################################
+// ***************************************************************************
 // ?
 // the icon fem-post-geo-plane might be wrong but I do not know any better since the plane is one of the implicit functions
 TaskPostFunction::TaskPostFunction(ViewProviderDocumentObject* view, QWidget* parent): TaskPostBox(view, Gui::BitmapFactory().pixmap("fem-post-geo-plane"), tr("Implicit function"), parent) {
@@ -421,10 +421,10 @@ void TaskPostFunction::applyPythonCode() {
     //we apply the views widgets python code
 }
 
-//############################################################################################
+// ***************************************************************************
 // region clip filter
 TaskPostClip::TaskPostClip(ViewProviderDocumentObject* view, App::PropertyLink* function, QWidget* parent)
-    : TaskPostBox(view,Gui::BitmapFactory().pixmap("fem-post-filter-clip-region"), tr("Clip region, choose implicit function"), parent) {
+    : TaskPostBox(view,Gui::BitmapFactory().pixmap("FEM_PostFilterClipRegion"), tr("Clip region, choose implicit function"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostClip::getClassTypeId()));
     assert(function);
@@ -543,10 +543,10 @@ void TaskPostClip::on_InsideOut_toggled(bool val) {
     recompute();
 }
 
-//############################################################################################
+// ***************************************************************************
 // data along a line
 TaskPostDataAlongLine::TaskPostDataAlongLine(ViewProviderDocumentObject* view, QWidget* parent)
-    : TaskPostBox(view,Gui::BitmapFactory().pixmap("fem-post-filter-data-along-line"), tr("Data along a line options"), parent) {
+    : TaskPostBox(view,Gui::BitmapFactory().pixmap("FEM_PostFilterDataAlongLine"), tr("Data along a line options"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostDataAlongLine::getClassTypeId()));
 
@@ -760,10 +760,10 @@ plt.show()\n";
 
 }
 
-//############################################################################################
+// ***************************************************************************
 // data at point
 TaskPostDataAtPoint::TaskPostDataAtPoint(ViewProviderDocumentObject* view, QWidget* parent)
-    : TaskPostBox(view,Gui::BitmapFactory().pixmap("fem-post-filter-data-at-point"), tr("Data at point options"), parent) {
+    : TaskPostBox(view,Gui::BitmapFactory().pixmap("FEM_PostFilterDataAtPoint"), tr("Data at point options"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostDataAtPoint::getClassTypeId()));
 
@@ -924,10 +924,10 @@ void TaskPostDataAtPoint::on_Field_activated(int i) {
     Base::Console().Error(PointData.c_str());
 }
 
-//############################################################################################
+// ***************************************************************************
 // scalar clip filter
 TaskPostScalarClip::TaskPostScalarClip(ViewProviderDocumentObject* view, QWidget* parent) :
-    TaskPostBox(view, Gui::BitmapFactory().pixmap("fem-post-filter-clip-scalar"), tr("Scalar clip options"), parent) {
+    TaskPostBox(view, Gui::BitmapFactory().pixmap("FEM_PostFilterClipScalar"), tr("Scalar clip options"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostScalarClip::getClassTypeId()));
 
@@ -1030,13 +1030,12 @@ void TaskPostScalarClip::on_InsideOut_toggled(bool val) {
     recompute();
 }
 
-
-//############################################################################################
+// ***************************************************************************
 // warp filter
 // spinbox min, slider, spinbox max
 // spinbox warp factor
 TaskPostWarpVector::TaskPostWarpVector(ViewProviderDocumentObject* view, QWidget* parent) :
-    TaskPostBox(view, Gui::BitmapFactory().pixmap("fem-post-filter-warp"), tr("Warp options"), parent) {
+    TaskPostBox(view, Gui::BitmapFactory().pixmap("FEM_PostFilterWarp"), tr("Warp options"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostWarpVector::getClassTypeId()));
 
@@ -1174,10 +1173,10 @@ void TaskPostWarpVector::on_Min_valueChanged(double) {
     ui->Slider->blockSignals(false);
 }
 
-//############################################################################################
+// ***************************************************************************
 // function clip filter
 TaskPostCut::TaskPostCut(ViewProviderDocumentObject* view, App::PropertyLink* function, QWidget* parent)
-    : TaskPostBox(view,Gui::BitmapFactory().pixmap("fem-post-filter-cut-function"), tr("Function cut, choose implicit function"), parent) {
+    : TaskPostBox(view,Gui::BitmapFactory().pixmap("FEM_PostFilterCutFunction"), tr("Function cut, choose implicit function"), parent) {
 
     assert(view->isDerivedFrom(ViewProviderFemPostCut::getClassTypeId()));
     assert(function);

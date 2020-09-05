@@ -1,6 +1,7 @@
 # ***************************************************************************
+# *   Copyright (c) 2016 Bernd Hahnebach <bernd@bimstatik.org>              *
 # *                                                                         *
-# *   Copyright (c) 2016 - Bernd Hahnebach <bernd@bimstatik.org>            *
+# *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -20,7 +21,7 @@
 # *                                                                         *
 # ***************************************************************************
 
-__title__ = "FreeCAD Z88 Disp Reader"
+__title__ = "Result import for Z88 displacements format"
 __author__ = "Bernd Hahnebach"
 __url__ = "http://www.freecadweb.org"
 
@@ -28,8 +29,10 @@ __url__ = "http://www.freecadweb.org"
 #  \ingroup FEM
 #  \brief FreeCAD Z88 Disp Reader for FEM workbench
 
-import FreeCAD
 import os
+
+import FreeCAD
+from FreeCAD import Console
 
 
 # ********* generic FreeCAD import and export methods *********
@@ -77,9 +80,10 @@ def import_z88_disp(
     the z888i1.txt FEMMesh file needs to be in the same directory as z88o2.txt
     # ahh, make a new document first ;-)
     """
+    import ObjectsFem
     from . import importZ88Mesh
     from . import importToolsFem
-    import ObjectsFem
+    from femresult import resulttools
     if result_name_prefix is None:
         result_name_prefix = ""
     disp_read = read_z88_disp(filename)
@@ -99,7 +103,7 @@ def import_z88_disp(
             )
             result_mesh_object.FemMesh = femmesh
         else:
-            FreeCAD.Console.PrintError("Z88 mesh file z88i1.txt not found!")
+            Console.PrintError("Z88 mesh file z88i1.txt not found.\n")
 
         # create result obj
         for result_set in disp_read["Results"]:
@@ -108,6 +112,9 @@ def import_z88_disp(
             res_obj = ObjectsFem.makeResultMechanical(FreeCAD.ActiveDocument, results_name)
             res_obj.Mesh = result_mesh_object
             res_obj = importToolsFem.fill_femresult_mechanical(res_obj, result_set)
+            res_obj = resulttools.add_disp_apps(res_obj)  # fill DisplacementLengths
+            res_obj = resulttools.fill_femresult_stats(res_obj)  # fill Stats
+
             if analysis:
                 analysis_object.addObject(res_obj)
 
@@ -118,7 +125,7 @@ def import_z88_disp(
             FreeCAD.ActiveDocument.recompute()
 
     else:
-        FreeCAD.Console.PrintError(
+        Console.PrintError(
             "Problem on Z88 result file import. No nodes found in Z88 result file.\n"
         )
     return res_obj
@@ -145,7 +152,6 @@ def read_z88_disp(
 
         if lno >= 6:
             # disp line
-            # print(linelist)
             node_no = int(linelist[0])
             mode_disp_x = float(linelist[1])
             mode_disp_y = float(linelist[2])
@@ -160,7 +166,7 @@ def read_z88_disp(
     results.append(mode_results)
 
     for r in results[0]["disp"]:
-        FreeCAD.Console.PrintLog("{} --> {}\n".format(r, results[0]["disp"][r]))
+        Console.PrintLog("{} --> {}\n".format(r, results[0]["disp"][r]))
 
     z88_disp_file.close()
     return {"Nodes": nodes, "Results": results}

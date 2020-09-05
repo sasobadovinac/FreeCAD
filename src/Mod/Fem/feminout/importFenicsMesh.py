@@ -1,6 +1,7 @@
 # ***************************************************************************
+# *   Copyright (c) 2017 Johannes Hartung <j.hartung@gmx.net>               *
 # *                                                                         *
-# *   Copyright (c) 2017 - Johannes Hartung <j.hartung@gmx.net>             *
+# *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -20,7 +21,7 @@
 # *                                                                         *
 # ***************************************************************************
 
-__title__ = "FreeCAD Fenics mesh reader and writer"
+__title__ = "Mesh import and export for Fenics mesh file format"
 __author__ = "Johannes Hartung"
 __url__ = "http://www.freecadweb.org"
 
@@ -31,6 +32,8 @@ __url__ = "http://www.freecadweb.org"
 import os
 
 import FreeCAD
+from FreeCAD import Console
+
 from . import importToolsFem
 from . import readFenicsXML
 from . import writeFenicsXML
@@ -122,7 +125,7 @@ if FreeCAD.GuiUp:
                     default_value = int(self.form.tableGroups.item(r, 3).text())
                     marked_value = int(self.form.tableGroups.item(r, 4).text())
                 except ValueError:
-                    FreeCAD.Console.PrintError(
+                    Console.PrintError(
                         "ERROR: value conversion failed "
                         "in table to dict: assuming 0 for default, "
                         "1 for marked.\n"
@@ -165,26 +168,26 @@ def export(objectslist, fileString, group_values_dict_nogui=None):
     of (marked_value (default=1), default_value (default=0))
     """
     if len(objectslist) != 1:
-        FreeCAD.Console.PrintError(
+        Console.PrintError(
             "This exporter can only export one object.\n")
         return
     obj = objectslist[0]
     if not obj.isDerivedFrom("Fem::FemMeshObject"):
-        FreeCAD.Console.PrintError("No FEM mesh object selected.\n")
+        Console.PrintError("No FEM mesh object selected.\n")
         return
 
     if fileString != "":
         fileName, fileExtension = os.path.splitext(fileString)
         if fileExtension.lower() == ".xml":
-            FreeCAD.Console.PrintWarning(
+            Console.PrintWarning(
                 "XML is not designed to save higher order elements.\n")
-            FreeCAD.Console.PrintWarning(
+            Console.PrintWarning(
                 "Reducing order for second order mesh.\n")
-            FreeCAD.Console.PrintWarning("Tri6 -> Tri3, Tet10 -> Tet4, etc.\n")
+            Console.PrintWarning("Tri6 -> Tri3, Tet10 -> Tet4, etc.\n")
             writeFenicsXML.write_fenics_mesh_xml(obj, fileString)
         elif fileExtension.lower() == ".xdmf":
             mesh_groups = importToolsFem.get_FemMeshObjectMeshGroups(obj)
-            if mesh_groups is not ():
+            if mesh_groups != ():
                 # if there are groups found, make task panel available if GuiUp
                 if FreeCAD.GuiUp == 1:
                     panel = WriteXDMFTaskPanel(obj, fileString)

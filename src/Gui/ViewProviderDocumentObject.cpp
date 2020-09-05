@@ -57,6 +57,7 @@
 #include "TaskView/TaskAppearance.h"
 #include "ViewProviderDocumentObject.h"
 #include "ViewProviderExtension.h"
+#include "SoFCUnifiedSelection.h"
 #include "Tree.h"
 #include <Gui/ViewProviderDocumentObjectPy.h>
 
@@ -68,16 +69,23 @@ using namespace Gui;
 PROPERTY_SOURCE(Gui::ViewProviderDocumentObject, Gui::ViewProvider)
 
 ViewProviderDocumentObject::ViewProviderDocumentObject()
-  : pcObject(0)
-  , pcDocument(0)
+  : pcObject(nullptr)
+  , pcDocument(nullptr)
+  , _UpdatingView(false)
 {
-    ADD_PROPERTY(DisplayMode,((long)0));
-    ADD_PROPERTY(Visibility,(true));
-    ADD_PROPERTY(ShowInTree,(true));
+    static const char *dogroup = "Display Options";
+    static const char *sgroup = "Selection";
+    
+    ADD_PROPERTY_TYPE(DisplayMode, ((long)0), dogroup, App::Prop_None, "Set the display mode");
+    ADD_PROPERTY_TYPE(Visibility, (true), dogroup, App::Prop_None, "Show the object in the 3d view");
+    ADD_PROPERTY_TYPE(ShowInTree, (true), dogroup, App::Prop_None, "Show the object in the tree view");
+    
+    ADD_PROPERTY_TYPE(SelectionStyle, ((long)0), sgroup, App::Prop_None, "Set the object selection style");
+    static const char *SelectionStyleEnum[] = {"Shape","BoundBox",0};
+    SelectionStyle.setEnums(SelectionStyleEnum);
 
     static const char* OnTopEnum[]= {"Disabled","Enabled","Object","Element",NULL};
-    ADD_PROPERTY(OnTopWhenSelected,((long int)0));
-    ADD_PROPERTY_TYPE(OnTopWhenSelected,((long int)0), "Base", App::Prop_None, 
+    ADD_PROPERTY_TYPE(OnTopWhenSelected,((long int)0), sgroup, App::Prop_None,
             "Enabled: Display the object on top of any other object when selected\n"
             "Object: On top only if the whole object is selected\n"
             "Element: On top only if some sub-element of the object is selected");
@@ -164,6 +172,8 @@ void ViewProviderDocumentObject::onBeforeChange(const App::Property* prop)
             onBeforeChangeProperty(doc, prop);
         }
     }
+
+    ViewProvider::onBeforeChange(prop);
 }
 
 void ViewProviderDocumentObject::onChanged(const App::Property* prop)
@@ -178,8 +188,32 @@ void ViewProviderDocumentObject::onChanged(const App::Property* prop)
             Visibility.getValue() ? show() : hide();
             Visibility.setStatus(App::Property::User2, false);
         }
-        if(getObject() && getObject()->Visibility.getValue()!=Visibility.getValue())
-            getObject()->Visibility.setValue(Visibility.getValue());
+        if (!Visibility.testStatus(App::Property::User1)
+                && getObject() 
+                && getObject()->Visibility.getValue()!=Visibility.getValue())
+        {
+            // Changing the visibility of a document object will automatically set
+            // the document modified but if the 'TouchDocument' flag is not set then
+            // this is undesired behaviour. So, if this change marks the document as
+            // modified then it must be be reversed.
+            if (!testStatus(Gui::ViewStatus::TouchDocument)) {
+                bool mod = false;
+                if (pcDocument)
+                    mod = pcDocument->isModified();
+                getObject()->Visibility.setValue(Visibility.getValue());
+                if (pcDocument)
+                    pcDocument->setModified(mod);
+            }
+            else {
+                getObject()->Visibility.setValue(Visibility.getValue());
+            }
+        }
+    }
+    else if (prop == &SelectionStyle) {
+        if(getRoot()->isOfType(SoFCSelectionRoot::getClassTypeId())) {
+            static_cast<SoFCSelectionRoot*>(getRoot())->selectionStyle = SelectionStyle.getValue()
+                ? SoFCSelectionRoot::Box : SoFCSelectionRoot::Full;
+        }
     }
 
     if (pcDocument && !pcDocument->isModified() && testStatus(Gui::ViewStatus::TouchDocument)) {
@@ -228,6 +262,9 @@ void ViewProviderDocumentObject::updateView()
 
     Base::ObjectStatusLocker<ViewStatus,ViewProviderDocumentObject> lock(ViewStatus::UpdatingView,this);
 
+    // Disable object visibility syncing
+    Base::ObjectStatusLocker<App::Property::Status,App::Property> lock2(App::Property::User1, &Visibility);
+
     std::map<std::string, App::Property*> Map;
     pcObject->getPropertyMap(Map);
 
@@ -263,10 +300,12 @@ void ViewProviderDocumentObject::attach(App::DocumentObject *pcObj)
     aDisplayEnumsArray.push_back(0); // null termination
     DisplayMode.setEnums(&(aDisplayEnumsArray[0]));
 
-    // set the active mode
-    const char* defmode = this->getDefaultDisplayMode();
-    if (defmode)
-        DisplayMode.setValue(defmode);
+    if(!isRestoring()) {
+        // set the active mode
+        const char* defmode = this->getDefaultDisplayMode();
+        if (defmode)
+            DisplayMode.setValue(defmode);
+    }
 
     //attach the extensions
     auto vector = getExtensionsDerivedFromType<Gui::ViewProviderExtension>();
@@ -287,16 +326,25 @@ void ViewProviderDocumentObject::update(const App::Property* prop)
     if(prop == &getObject()->Visibility) {
         if(!isRestoring() && Visibility.getValue()!=getObject()->Visibility.getValue())
             Visibility.setValue(!Visibility.getValue());
-    }else
+    } else {
+        // Disable object visibility syncing
+        Base::ObjectStatusLocker<App::Property::Status,App::Property>
+            guard(App::Property::User1, &Visibility);
         ViewProvider::update(prop);
+    }
 }
 
 Gui::Document* ViewProviderDocumentObject::getDocument() const
 {
     if(!pcObject)
         throw Base::RuntimeError("View provider detached");
-    App::Document* pAppDoc = pcObject->getDocument();
-    return Gui::Application::Instance->getDocument(pAppDoc);
+    if (pcDocument) {
+        return pcDocument;
+    }
+    else {
+        App::Document* pAppDoc = pcObject->getDocument();
+        return Gui::Application::Instance->getDocument(pAppDoc);
+    }
 }
 
 Gui::MDIView* ViewProviderDocumentObject::getActiveView() const

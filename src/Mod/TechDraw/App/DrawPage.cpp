@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -51,6 +51,7 @@
 #include "DrawViewDimension.h"
 #include "DrawViewBalloon.h"
 #include "DrawLeaderLine.h"
+#include "Preferences.h"
 
 #include <Mod/TechDraw/App/DrawPagePy.h>  // generated from DrawPagePy.xml
 
@@ -64,7 +65,7 @@ using namespace std;
 
 App::PropertyFloatConstraint::Constraints DrawPage::scaleRange = {Precision::Confusion(),
                                                                   std::numeric_limits<double>::max(),
-                                                                  pow(10,- Base::UnitsApi::getDecimals())};
+                                                                  (0.1)}; // increment by 0.1
 
 PROPERTY_SOURCE(TechDraw::DrawPage, App::DocumentObject)
 
@@ -77,12 +78,9 @@ DrawPage::DrawPage(void)
     static const char *group = "Page";
     nowUnsetting = false;
     forceRedraw(false);
-    
-    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
-        .GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
-    bool autoUpdate = hGrp->GetBool("KeepPagesUpToDate", true);   //this is the default value for new pages!
 
-    ADD_PROPERTY_TYPE(KeepUpdated, (autoUpdate), group, (App::PropertyType)(App::Prop_Output), "Keep page in sync with model");
+    ADD_PROPERTY_TYPE(KeepUpdated, (Preferences::keepPagesUpToDate()),
+                                             group, (App::PropertyType)(App::Prop_Output), "Keep page in sync with model");
     ADD_PROPERTY_TYPE(Template, (0), group, (App::PropertyType)(App::Prop_None), "Attached Template");
     Template.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(Views, (0), group, (App::PropertyType)(App::Prop_None), "Attached Views");
@@ -90,26 +88,20 @@ DrawPage::DrawPage(void)
 
     // Projection Properties
     ProjectionType.setEnums(ProjectionTypeEnums);
+    ADD_PROPERTY(ProjectionType, ((long)Preferences::projectionAngle()));
 
-    hGrp = App::GetApplication().GetUserParameter().GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
+    Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().
+                                         GetGroup("BaseApp")->GetGroup("Preferences")->
+                                         GetGroup("Mod/TechDraw/General");
+    double defScale = hGrp->GetFloat("DefaultScale",1.0);
+    ADD_PROPERTY_TYPE(Scale, (defScale), group, (App::PropertyType)(App::Prop_None), "Scale factor for this Page");
 
-    // In preferences, 0 -> First Angle 1 -> Third Angle
-    int projType = hGrp->GetInt("ProjectionAngle", -1);
-
-    if (projType == -1) {
-        ADD_PROPERTY(ProjectionType, ((long)0)); // Default to first angle
-    } else {
-        ADD_PROPERTY(ProjectionType, ((long)projType));
-    }
-
-    ADD_PROPERTY_TYPE(Scale, (1.0), group, (App::PropertyType)(App::Prop_None), "Scale factor for this Page");
     ADD_PROPERTY_TYPE(NextBalloonIndex, (1), group, (App::PropertyType)(App::Prop_None),
                      "Auto-numbering for Balloons");
 
     Scale.setConstraints(&scaleRange);
-    double defScale = hGrp->GetFloat("DefaultScale",1.0);
-    Scale.setValue(defScale);
     balloonPlacing = false;
+    balloonParent = nullptr;
 }
 
 DrawPage::~DrawPage()
@@ -130,6 +122,7 @@ void DrawPage::onChanged(const App::Property* prop)
             //would be nice if this message was displayed immediately instead of after the recomputeFeature
             Base::Console().Message("Rebuilding Views for: %s/%s\n",getNameInDocument(),Label.getValue());
             updateAllViews();
+            purgeTouched();
         }
     } else if (prop == &Template) {
         if (!isRestoring() &&
@@ -176,6 +169,16 @@ App::DocumentObjectExecReturn *DrawPage::execute(void)
 // this is now irrelevant, b/c DP::execute doesn't do anything. 
 short DrawPage::mustExecute() const
 {
+    short result = 0;
+    if (!isRestoring()) {
+        result  =  (Views.isTouched()  ||
+                    Scale.isTouched()  ||
+                    ProjectionType.isTouched() ||
+                    Template.isTouched());
+        if (result) {
+            return result;
+        }
+    }
     return App::DocumentObject::mustExecute();
 }
 
@@ -331,17 +334,27 @@ void DrawPage::onDocumentRestored()
     App::DocumentObject::onDocumentRestored();
 }
 
+void DrawPage::redrawCommand()
+{
+//    Base::Console().Message("DP::redrawCommand()\n");
+    forceRedraw(true);
+    updateAllViews();
+    forceRedraw(false);
+}
 //should really be called "updateMostViews".  can still be problems to due execution order.
 void DrawPage::updateAllViews()
 {
+//    Base::Console().Message("DP::updateAllViews()\n");
     std::vector<App::DocumentObject*> featViews = getAllViews();
-    std::vector<App::DocumentObject*>::const_iterator it = featViews.begin();
+    std::vector<App::DocumentObject*>::iterator it = featViews.begin();
     //first, make sure all the Parts have been executed so GeometryObjects exist
     for(; it != featViews.end(); ++it) {
         TechDraw::DrawViewPart *part = dynamic_cast<TechDraw::DrawViewPart *>(*it);
-        if (part != nullptr &&
-            !part->hasGeometry()) {
+        TechDraw::DrawViewCollection *collect = dynamic_cast<TechDraw::DrawViewCollection*>(*it);
+        if (part != nullptr) {
             part->recomputeFeature();
+        } else if (collect != nullptr) {
+            collect->recomputeFeature();
         }
     }
     //second, make sure all the Dimensions have been executed so Measurements have References
@@ -448,6 +461,7 @@ void DrawPage::handleChangedPropertyType(
     }
 }
 
+//allow/prevent drawing updates for all Pages
 bool DrawPage::GlobalUpdateDrawings(void)
 {
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()
@@ -456,6 +470,7 @@ bool DrawPage::GlobalUpdateDrawings(void)
     return result;
 }
 
+//allow/prevent a single page to update despite GlobalUpdateDrawings setting
 bool DrawPage::AllowPageOverride(void)
 {
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter()

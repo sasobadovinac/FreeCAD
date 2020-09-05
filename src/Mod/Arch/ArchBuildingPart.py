@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 
 #***************************************************************************
-#*                                                                         *
 #*   Copyright (c) 2018 Yorik van Havre <yorik@uncreated.net>              *
 #*                                                                         *
 #*   This program is free software; you can redistribute it and/or modify  *
@@ -310,6 +309,7 @@ class CommandBuildingPart:
         FreeCADGui.addModule("Arch")
         FreeCADGui.doCommand("obj = Arch.makeBuildingPart("+ss+")")
         FreeCADGui.addModule("Draft")
+        FreeCADGui.doCommand("obj.Placement = FreeCAD.DraftWorkingPlane.getPlacement()")
         FreeCADGui.doCommand("Draft.autogroup(obj)")
         FreeCAD.ActiveDocument.commitTransaction()
         FreeCAD.ActiveDocument.recompute()
@@ -334,6 +334,9 @@ class BuildingPart(ArchIFC.IfcProduct):
         pl = obj.PropertiesList
         if not "Height" in pl:
             obj.addProperty("App::PropertyLength","Height","BuildingPart",QT_TRANSLATE_NOOP("App::Property","The height of this object"))
+        if not "HeightPropagate" in pl:
+            obj.addProperty("App::PropertyBool","HeightPropagate","Children",QT_TRANSLATE_NOOP("App::Property","If true, the height value propagates to contained objects"))
+            obj.HeightPropagate = True
         if not "LevelOffset" in pl:
             obj.addProperty("App::PropertyLength","LevelOffset","BuildingPart",QT_TRANSLATE_NOOP("App::Property","The level of the (0,0,0) point of this level"))
         if not "Area" in pl:
@@ -376,12 +379,8 @@ class BuildingPart(ArchIFC.IfcProduct):
             self.svgcache = None
             self.shapecache = None
 
-        if (prop == "Height") and prop.Height.Value:
-            for child in obj.Group:
-                if Draft.getType(child) in ["Wall","Structure"]:
-                    if not child.Height.Value:
-                        print("Executing ",child.Label)
-                        child.Proxy.execute(child)
+        if (prop == "Height" or prop == "HeightPropagate") and obj.Height.Value:
+            self.touchChildren(obj)
 
         elif prop == "Placement":
             if hasattr(self,"oldPlacement"):
@@ -445,8 +444,8 @@ class BuildingPart(ArchIFC.IfcProduct):
         "recursively get the shapes of objects inside this BuildingPart"
 
         shapes = []
-        for child in Draft.getGroupContents(obj):
-            if child.isDerivedFrom("Part::Feature"):
+        for child in Draft.get_group_contents(obj):
+            if hasattr(child,'Shape'):
                 shapes.extend(child.Shape.Faces)
         return shapes
 
@@ -461,6 +460,26 @@ class BuildingPart(ArchIFC.IfcProduct):
                     g.append(o)
         return g
 
+    def touchChildren(self,obj):
+
+        "Touches all descendents where applicable"
+
+        for child in obj.Group:
+            if Draft.getType(child) in ["Wall","Structure"]:
+                if not child.Height.Value:
+                    print("Executing ",child.Label)
+                    child.Proxy.execute(child)
+            elif Draft.getType(child) in ["Group","BuildingPart"]:
+                self.touchChildren(child)
+
+    def addObject(self,obj,child):
+
+        "Adds an object to the group of this BuildingPart"
+
+        if not child in obj.Group:
+            g = obj.Group
+            g.append(child)
+            obj.Group = g
 
 
 class ViewProviderBuildingPart:
@@ -518,11 +537,11 @@ class ViewProviderBuildingPart:
         if not "RestoreView" in pl:
             vobj.addProperty("App::PropertyBool","RestoreView","Interaction",QT_TRANSLATE_NOOP("App::Property","If set, the view stored in this object will be restored on double-click"))
         if not "DoubleClickActivates" in pl:
-            vobj.addProperty("App::PropertyBool","DoubleClickActivates","Interaction",QT_TRANSLATE_NOOP("App::Property","If True, double-clicking this object in the tree turns it active"))
+            vobj.addProperty("App::PropertyBool","DoubleClickActivates","Interaction",QT_TRANSLATE_NOOP("App::Property","If True, double-clicking this object in the tree activates it"))
 
         # inventor saving
         if not "SaveInventor" in pl:
-            vobj.addProperty("App::PropertyBool","SaveInventor","Interaction",QT_TRANSLATE_NOOP("App::Property","If this is enabled, the inventor representation of this object will be saved in the FreeCAD file, allowing to reference it in other file sin lightweight mode."))
+            vobj.addProperty("App::PropertyBool","SaveInventor","Interaction",QT_TRANSLATE_NOOP("App::Property","If this is enabled, the inventor representation of this object will be saved in the FreeCAD file, allowing to reference it in other files in lightweight mode."))
         if not "SavedInventor" in pl:
             vobj.addProperty("App::PropertyFileIncluded","SavedInventor","Interaction",QT_TRANSLATE_NOOP("App::Property","A slot to save the inventor representation of this object, if enabled"))
             vobj.setEditorMode("SavedInventor",2)
@@ -634,9 +653,9 @@ class ViewProviderBuildingPart:
         "recursively get the colors of objects inside this BuildingPart"
 
         colors = []
-        for child in Draft.getGroupContents(obj):
-            if child.isDerivedFrom("Part::Feature"):
-                if len(child.ViewObject.DiffuseColor) == len(child.Shape.Faces):
+        for child in Draft.get_group_contents(obj):
+            if hasattr(child,'Shape') and (hasattr(child.ViewObject,"DiffuseColor") or hasattr(child.ViewObject,"ShapeColor")):
+                if hasattr(child.ViewObject,"DiffuseColor") and len(child.ViewObject.DiffuseColor) == len(child.Shape.Faces):
                     colors.extend(child.ViewObject.DiffuseColor)
                 else:
                     c = child.ViewObject.ShapeColor[:3]+(child.ViewObject.Transparency/100.0,)
@@ -720,7 +739,8 @@ class ViewProviderBuildingPart:
                     if self.clip:
                         sg.removeChild(self.clip)
                         self.clip = None
-                    for o in Draft.getGroupContents(vobj.Object.Group,walls=True):
+                    for o in Draft.get_group_contents(vobj.Object.Group,
+                                                      walls=True):
                         if hasattr(o.ViewObject,"Lighting"):
                             o.ViewObject.Lighting = "One side"
                     self.clip = coin.SoClipPlane()
@@ -745,7 +765,8 @@ class ViewProviderBuildingPart:
                     if self.clip:
                         sg.removeChild(self.clip)
                         self.clip = None
-                    for o in Draft.getGroupContents(vobj.Object.Group,walls=True):
+                    for o in Draft.get_group_contents(vobj.Object.Group,
+                                                      walls=True):
                         if hasattr(o.ViewObject,"Lighting"):
                             o.ViewObject.Lighting = "Two side"
         elif prop == "Visibility":
@@ -760,7 +781,7 @@ class ViewProviderBuildingPart:
         if self.clip:
             sg.removeChild(self.clip)
             self.clip = None
-        for o in Draft.getGroupContents(vobj.Object.Group,walls=True):
+        for o in Draft.get_group_contents(vobj.Object.Group, walls=True):
             if hasattr(o.ViewObject,"Lighting"):
                 o.ViewObject.Lighting = "Two side"
         return True
@@ -828,6 +849,7 @@ class ViewProviderBuildingPart:
                 else:
                     self.wptext = FreeCADGui.draftToolBar.wplabel.text()
                     FreeCADGui.draftToolBar.wplabel.setText(self.Object.Label)
+            FreeCAD.DraftWorkingPlane.lastBuildingPart = self.Object.Name
 
     def writeCamera(self):
 

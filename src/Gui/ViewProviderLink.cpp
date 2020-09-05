@@ -41,16 +41,18 @@
 # include <Inventor/nodes/SoCube.h>
 # include <Inventor/sensors/SoNodeSensor.h>
 #endif
+#include <cctype>
 #include <atomic>
 #include <QApplication>
 #include <QFileInfo>
 #include <QMenu>
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/bind.hpp>
+#include <boost_bind_bind.hpp>
 #include <Base/Console.h>
 #include <Base/PlacementPy.h>
 #include <Base/MatrixPy.h>
 #include <Base/BoundBoxPy.h>
+#include <Base/Tools.h>
 #include <App/ComplexGeoData.h>
 #include <App/GeoFeature.h>
 #include "Application.h"
@@ -363,6 +365,7 @@ public:
                 pcSnapshot = new SoFCSelectionRoot;
             else
                 pcSnapshot = new SoSeparator;
+            pcSnapshot->boundingBoxCaching = SoSeparator::OFF;
             pcSnapshot->renderCaching = SoSeparator::OFF;
             std::ostringstream ss;
             ss << pcLinked->getObject()->getNameInDocument() 
@@ -680,7 +683,7 @@ void intrusive_ptr_release(Gui::LinkInfo *px){
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-EXTENSION_TYPESYSTEM_SOURCE(Gui::ViewProviderLinkObserver,Gui::ViewProviderExtension);
+EXTENSION_TYPESYSTEM_SOURCE(Gui::ViewProviderLinkObserver,Gui::ViewProviderExtension)
 
 ViewProviderLinkObserver::ViewProviderLinkObserver() {
     // TODO: any better way to get deleted automatically?
@@ -861,7 +864,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-TYPESYSTEM_SOURCE(Gui::LinkView,Base::BaseClass);
+TYPESYSTEM_SOURCE(Gui::LinkView,Base::BaseClass)
 
 LinkView::LinkView()
     :nodeType(SnapshotTransform)
@@ -1711,15 +1714,22 @@ QPixmap ViewProviderLink::getOverlayPixmap() const {
 void ViewProviderLink::onChanged(const App::Property* prop) {
     if(prop==&ChildViewProvider) {
         childVp = freecad_dynamic_cast<ViewProviderDocumentObject>(ChildViewProvider.getObject().get());
-        if(childVp) {
-            childVp->setPropertyPrefix("ChildViewProvider.");
-            childVp->Visibility.setValue(getObject()->Visibility.getValue());
-            childVp->attach(getObject());
-            childVp->updateView();
-            childVp->setActiveMode();
-            if(pcModeSwitch->getNumChildren()>1){
-                childVpLink = LinkInfo::get(childVp,0);
-                pcModeSwitch->replaceChild(1,childVpLink->getSnapshot(LinkView::SnapshotTransform));
+        if(childVp && getObject()) {
+            if(strcmp(childVp->getTypeId().getName(),getObject()->getViewProviderName())!=0
+                    && !childVp->allowOverride(*getObject()))
+            {
+                FC_ERR("Child view provider type '" << childVp->getTypeId().getName()
+                        << "' does not support " << getObject()->getFullName());
+            } else {
+                childVp->setPropertyPrefix("ChildViewProvider.");
+                childVp->Visibility.setValue(getObject()->Visibility.getValue());
+                childVp->attach(getObject());
+                childVp->updateView();
+                childVp->setActiveMode();
+                if(pcModeSwitch->getNumChildren()>1){
+                    childVpLink = LinkInfo::get(childVp,0);
+                    pcModeSwitch->replaceChild(1,childVpLink->getSnapshot(LinkView::SnapshotTransform));
+                }
             }
         }
     }else if(!isRestoring()) {
@@ -1800,9 +1810,11 @@ void ViewProviderLink::updateDataPrivate(App::LinkBaseExtension *ext, const App:
         if(!prop->testStatus(App::Property::User3))
             applyColors();
     }else if(prop==ext->getScaleProperty() || prop==ext->getScaleVectorProperty()) {
-        const auto &v = ext->getScaleVector();
-        pcTransform->scaleFactor.setValue(v.x,v.y,v.z);
-        linkView->renderDoubleSide(v.x*v.y*v.z < 0);
+        if(!prop->testStatus(App::Property::User3)) {
+            const auto &v = ext->getScaleVector();
+            pcTransform->scaleFactor.setValue(v.x,v.y,v.z);
+            linkView->renderDoubleSide(v.x*v.y*v.z < 0);
+        }
     }else if(prop == ext->getPlacementProperty() || prop == ext->getLinkPlacementProperty()) {
         auto propLinkPlacement = ext->getLinkPlacementProperty();
         if(!propLinkPlacement || propLinkPlacement == prop) {
@@ -1812,22 +1824,16 @@ void ViewProviderLink::updateDataPrivate(App::LinkBaseExtension *ext, const App:
             pcTransform->scaleFactor.setValue(v.x,v.y,v.z);
             linkView->renderDoubleSide(v.x*v.y*v.z < 0);
         }
-    }else if(prop == ext->getLinkedObjectProperty() ||
-             prop == ext->getSubElementsProperty()) 
-    {
+    }else if(prop == ext->getLinkedObjectProperty()) {
+
         if(!prop->testStatus(App::Property::User3)) {
             std::vector<std::string> subs;
             const char *subname = ext->getSubName();
             std::string sub;
             if(subname)
                 sub = subname;
-            const char *subElement = ext->getSubElement();
-            if(subElement) {
-                hasSubElement = true;
-                subs.push_back(sub+subElement);
-            }else
-                hasSubElement = false;
-            for(const auto &s : ext->getSubElementsValue()) {
+            hasSubElement = false;
+            for(const auto &s : ext->getSubElements()) {
                 if(s.empty()) continue;
                 hasSubElement = true;
                 subs.push_back(sub+s);
@@ -2155,7 +2161,8 @@ bool ViewProviderLink::canDropObjects() const {
 }
 
 bool ViewProviderLink::canDropObjectEx(App::DocumentObject *obj, 
-        App::DocumentObject *owner, const char *subname, const std::vector<std::string> &elements) const
+        App::DocumentObject *owner, const char *subname, 
+        const std::vector<std::string> &subElements) const
 {
     if(pcObject == obj || pcObject == owner)
         return false;
@@ -2172,36 +2179,45 @@ bool ViewProviderLink::canDropObjectEx(App::DocumentObject *obj,
                 if(linkedVdp->getObject()==obj || linkedVdp->getObject()==owner)
                     return false;
             }
-            return linked->canDropObjectEx(obj,owner,subname,elements);
+            return linked->canDropObjectEx(obj,owner,subname,subElements);
         }
     }
     if(obj->getDocument() != getObject()->getDocument() && 
-       !freecad_dynamic_cast<App::PropertyXLink>(ext->getLinkedObjectValue()))
+       !freecad_dynamic_cast<App::PropertyXLink>(ext->getLinkedObjectProperty()))
         return false;
 
     return true;
 }
 
 std::string ViewProviderLink::dropObjectEx(App::DocumentObject* obj, 
-    App::DocumentObject *owner, const char *subname, const std::vector<std::string> &elements) 
+    App::DocumentObject *owner, const char *subname, 
+    const std::vector<std::string> &subElements) 
 {
     auto ext = getLinkExtension();
+    if (!ext)
+        return std::string();
+
     if(isGroup(ext)) {
         size_t size = ext->getElementListValue().size();
         ext->setLink(size,obj);
         return std::to_string(size)+".";
     }
 
-    if(!ext || !ext->getLinkedObjectProperty() || hasElements(ext))
+    if(!ext->getLinkedObjectProperty() || hasElements(ext))
         return std::string();
 
     if(!hasSubName) {
         auto linked = getLinkedView(false,ext);
         if(linked)
-            return linked->dropObjectEx(obj,owner,subname,elements);
+            return linked->dropObjectEx(obj,owner,subname,subElements);
     }
-    if(owner)
-        ext->setLink(-1,owner,subname);
+    if(owner) {
+        if(ext->getSubElements().size())
+            ext->setLink(-1,owner,subname,subElements);
+        else
+            ext->setLink(-1,owner,subname);
+    } else if(ext->getSubElements().size())
+        ext->setLink(-1,obj,0,subElements);
     else
         ext->setLink(-1,obj,0);
     return std::string();
@@ -2237,7 +2253,7 @@ bool ViewProviderLink::getElementPicked(const SoPickedPoint *pp, std::string &su
     bool ret = linkView->linkGetElementPicked(pp,subname);
     if(!ret)
         return ret;
-    if(isGroup(ext)) {
+    if(isGroup(ext,true)) {
         const char *sub = 0;
         int idx = App::LinkBaseExtension::getArrayIndex(subname.c_str(),&sub);
         if(idx>=0 ) {
@@ -2320,9 +2336,17 @@ bool ViewProviderLink::doubleClicked() {
 void ViewProviderLink::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
     auto ext = getLinkExtension();
-    if(linkEdit(ext)) 
+    if (!ext)
+        return;
+
+    if(linkEdit(ext)) {
         linkView->getLinkedView()->setupContextMenu(menu,receiver,member);
-    if(ext && ext->getColoredElementsProperty()) {
+    } else if(ext->getPlacementProperty() || ext->getLinkPlacementProperty()) {
+        QAction* act = menu->addAction(QObject::tr("Transform"), receiver, member);
+        act->setData(QVariant((int)ViewProvider::Transform));
+    }
+
+    if(ext->getColoredElementsProperty()) {
         bool found = false;
         for(auto action : menu->actions()) {
             if(action->data().toInt() == ViewProvider::Color) {
@@ -2389,20 +2413,58 @@ bool ViewProviderLink::initDraggingPlacement() {
 
     dragCtx.reset(new DraggerContext);
 
+    dragCtx->preTransform = doc->getEditingTransform();
+    doc->setEditingTransform(dragCtx->preTransform);
+
     const auto &pla = ext->getPlacementProperty()?
         ext->getPlacementValue():ext->getLinkPlacementValue();
 
-    dragCtx->preTransform = doc->getEditingTransform();
-    auto plaMat = pla.toMatrix();
-    plaMat.inverse();
-    dragCtx->preTransform *= plaMat;
+    // Cancel out our own transformation from the editing transform, because
+    // the dragger is meant to change our transformation.
+    dragCtx->preTransform *= pla.inverse().toMatrix();
 
-    dragCtx->bbox = linkView->getBoundBox();
-    const auto &offset = Base::Placement(
-            dragCtx->bbox.GetCenter(),Base::Rotation());
-    dragCtx->initialPlacement = pla * offset;
-    dragCtx->mat = offset.toMatrix();
-    dragCtx->mat.inverse();
+    dragCtx->bbox = getBoundingBox(0,false);
+    // The returned bounding box is before our own transform, but we still need
+    // to scale it to get the correct center.
+    auto scale = ext->getScaleVector();
+    dragCtx->bbox.ScaleX(scale.x);
+    dragCtx->bbox.ScaleY(scale.y);
+    dragCtx->bbox.ScaleZ(scale.z);
+
+    auto modifier = QApplication::queryKeyboardModifiers();
+    // Determine the dragger base position
+    // if CTRL key is down, force to use bound box center,
+    // if SHIFT key is down, force to use origine,
+    // if not a sub link, use origine,
+    // else (e.g. group, array, sub link), use bound box center
+    if(modifier != Qt::ShiftModifier
+            && ((ext->getLinkedObjectValue() && !linkView->hasSubs())
+                || modifier == Qt::ControlModifier))
+    {
+        App::PropertyPlacement *propPla = 0;
+        if(ext->getLinkTransformValue() && ext->getLinkedObjectValue()) {
+            propPla = Base::freecad_dynamic_cast<App::PropertyPlacement>(
+                    ext->getLinkedObjectValue()->getPropertyByName("Placement"));
+        }
+        if(propPla) {
+            dragCtx->initialPlacement = pla * propPla->getValue();
+            dragCtx->mat *= propPla->getValue().inverse().toMatrix();
+        } else
+            dragCtx->initialPlacement = pla;
+
+    } else {
+        auto offset = dragCtx->bbox.GetCenter();
+
+        // This determines the initial placement of the dragger. We place it at the
+        // center of our bounding box.
+        dragCtx->initialPlacement = pla * Base::Placement(offset, Base::Rotation());
+
+        // dragCtx->mat is to transform the dragger placement to our own placement.
+        // Since the dragger is placed at the center, we set the transformation by
+        // moving the same amount in reverse direction.
+        dragCtx->mat.move(Vector3d() - offset);
+    }
+
     return true;
 }
 
@@ -2416,7 +2478,15 @@ ViewProvider *ViewProviderLink::startEditing(int mode) {
         return inherited::startEditing(mode);
     }
 
+    static thread_local bool _pendingTransform;
+    static thread_local Base::Matrix4D  _editingTransform;
+
+    auto doc = Application::Instance->editDocument();
+
     if(mode==ViewProvider::Transform) {
+        if(_pendingTransform && doc)
+            doc->setEditingTransform(_editingTransform);
+            
         if(!initDraggingPlacement())
             return 0;
         if(useCenterballDragger)
@@ -2442,7 +2512,6 @@ ViewProvider *ViewProviderLink::startEditing(int mode) {
     // and set color. We need to find a better place to declare this constant.
     mode &= ~0x8000;
 
-    auto doc = Application::Instance->editDocument();
     if(!doc) {
         FC_ERR("no editing document");
         return 0;
@@ -2462,8 +2531,12 @@ ViewProvider *ViewProviderLink::startEditing(int mode) {
         FC_ERR("no linked viewprovider");
         return 0;
     }
-    // amend the editing transformation with the link transformation
+    // Amend the editing transformation with the link transformation.
+    // But save it first in case the linked object reroute the editing request
+    // back to us.
+    _editingTransform = doc->getEditingTransform();
     doc->setEditingTransform(doc->getEditingTransform()*mat);
+    Base::FlagToggler<> guard(_pendingTransform);
     return vpd->startEditing(mode);
 }
 
@@ -2774,13 +2847,47 @@ std::map<std::string, App::Color> ViewProviderLink::getElementColors(const char 
         return colors;
     }
 
+    int element_count = ext->getElementCountValue();
+
     for(auto &sub : subs) {
         if(++i >= size)
             break;
-        if((isPrefix && (boost::starts_with(sub.first,subname) || boost::starts_with(sub.second,subname))) ||
-           (!isPrefix && (sub.first==subname || sub.second==subname)))
+
+        int offset = 0;
+
+        if(sub.second.size() && element_count && !std::isdigit(sub.second[0])) {
+            // For checking and expanding color override of array base
+            if(!subname[0]) {
+                std::ostringstream ss;
+                ss << "0." << sub.second;
+                if(getObject()->getSubObject(ss.str().c_str())) {
+                    for(int j=0;j<element_count;++j) {
+                        ss.str("");
+                        ss << j << '.' << sub.second;
+                        colors.emplace(ss.str(),OverrideColorList[i]);
+                    }
+                    continue;
+                }
+            } else if (std::isdigit(subname[0])) {
+                const char *dot = strchr(subname,'.');
+                if(dot) 
+                    offset = dot-subname+1;
+            }
+        }
+
+        if(isPrefix) {
+            if(!boost::starts_with(sub.first,subname+offset) 
+                    && !boost::starts_with(sub.second,subname+offset))
+                continue;
+        }else if(sub.first!=subname+offset && sub.second!=subname+offset)
+            continue;
+
+        if(offset) 
+            colors.emplace(std::string(subname,offset)+sub.second, OverrideColorList[i]);
+        else
             colors[sub.second] = OverrideColorList[i];
     }
+
     if(!subname[0])
         return colors;
 
@@ -2818,6 +2925,10 @@ void ViewProviderLink::setElementColors(const std::map<std::string, App::Color> 
     if(!ext || ! ext->getColoredElementsProperty())
         return;
 
+    // For checking and collapsing array element color
+    std::map<std::string,std::map<int,App::Color> > subMap;
+    int element_count = ext->getElementCountValue();
+
     std::vector<std::string> subs;
     std::vector<App::Color> colors;
     App::Color faceColor;
@@ -2826,11 +2937,43 @@ void ViewProviderLink::setElementColors(const std::map<std::string, App::Color> 
         if(!hasFaceColor && v.first == "Face") {
             hasFaceColor = true;
             faceColor = v.second;
-        }else{
+            continue;
+        }
+        
+        if(element_count && v.first.size() && std::isdigit(v.first[0])) {
+            // In case of array, check if there are override of the same
+            // sub-element for every array element. And collapse those overrides
+            // into one without the index.
+            const char *dot = strchr(v.first.c_str(),'.');
+            if(dot) {
+                subMap[dot+1][std::atoi(v.first.c_str())] = v.second;
+                continue;
+            }
+        }
+        subs.push_back(v.first);
+        colors.push_back(v.second);
+    }
+    for(auto &v : subMap) {
+        if(element_count == (int)v.second.size()) {
+            App::Color firstColor = v.second.begin()->second;
             subs.push_back(v.first);
-            colors.push_back(v.second);
+            colors.push_back(firstColor);
+            for(auto it=v.second.begin();it!=v.second.end();) {
+                if(it->second==firstColor)
+                    it = v.second.erase(it);
+                else
+                    ++it;
+            }
+        }
+        std::ostringstream ss;
+        for(auto &colorInfo : v.second) {
+            ss.str("");
+            ss << colorInfo.first << '.' << v.first;
+            subs.push_back(ss.str());
+            colors.push_back(colorInfo.second);
         }
     }
+
     auto prop = ext->getColoredElementsProperty();
     if(subs!=prop->getSubValues() || colors!=OverrideColorList.getValues()) {
         prop->setStatus(App::Property::User3,true);

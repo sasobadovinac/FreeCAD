@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de)          *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -24,7 +24,7 @@
 #define BASE_IINPUTSOURCE_H
 
 
-#include <iostream>
+#include <iosfwd>
 
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/util/BinInputStream.hpp>

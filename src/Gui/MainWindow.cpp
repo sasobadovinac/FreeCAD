@@ -28,6 +28,7 @@
 # include <QThread>
 # include <QBuffer>
 # include <QByteArray>
+# include <QCheckBox>
 # include <QClipboard>
 # include <QMimeData>
 # include <QCloseEvent>
@@ -52,7 +53,9 @@
 # include <QWhatsThis>
 #endif
 
-#include <boost/bind.hpp>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+# include <QScreen>
+#endif
 
 // FreeCAD Base header
 #include <Base/Parameter.h>
@@ -72,6 +75,7 @@
 #include "Assistant.h"
 #include "DownloadManager.h"
 #include "WaitCursor.h"
+#include "FileDialog.h"
 
 #include "Action.h"
 #include "Command.h"
@@ -97,7 +101,7 @@
 #include "MenuManager.h"
 //#include "ToolBox.h"
 #include "ReportView.h"
-#include "CombiView.h"
+#include "ComboView.h"
 #include "PythonConsole.h"
 #include "TaskView/TaskView.h"
 #include "DAGView/DAGView.h"
@@ -116,8 +120,9 @@
 #include "View3DInventor.h"
 #include "View3DInventorViewer.h"
 #include "DlgObjectSelection.h"
+#include "Tools.h"
 
-FC_LOG_LEVEL_INIT("MainWindow",false,true,true);
+FC_LOG_LEVEL_INIT("MainWindow",false,true,true)
 
 #if defined(Q_OS_WIN32)
 #define slots
@@ -286,6 +291,12 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
     // global access 
     instance = this;
 
+    // support for grouped dragging of dockwidgets
+    // https://woboq.com/blog/qdockwidget-changes-in-56.html
+#if QT_VERSION >= 0x050600
+    setDockOptions(dockOptions() | QMainWindow::GroupedDragging);
+#endif
+
     // Create the layout containing the workspace and a tab bar
     d->mdiArea = new QMdiArea();
     // Movable tabs
@@ -324,7 +335,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
     d->sizeLabel = new QLabel(tr("Dimension"), statusBar());
     d->sizeLabel->setMinimumWidth(120);
     statusBar()->addWidget(d->actionLabel, 1);
-    QProgressBar* progressBar = Gui::Sequencer::instance()->getProgressBar(statusBar());
+    QProgressBar* progressBar = Gui::SequencerBar::instance()->getProgressBar(statusBar());
     statusBar()->addPermanentWidget(progressBar, 0);
     statusBar()->addPermanentWidget(d->sizeLabel, 0);
 
@@ -344,6 +355,10 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
     connect(d->activityTimer, SIGNAL(timeout()),this, SLOT(_updateActions()));
     d->activityTimer->setSingleShot(false);
     d->activityTimer->start(150);
+
+    // update view-sensitive commands when clipboard has changed
+    QClipboard *clipbd = QApplication::clipboard();
+    connect(clipbd, SIGNAL(dataChanged()), this, SLOT(updateEditorActions()));
 
     // show main window timer
     d->visibleTimer = new QTimer(this);
@@ -379,17 +394,19 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
     }
 #endif
 
+    bool treeView = false, propertyView = false;
     if (hiddenDockWindows.find("Std_TreeView") == std::string::npos) {
         //work through parameter.
         ParameterGrp::handle group = App::GetApplication().GetUserParameter().
                 GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("DockWindows")->GetGroup("TreeView");
         bool enabled = group->GetBool("Enabled", true);
-        if(enabled != group->GetBool("Enabled", false)) {
+        if (enabled != group->GetBool("Enabled", false)) {
             enabled = App::GetApplication().GetUserParameter().GetGroup("BaseApp")
                             ->GetGroup("MainWindow")->GetGroup("DockWindows")->GetBool("Std_TreeView",false);
         }
         group->SetBool("Enabled", enabled); //ensure entry exists.
         if (enabled) {
+            treeView = true;
             TreeDockWidget* tree = new TreeDockWidget(0, this);
             tree->setObjectName
                 (QString::fromLatin1(QT_TRANSLATE_NOOP("QDockWidget","Tree view")));
@@ -404,12 +421,13 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
         ParameterGrp::handle group = App::GetApplication().GetUserParameter().
                 GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("DockWindows")->GetGroup("PropertyView");
         bool enabled = group->GetBool("Enabled", true);
-        if(enabled != group->GetBool("Enabled", false)) {
+        if (enabled != group->GetBool("Enabled", false)) {
             enabled = App::GetApplication().GetUserParameter().GetGroup("BaseApp")
                             ->GetGroup("MainWindow")->GetGroup("DockWindows")->GetBool("Std_PropertyView",false);
         }
         group->SetBool("Enabled", enabled); //ensure entry exists.
         if (enabled) {
+            propertyView = true;
             PropertyDockView* pcPropView = new PropertyDockView(0, this);
             pcPropView->setObjectName
                 (QString::fromLatin1(QT_TRANSLATE_NOOP("QDockWidget","Property view")));
@@ -428,11 +446,18 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
     }
 
     // Combo view
-    if (hiddenDockWindows.find("Std_CombiView") == std::string::npos) {
-        CombiView* pcCombiView = new CombiView(0, this);
-        pcCombiView->setObjectName(QString::fromLatin1(QT_TRANSLATE_NOOP("QDockWidget","Combo View")));
-        pcCombiView->setMinimumWidth(150);
-        pDockMgr->registerDockWindow("Std_CombiView", pcCombiView);
+    if (hiddenDockWindows.find("Std_ComboView") == std::string::npos) {
+        bool enable = !treeView || !propertyView;
+        if (!enable) {
+            ParameterGrp::handle group = App::GetApplication().GetUserParameter().
+                    GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("DockWindows")->GetGroup("ComboView");
+            enable = group->GetBool("Enabled", true);
+        }
+
+        ComboView* pcComboView = new ComboView(enable, 0, this);
+        pcComboView->setObjectName(QString::fromLatin1(QT_TRANSLATE_NOOP("QDockWidget","Combo View")));
+        pcComboView->setMinimumWidth(150);
+        pDockMgr->registerDockWindow("Std_ComboView", pcComboView);
     }
 
 #if QT_VERSION < 0x040500
@@ -653,7 +678,9 @@ bool MainWindow::closeAllDocuments (bool close)
             continue;
         if(!gdoc->canClose(false))
             return false;
-        if(!gdoc->isModified() || doc->testStatus(App::Document::PartialDoc))
+        if(!gdoc->isModified() 
+                || doc->testStatus(App::Document::PartialDoc)
+                || doc->testStatus(App::Document::TempDoc))
             continue;
         bool save = saveAll;
         if(!save && checkModify) {
@@ -688,6 +715,15 @@ void MainWindow::activatePreviousWindow ()
 
 void MainWindow::activateWorkbench(const QString& name)
 {
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    bool saveWB = hGrp->GetBool("SaveWBbyTab", false);
+    QMdiSubWindow* subWin = d->mdiArea->activeSubWindow();
+    if (subWin /*!= nullptr*/ && saveWB) {
+        QString currWb = subWin->property("ownWB").toString();
+        if (currWb.isEmpty() || currWb != name) {
+            subWin->setProperty("ownWB", name);
+        }
+    }
     // emit this signal
     workbenchActivated(name);
     updateActions(true);
@@ -776,12 +812,9 @@ bool MainWindow::event(QEvent *e)
         if (!temp)
             return true;
         View3DInventorViewer *view = temp->getViewer();
-        if (!view)
-            return true;
-        QWidget *viewWidget = view->getGLWidget();
-        if (viewWidget) {
+        if (view) {
             Spaceball::MotionEvent anotherEvent(*motionEvent);
-            qApp->sendEvent(viewWidget, &anotherEvent);
+            qApp->sendEvent(view, &anotherEvent);
         }
         return true;
     }else if(e->type() == QEvent::StatusTip) {
@@ -1008,6 +1041,18 @@ void MainWindow::onWindowActivated(QMdiSubWindow* w)
     if (!w) return;
     MDIView* view = dynamic_cast<MDIView*>(w->widget());
 
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    bool saveWB = hGrp->GetBool("SaveWBbyTab", false);
+    if (saveWB) {
+        QString currWb = w->property("ownWB").toString();
+        if (! currWb.isEmpty()) {
+            this->activateWorkbench(currWb);
+        }
+        else {
+            w->setProperty("ownWB", QString::fromStdString(WorkbenchManager::instance()->active()->name()));
+        }
+    }
+    
     // Even if windowActivated() signal is emitted mdi doesn't need to be a top-level window.
     // This happens e.g. if two windows are top-level and one of them gets docked again.
     // QWorkspace emits the signal then even though the other window is in front.
@@ -1024,6 +1069,7 @@ void MainWindow::onWindowActivated(QMdiSubWindow* w)
     // set active the appropriate window (it needs not to be part of mdiIds, e.g. directly after creation)
     d->activeView = view;
     Application::Instance->viewActivated(view);
+    updateActions(true);
 }
 
 void MainWindow::onWindowsMenuAboutToShow()
@@ -1274,28 +1320,71 @@ void MainWindow::appendRecentFile(const QString& filename)
     }
 }
 
+void MainWindow::appendRecentMacro(const QString& filename)
+{
+    RecentMacrosAction *recent = this->findChild<RecentMacrosAction *>
+        (QString::fromLatin1("recentMacros"));
+    if (recent) {
+        recent->appendFile(filename);
+    }
+}
+
 void MainWindow::updateActions(bool delay)
 {
     //make it safe to call before the main window is actually created
     if (!instance)
         return;
-    if(!d->activityTimer->isActive())
-        d->activityTimer->start(150);
-    else if(delay) {
-        if(!d->actionUpdateDelay)
-            d->actionUpdateDelay=1;
-    }else
-        d->actionUpdateDelay=-1;
+
+    if (!d->activityTimer->isActive()) {
+        // If for some reason updateActions() is called from a worker thread
+        // we must avoid to directly call QTimer::start() because this leaves
+        // the whole application in a weird state
+        if (d->activityTimer->thread() != QThread::currentThread()) {
+            QMetaObject::invokeMethod(d->activityTimer, "start", Qt::QueuedConnection,
+                QGenericReturnArgument(), Q_ARG(int, 150));
+        }
+        else {
+            d->activityTimer->start(150);
+        }
+    }
+    else if (delay) {
+        if (!d->actionUpdateDelay)
+            d->actionUpdateDelay = 1;
+    }
+    else {
+        d->actionUpdateDelay = -1;
+    }
 }
 
 void MainWindow::_updateActions()
 {
-    if (isVisible() && d->actionUpdateDelay<=0) {
+    if (isVisible() && d->actionUpdateDelay <= 0) {
         FC_LOG("update actions");
         d->activityTimer->stop();
         Application::Instance->commandManager().testActive();
     }
     d->actionUpdateDelay = 0;
+}
+
+void MainWindow::updateEditorActions()
+{
+    Command* cmd = nullptr;
+    CommandManager& mgr = Application::Instance->commandManager();
+
+    cmd = mgr.getCommandByName("Std_Cut");
+    if (cmd) cmd->testActive();
+
+    cmd = mgr.getCommandByName("Std_Copy");
+    if (cmd) cmd->testActive();
+
+    cmd = mgr.getCommandByName("Std_Paste");
+    if (cmd) cmd->testActive();
+
+    cmd = mgr.getCommandByName("Std_Undo");
+    if (cmd) cmd->testActive();
+
+    cmd = mgr.getCommandByName("Std_Redo");
+    if (cmd) cmd->testActive();
 }
 
 void MainWindow::switchToTopLevelMode()
@@ -1332,7 +1421,11 @@ void MainWindow::loadWindowSettings()
     QString qtver = QString::fromLatin1("Qt%1.%2").arg(major).arg(minor);
     QSettings config(vendor, application);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    QRect rect = QApplication::primaryScreen()->availableGeometry();
+#else
     QRect rect = QApplication::desktop()->availableGeometry();
+#endif
     int maxHeight = rect.height();
     int maxWidth = rect.width();
 
@@ -1350,10 +1443,10 @@ void MainWindow::loadWindowSettings()
     this->move(pos);
 
     // tmp. disable the report window to suppress some bothering warnings
-    Base::Console().SetEnabledMsgType("ReportOutput", ConsoleMsgType::MsgType_Wrn, false);
+    Base::Console().SetEnabledMsgType("ReportOutput", Base::ConsoleSingleton::MsgType_Wrn, false);
     this->restoreState(config.value(QString::fromLatin1("MainWindowState")).toByteArray());
     std::clog << "Main window restored" << std::endl;
-    Base::Console().SetEnabledMsgType("ReportOutput", ConsoleMsgType::MsgType_Wrn, true);
+    Base::Console().SetEnabledMsgType("ReportOutput", Base::ConsoleSingleton::MsgType_Wrn, true);
 
     bool max = config.value(QString::fromLatin1("Maximized"), false).toBool();
     max ? showMaximized() : show();
@@ -1471,14 +1564,14 @@ QPixmap MainWindow::splashImage() const
         QFont fontExe = painter.font();
         fontExe.setPointSize(20);
         QFontMetrics metricExe(fontExe);
-        int l = metricExe.width(title);
+        int l = QtTools::horizontalAdvance(metricExe, title);
         int w = splash_image.width();
         int h = splash_image.height();
 
         QFont fontVer = painter.font();
         fontVer.setPointSize(12);
         QFontMetrics metricVer(fontVer);
-        int v = metricVer.width(version);
+        int v = QtTools::horizontalAdvance(metricVer, version);
 
         int x = -1, y = -1;
         QRegExp rx(QLatin1String("(\\d+).(\\d+)"));
@@ -1586,11 +1679,13 @@ QMimeData * MainWindow::createMimeDataFromSelection () const
     // if less than ~10 MB
     bool use_buffer=(memsize < 0xA00000);
     QByteArray res;
-    try {
-        res.reserve(memsize);
-    }
-    catch (const Base::MemoryException&) {
-        use_buffer = false;
+    if(use_buffer) {
+        try {
+            res.reserve(memsize);
+        }
+        catch (const std::bad_alloc &) {
+            use_buffer = false;
+        }
     }
 
     WaitCursor wc;
@@ -1646,9 +1741,11 @@ void MainWindow::insertFromMimeData (const QMimeData * mimeData)
     else if(mimeData->hasFormat(_MimeDocObjX)) {
         format = _MimeDocObjX;
         hasXLink = true;
-    }else if(mimeData->hasFormat(_MimeDocObjFile))
+    }else if(mimeData->hasFormat(_MimeDocObjFile)) {
+        format = _MimeDocObjFile;
         fromDoc = true;
-    else if(mimeData->hasFormat(_MimeDocObjXFile)) {
+    }else if(mimeData->hasFormat(_MimeDocObjXFile)) {
+        format = _MimeDocObjXFile;
         fromDoc = true;
         hasXLink = true;
     }else {
@@ -1714,10 +1811,10 @@ void MainWindow::unsetUrlHandler(const QString &scheme)
     d->urlHandler.remove(scheme);
 }
 
-void MainWindow::loadUrls(App::Document* doc, const QList<QUrl>& url)
+void MainWindow::loadUrls(App::Document* doc, const QList<QUrl>& urls)
 {
     QStringList files;
-    for (QList<QUrl>::ConstIterator it = url.begin(); it != url.end(); ++it) {
+    for (QList<QUrl>::ConstIterator it = urls.begin(); it != urls.end(); ++it) {
         QMap<QString, QPointer<UrlHandler> >::iterator jt = d->urlHandler.find(it->scheme());
         if (jt != d->urlHandler.end() && !jt->isNull()) {
             // delegate the loading to the url handler
@@ -1728,7 +1825,7 @@ void MainWindow::loadUrls(App::Document* doc, const QList<QUrl>& url)
         QFileInfo info((*it).toLocalFile());
         if (info.exists() && info.isFile()) {
             if (info.isSymLink())
-                info.setFile(info.readLink());
+                info.setFile(info.symLinkTarget());
             std::vector<std::string> module = App::GetApplication()
                 .getImportModules(info.completeSuffix().toLatin1());
             if (module.empty()) {
@@ -1969,43 +2066,26 @@ void StatusBarObserver::OnChange(Base::Subject<const char*> &rCaller, const char
     }
 }
 
-/** Get called when a message is issued. 
- * The message is displayed on the ststus bar. 
- */
-void StatusBarObserver::Message(const char * m)
+void StatusBarObserver::SendLog(const std::string& msg, Base::LogStyle level)
 {
-    // Send the event to the main window to allow thread-safety. Qt will delete it when done.
-    CustomMessageEvent* ev = new CustomMessageEvent(MainWindow::Msg, QString::fromUtf8(m));
-    QApplication::postEvent(getMainWindow(), ev);
-}
+    int messageType = -1;
+    switch(level){
+        case Base::LogStyle::Warning:
+            messageType = MainWindow::Wrn;
+            break;
+        case Base::LogStyle::Message:
+            messageType = MainWindow::Msg;
+            break;
+        case Base::LogStyle::Error:
+            messageType = MainWindow::Err;
+            break;
+        case Base::LogStyle::Log:
+            messageType = MainWindow::Log;
+            break;
+    }
 
-/** Get called when a warning is issued. 
- * The message is displayed on the ststus bar. 
- */
-void StatusBarObserver::Warning(const char *m)
-{
     // Send the event to the main window to allow thread-safety. Qt will delete it when done.
-    CustomMessageEvent* ev = new CustomMessageEvent(MainWindow::Wrn, QString::fromUtf8(m));
-    QApplication::postEvent(getMainWindow(), ev);
-}
-
-/** Get called when an error is issued. 
- * The message is displayed on the ststus bar. 
- */
-void StatusBarObserver::Error  (const char *m)
-{
-    // Send the event to the main window to allow thread-safety. Qt will delete it when done.
-    CustomMessageEvent* ev = new CustomMessageEvent(MainWindow::Err, QString::fromUtf8(m));
-    QApplication::postEvent(getMainWindow(), ev);
-}
-
-/** Get called when a log message is issued. 
- * The message is used to create an Inventor node for debug purposes. 
- */
-void StatusBarObserver::Log(const char *m)
-{
-    // Send the event to the main window to allow thread-safety. Qt will delete it when done.
-    CustomMessageEvent* ev = new CustomMessageEvent(MainWindow::Log, QString::fromUtf8(m));
+    CustomMessageEvent* ev = new CustomMessageEvent(messageType, QString::fromUtf8(msg.c_str()));
     QApplication::postEvent(getMainWindow(), ev);
 }
 

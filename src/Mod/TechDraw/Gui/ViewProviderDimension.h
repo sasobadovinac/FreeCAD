@@ -44,18 +44,25 @@ public:
     /// destructor
     virtual ~ViewProviderDimension();
 
-    App::PropertyFont        Font;
-    App::PropertyLength      Fontsize;
-    App::PropertyFloat       LineWidth;
-    App::PropertyColor       Color;
+    App::PropertyFont   Font;
+    App::PropertyLength Fontsize;
+    App::PropertyLength LineWidth;
+    App::PropertyColor  Color;
 
-    static const int STD_STYLE_ISO_ORIENTED   = 0;
-    static const int STD_STYLE_ISO_LEVELLED   = 1;
-    static const int STD_STYLE_ASME_REGULAR   = 2;
-    static const int STD_STYLE_ASME_INLINED   = 3;
-
+    static const int STD_STYLE_ISO_ORIENTED     = 0;
+    static const int STD_STYLE_ISO_REFERENCING  = 1;
+    static const int STD_STYLE_ASME_INLINED     = 2;
+    static const int STD_STYLE_ASME_REFERENCING = 3;
     App::PropertyEnumeration StandardAndStyle;
-    App::PropertyBool        ExtendToCenter;
+
+    static const int REND_EXTENT_NONE     = 0;
+    static const int REND_EXTENT_MINIMAL  = 1;
+    static const int REND_EXTENT_CONFINED = 2;
+    static const int REND_EXTENT_REDUCED  = 3;
+    static const int REND_EXTENT_NORMAL   = 4;
+    static const int REND_EXTENT_EXPANDED = 5;
+    App::PropertyEnumeration RenderingExtent;
+
     App::PropertyBool        FlipArrowheads;
 
     virtual void attach(App::DocumentObject *);
@@ -68,9 +75,19 @@ public:
 
     virtual TechDraw::DrawViewDimension* getViewObject() const;
 
-private:
+    App::Color prefColor() const;
+    std::string prefFont() const;
+    double prefFontSize() const;
+    double prefWeight() const;
+    int prefStandardAndStyle() const;
+    virtual bool canDelete(App::DocumentObject* obj) const;
 
+protected:
+    virtual void handleChangedPropertyType(Base::XMLReader &reader, const char *TypeName, App::Property * prop);
+
+private:
     static const char *StandardAndStyleEnums[];
+    static const char *RenderingExtentEnums[];
 
 };
 

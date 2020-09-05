@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de)          *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2011 Werner Mayer <wmayer[at]users.sourceforge.net>     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -41,7 +42,7 @@
 #include "DocumentObjectExtension.h"
 #include "GeoFeatureGroupExtension.h"
 #include <App/DocumentObjectPy.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 FC_LOG_LEVEL_INIT("App",true,true)
 
@@ -283,14 +284,24 @@ void DocumentObject::getOutList(int options, std::vector<DocumentObject*> &res) 
     std::vector<Property*> props;
     getPropertyList(props);
     bool noHidden = !!(options & OutListNoHidden);
-    bool noXLinked = !!(options & OutListNoXLinked);
+    std::size_t size = res.size();
     for(auto prop : props) {
         auto link = dynamic_cast<PropertyLinkBase*>(prop);
-        if(link && (!noXLinked || !PropertyXLink::supportXLink(prop)))
+        if(link)
             link->getLinks(res,noHidden);
     }
     if(!(options & OutListNoExpression))
         ExpressionEngine.getLinks(res);
+
+    if(options & OutListNoXLinked) {
+        for(auto it=res.begin()+size;it!=res.end();) {
+            auto obj = *it;
+            if(obj && obj->getDocument()!=getDocument())
+                it = res.erase(it);
+            else
+                ++it;
+        }
+    }
 }
 
 std::vector<App::DocumentObject*> DocumentObject::getOutListOfProperty(App::Property* prop) const
@@ -361,7 +372,7 @@ std::vector<App::DocumentObject*> DocumentObject::getInListRecursive(void) const
 
 #else
 // The original algorithm is highly inefficient in some special case.
-// Considering an object is linked by every other objects. After exculding this
+// Considering an object is linked by every other objects. After excluding this
 // object, there is another object linked by every other of the remaining
 // objects, and so on.  The vector 'result' above will be of magnitude n^2.
 // Even if we replace the vector with a set, we still need to visit that amount
@@ -688,7 +699,7 @@ void DocumentObject::onChanged(const Property* prop)
         return;
 
     if(!GetApplication().isRestoring() && 
-       prop && !prop->testStatus(Property::PartialTrigger) &&
+       !prop->testStatus(Property::PartialTrigger) &&
        getDocument() && 
        getDocument()->testStatus(Document::PartialDoc))
     {
@@ -923,6 +934,11 @@ void DocumentObject::onDocumentRestored()
         ext->onExtendedDocumentRestored();
     if(Visibility.testStatus(Property::Output))
         Visibility.setStatus(Property::NoModify,true);
+}
+
+void DocumentObject::onUndoRedoFinished()
+{
+
 }
 
 void DocumentObject::onSettingDocument()
@@ -1197,4 +1213,3 @@ void DocumentObject::onPropertyStatusChanged(const Property &prop, unsigned long
     if(!Document::isAnyRestoring() && getNameInDocument() && getDocument())
         getDocument()->signalChangePropertyEditor(*getDocument(),prop);
 }
-

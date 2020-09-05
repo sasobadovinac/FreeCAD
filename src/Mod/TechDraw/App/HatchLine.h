@@ -25,9 +25,6 @@
 #ifndef _TechDraw_HATCHLINE_H_
 #define _TechDraw_HATCHLINE_H_
 
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include <vector>
 #include <string>
 
@@ -61,7 +58,7 @@ public:
       bool                empty(void) {return m_parms.empty();}
       int                 size(void)  {return m_parms.size();}
       double              length(void);
-      void                dump(char* title);
+      void                dump(const char* title);
       DashSpec            reversed(void);
       
 private:
@@ -95,7 +92,7 @@ public:
     
     bool isDashed(void);
 
-    void dump(char* title);
+    void dump(const char* title);
 
 private: 
     void init(void);
@@ -115,10 +112,10 @@ public:
     LineSet() {}
     ~LineSet() {}
     
-    void setPATLineSpec(PATLineSpec s) { m_hatchLine = s; }
+    void setPATLineSpec(const PATLineSpec& s) { m_hatchLine = s; }
     void setEdges(std::vector<TopoDS_Edge> e) {m_edges = e;}
     void setGeoms(std::vector<TechDraw::BaseGeom*>  g) {m_geoms = g;}
-    void setBBox(Bnd_Box bb) {m_box = bb;}
+    void setBBox(const Bnd_Box& bb) {m_box = bb;}
 
     std::vector<TopoDS_Edge>    getEdges(void) { return m_edges; }
     TopoDS_Edge                 getEdge(int i) {return m_edges.at(i);}

@@ -202,12 +202,12 @@ struct FlagToggler {
     FlagToggler(Flag &_flag, Flag check)
         :flag(_flag),toggled(check==_flag)
     {
-        if(toggled)
+        if (toggled)
             flag = !flag;
     }
 
     ~FlagToggler() {
-        if(toggled)
+        if (toggled)
             flag = !flag;
     }
 };
@@ -284,6 +284,11 @@ struct BaseExport Tools
     static std::string narrow(const std::wstring& str);
     static std::string escapedUnicodeFromUtf8(const char *s);
     static std::string escapedUnicodeToUtf8(const std::string& s);
+
+    static QString escapeEncodeString(const QString& s);
+    static std::string escapeEncodeString(const std::string& s);
+    static QString escapeEncodeFilename(const QString& s);
+    static std::string escapeEncodeFilename(const std::string& s);
 
     /**
      * @brief toStdString Convert a QString into a UTF-8 encoded std::string.

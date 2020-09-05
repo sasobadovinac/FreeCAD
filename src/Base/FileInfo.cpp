@@ -1,5 +1,5 @@
 /***************************************************************************
- *   (c) Jürgen Riegel (juergen.riegel@web.de) 2005                        *
+ *   Copyright (c) 2005 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -19,7 +19,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
  *   USA                                                                   *
  *                                                                         *
- *   Juergen Riegel 2002                                                   *
  ***************************************************************************/
 
 
@@ -189,6 +188,7 @@ std::string FileInfo::getTempFileName(const char* FileName, const char* Path)
         buf += "/fileXXXXXX";
     }
 
+    /* coverity[secure_temp] mkstemp uses 0600 as the mode and is safe */
     int id = mkstemp(const_cast<char*>(buf.c_str()));
     if (id > -1) {
         FILE* file = fdopen(id, "w");
@@ -483,6 +483,9 @@ bool FileInfo::renameFile(const char* NewName)
         int code = errno;
         std::clog << "Error in renameFile: " << strerror(code) << " (" << code << ")" << std::endl;
     }
+    else {
+        FileName = NewName;
+    }
 
     return res;
 }
@@ -589,7 +592,7 @@ std::vector<Base::FileInfo> FileInfo::getDirectoryContent(void) const
     {
         std::string dir = dentry->d_name;
         if (dir != "." && dir != "..")
-            List.push_back(FileInfo(FileName + "/" + dir));
+            List.emplace_back(FileName + "/" + dir);
     }
     closedir(dp);
 #else

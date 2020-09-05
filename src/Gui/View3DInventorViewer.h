@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2004 Juergen Riegel <juergen.riegel@web.de>             *
+ *   Copyright (c) 2004 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -105,7 +105,7 @@ public:
     
     /** @name Anti-Aliasing modes of the rendered 3D scene
       * Specifies Anti-Aliasing (AA) method
-      * - Smoothing enables OpenGL line and vertex smoothing (basically depreciated)
+      * - Smoothing enables OpenGL line and vertex smoothing (basically deprecated)
       * - MSAA is hardware multi sampling (with 2, 4 or 8 passes), a quite common and efficient AA technique
       */
     //@{
@@ -181,7 +181,12 @@ public:
 
     /** @name Handling of view providers */
     //@{
+    /// Checks if the view provider is a top-level object of the scene
     SbBool hasViewProvider(ViewProvider*) const;
+    /// Checks if the view provider is part of the scene.
+    /// In contrast to hasViewProvider() this method also checks if the view
+    /// provider is a child of another view provider
+    SbBool containsViewProvider(const ViewProvider*) const;
     /// adds an ViewProvider to the view, e.g. from a feature
     void addViewProvider(ViewProvider*);
     /// remove a ViewProvider
@@ -236,6 +241,8 @@ public:
     std::vector<SbVec2f> getGLPolygon(SelectionRole* role=0) const;
     std::vector<SbVec2f> getGLPolygon(const std::vector<SbVec2s>&) const;
     const std::vector<SbVec2s>& getPolygon(SelectionRole* role=0) const;
+    void setSelectionEnabled(const SbBool enable);
+    SbBool isSelectionEnabled(void) const;
     //@}
     
     /// Returns the screen coordinates of the origin of the path's tail object
@@ -377,6 +384,7 @@ public:
     virtual PyObject *getPyObject(void);
 
 protected:
+    GLenum getInternalTextureFormat() const;
     void renderScene();
     void renderFramebuffer();
     void renderGLImage();

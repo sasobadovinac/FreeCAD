@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -25,7 +25,6 @@
 
 #ifndef _PreComp_
 # include <sstream>
-
 # include <gp_Trsf.hxx>
 # include <gp_Ax1.hxx>
 # include <BRepBuilderAPI_MakeShape.hxx>
@@ -36,6 +35,7 @@
 # include <TopExp_Explorer.hxx>
 # include <TopTools_IndexedMapOfShape.hxx>
 # include <Standard_Failure.hxx>
+# include <Standard_Version.hxx>
 # include <TopoDS_Face.hxx>
 # include <gp_Dir.hxx>
 # include <gp_Pln.hxx> // for Precision::Confusion()
@@ -53,7 +53,7 @@
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/bind.hpp>
+#include <boost_bind_bind.hpp>
 #include <Base/Console.h>
 #include <Base/Writer.h>
 #include <Base/Reader.h>
@@ -74,8 +74,9 @@
 #include "TopoShapePy.h"
 
 using namespace Part;
+namespace bp = boost::placeholders;
 
-FC_LOG_LEVEL_INIT("Part",true,true);
+FC_LOG_LEVEL_INIT("Part",true,true)
 
 PROPERTY_SOURCE(Part::Feature, App::GeoFeature)
 
@@ -163,7 +164,7 @@ App::DocumentObject *Feature::getSubObject(const char *subname,
             bool copy = sCopy?true:false;
             if(!copy) {
                 // Work around OCC bug on transforming circular edge with an
-                // offsetted surface. The bug probably affect other shape type,
+                // offset surface. The bug probably affect other shape type,
                 // too.
                 TopExp_Explorer exp(ts.getShape(),TopAbs_EDGE);
                 if(exp.More()) {
@@ -179,16 +180,27 @@ App::DocumentObject *Feature::getSubObject(const char *subname,
         }
         *pyObj =  Py::new_reference_to(shape2pyshape(ts));
         return const_cast<Feature*>(this);
-    }catch(Standard_Failure &e) {
+    }
+    catch(Standard_Failure &e) {
+        // FIXME: Do not handle the exception here because it leads to a flood of irrelevant and
+        // annoying error messages.
+        // For example: https://forum.freecadweb.org/viewtopic.php?f=19&t=42216
+        // Instead either raise a sub-class of Base::Exception and let it handle by the calling
+        // instance or do simply nothing. For now the error message is degraded to a log message.
         std::ostringstream str;
         Standard_CString msg = e.GetMessageString();
+#if OCC_VERSION_HEX >= 0x070000
+        // Avoid name mangling
+        str << e.DynamicType()->get_type_name() << " ";
+#else
         str << typeid(e).name() << " ";
+#endif
         if (msg) {str << msg;}
         else     {str << "No OCCT Exception Message";}
         str << ": " << getFullName();
         if (subname) 
             str << '.' << subname;
-        FC_ERR(str.str());
+        FC_LOG(str.str());
         return 0;
     }
 }
@@ -211,11 +223,11 @@ struct ShapeCache {
             return;
         inited = true;
         App::GetApplication().signalDeleteDocument.connect(
-                boost::bind(&ShapeCache::slotDeleteDocument, this, _1));
+                boost::bind(&ShapeCache::slotDeleteDocument, this, bp::_1));
         App::GetApplication().signalDeletedObject.connect(
-                boost::bind(&ShapeCache::slotClear, this, _1));
+                boost::bind(&ShapeCache::slotClear, this, bp::_1));
         App::GetApplication().signalChangedObject.connect(
-                boost::bind(&ShapeCache::slotChanged, this, _1,_2));
+                boost::bind(&ShapeCache::slotChanged, this, bp::_1,bp::_2));
     }
 
     void slotDeleteDocument(const App::Document &doc) {
@@ -369,7 +381,10 @@ static TopoShape _getTopoShape(const App::DocumentObject *obj, const char *subna
     }
 
     auto link = owner->getExtensionByType<App::LinkBaseExtension>(true);
-    if(owner!=linked && (!link || !link->_ChildCache.getSize())) {
+    if(owner!=linked 
+            && (!link || (!link->_ChildCache.getSize() 
+                            && link->getSubElements().size()<=1))) 
+    {
         // if there is a linked object, and there is no child cache (which is used
         // for special handling of plain group), obtain shape from the linked object
         shape = Feature::getTopoShape(linked,0,false,0,0,false,false);
@@ -393,9 +408,10 @@ static TopoShape _getTopoShape(const App::DocumentObject *obj, const char *subna
         // not return the linked object when calling getLinkedObject().
         // Therefore, it should be handled here.
         TopoShape baseShape;
+        Base::Matrix4D baseMat;
         std::string op;
         if(link && link->getElementCountValue()) {
-            linked = link->getTrueLinkedObject(false);
+            linked = link->getTrueLinkedObject(false,&baseMat);
             if(linked && linked!=owner) {
                 baseShape = Feature::getTopoShape(linked,0,false,0,0,false,false);
                 // if(!link->getShowElementValue())
@@ -405,25 +421,28 @@ static TopoShape _getTopoShape(const App::DocumentObject *obj, const char *subna
         for(auto &sub : owner->getSubObjects()) {
             if(sub.empty()) continue;
             int visible;
-            if(sub[sub.size()-1] != '.')
-                sub += '.';
             std::string childName;
             App::DocumentObject *parent=0;
-            Base::Matrix4D mat;
-            auto subObj = owner->resolve(sub.c_str(), &parent, &childName,0,0,&mat,false);
-            if(!parent || !subObj)
-                continue;
-            if(linkStack.size() 
-                && parent->getExtensionByType<App::GroupExtension>(true,false))
-            {
-                visible = linkStack.back()->isElementVisible(childName.c_str());
-            }else
-                visible = parent->isElementVisible(childName.c_str());
+            Base::Matrix4D mat = baseMat;
+            App::DocumentObject *subObj=0;
+            if(sub.find('.')==std::string::npos)
+                visible = 1;
+            else {
+                subObj = owner->resolve(sub.c_str(), &parent, &childName,0,0,&mat,false);
+                if(!parent || !subObj)
+                    continue;
+                if(linkStack.size() 
+                    && parent->getExtensionByType<App::GroupExtension>(true,false))
+                {
+                    visible = linkStack.back()->isElementVisible(childName.c_str());
+                }else
+                    visible = parent->isElementVisible(childName.c_str());
+            }
             if(visible==0)
                 continue;
             TopoShape shape;
-            if(baseShape.isNull()) {
-                shape = _getTopoShape(owner,sub.c_str(),false,0,&subObj,false,false,linkStack);
+            if(!subObj || baseShape.isNull()) {
+                shape = _getTopoShape(owner,sub.c_str(),true,0,&subObj,false,false,linkStack);
                 if(shape.isNull())
                     continue;
                 if(visible<0 && subObj && !subObj->Visibility.getValue())

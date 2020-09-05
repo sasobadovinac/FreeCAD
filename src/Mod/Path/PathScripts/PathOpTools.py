@@ -23,25 +23,23 @@
 # ***************************************************************************
 
 import FreeCAD
-import Part
 import PathScripts.PathGeom as PathGeom
 import PathScripts.PathLog as PathLog
 import math
 
 from PySide import QtCore
 
+# lazily loaded modules
+from lazy_loader.lazy_loader import LazyLoader
+Part = LazyLoader('Part', globals(), 'Part')
+
 __title__ = "PathOpTools - Tools for Path operations."
 __author__ = "sliptonic (Brad Collette)"
 __url__ = "http://www.freecadweb.org"
 __doc__ = "Collection of functions used by various Path operations. The functions are specific to Path and the algorithms employed by Path's operations."
 
-LOGLEVEL = False
-
-if LOGLEVEL:
-    PathLog.setLevel(PathLog.Level.DEBUG, PathLog.thisModule())
-    PathLog.trackModule(PathLog.thisModule())
-else:
-    PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+#PathLog.trackModule(PathLog.thisModule())
 
 PrintWireDebug = False
 
@@ -146,7 +144,7 @@ def orientWire(w, forward=True):
         PathLog.track('orientWire - ok')
     return wire
 
-def offsetWire(wire, base, offset, forward):
+def offsetWire(wire, base, offset, forward, Side = None):
     '''offsetWire(wire, base, offset, forward) ... offsets the wire away from base and orients the wire accordingly.
     The function tries to avoid most of the pitfalls of Part.makeOffset2D which is possible because all offsetting
     happens in the XY plane.
@@ -200,8 +198,12 @@ def offsetWire(wire, base, offset, forward):
     if wire.isClosed():
         if not base.isInside(owire.Edges[0].Vertexes[0].Point, offset/2, True):
             PathLog.track('closed - outside')
+            if Side:
+                Side[0] = "Outside"
             return orientWire(owire, forward)
         PathLog.track('closed - inside')
+        if Side:
+            Side[0] = "Inside"
         try:
             owire = wire.makeOffset2D(-offset)
         except Exception: # pylint: disable=broad-except
@@ -217,7 +219,7 @@ def offsetWire(wire, base, offset, forward):
     # Of the remaining edges we take the longest wire to be the engraving side
     # Looking for a circle with the start vertex as center marks and end
     #  starting from there follow the edges until a circle with the end vertex as center is found
-    #  if the traversed edges include any oof the remainig from above, all those edges are remaining
+    #  if the traversed edges include any of the remaining from above, all those edges are remaining
     #  this is to also include edges which might partially be inside shape
     #  if they need to be discarded, split, that should happen in a post process
     # Depending on the Axis of the circle, and which side remains we know if the wire needs to be flipped

@@ -30,6 +30,10 @@
 # include <iostream>
 # include <climits>
 # include <QString>
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wextra-semi"
+#endif
 # include <Standard_Version.hxx>
 # include <NCollection_Vector.hxx>
 # include <BRep_Builder.hxx>
@@ -70,6 +74,9 @@
 # else
 # include <TDataStd_Shape.hxx>
 # endif
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #endif
 
 #include <CXX/Extensions.hxx>
@@ -517,9 +524,9 @@ private:
             auto ret = ocaf.loadShapes();
             hApp->Close(hDoc);
             FC_DURATION_PLUS(d2,t);
-            FC_DURATION_MSG(d1,"file read");
-            FC_DURATION_MSG(d2,"import");
-            FC_DURATION_MSG((d1+d2),"total");
+            FC_DURATION_LOG(d1,"file read");
+            FC_DURATION_LOG(d2,"import");
+            FC_DURATION_LOG((d1+d2),"total");
 
             if(ret) {
                 App::GetApplication().setActiveDocument(pcDoc);
@@ -590,9 +597,10 @@ private:
                 if(keepPlacement!=Py_None)
                     ocaf.setKeepPlacement(PyObject_IsTrue(keepPlacement));
                 ocaf.exportObjects(objs);
-            } else {
-                bool keepExplicitPlacement = objs.size() > 1;
-                keepExplicitPlacement = Standard_True;
+            }
+            else {
+                //bool keepExplicitPlacement = objs.size() > 1;
+                bool keepExplicitPlacement = Standard_True;
                 ExportOCAFGui ocaf(hDoc, keepExplicitPlacement);
                 // That stuff is exporting a list of selected objects into FreeCAD Tree
                 std::vector <TDF_Label> hierarchical_label;

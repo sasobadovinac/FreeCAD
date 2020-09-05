@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Juergen Riegel         <juergen.riegel@web.de>          *
+ *   Copyright (c) Jürgen Riegel <juergen.riegel@web.de>                   *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -83,7 +83,7 @@ MeshObject::MeshObject(const MeshObject& mesh)
   : _Mtrx(mesh._Mtrx),_kernel(mesh._kernel)
 {
     // copy the mesh structure
-    this->_segments = mesh._segments;
+    copySegments(mesh);
 }
 
 MeshObject::~MeshObject()
@@ -161,13 +161,33 @@ Base::BoundBox3d MeshObject::getBoundBox(void)const
     return Bnd2;
 }
 
+void MeshObject::copySegments(const MeshObject& mesh)
+{
+    // After copying the segments the mesh pointers must be adjusted
+    this->_segments = mesh._segments;
+    std::for_each(this->_segments.begin(), this->_segments.end(), [this](Segment& s) {
+        s._mesh = this;
+    });
+}
+
+void MeshObject::swapSegments(MeshObject& mesh)
+{
+    this->_segments.swap(mesh._segments);
+    std::for_each(this->_segments.begin(), this->_segments.end(), [this](Segment& s) {
+        s._mesh = this;
+    });
+    std::for_each(mesh._segments.begin(), mesh._segments.end(), [&mesh](Segment& s) {
+        s._mesh = &mesh;
+    });
+}
+
 void MeshObject::operator = (const MeshObject& mesh)
 {
     if (this != &mesh) {
         // copy the mesh structure
         setTransform(mesh._Mtrx);
         this->_kernel = mesh._kernel;
-        this->_segments = mesh._segments;
+        copySegments(mesh);
     }
 }
 
@@ -188,7 +208,7 @@ void MeshObject::swap(MeshCore::MeshKernel& Kernel)
 void MeshObject::swap(MeshObject& mesh)
 {
     this->_kernel.Swap(mesh._kernel);
-    this->_segments.swap(mesh._segments);
+    swapSegments(mesh);
     Base::Matrix4D tmp=this->_Mtrx;
     this->_Mtrx = mesh._Mtrx;
     mesh._Mtrx = tmp;
@@ -412,6 +432,20 @@ bool MeshObject::load(const char* file, MeshCore::Material* mat)
         return false;
 
     swapKernel(kernel, aReader.GetGroupNames());
+
+    if (mat && mat->binding == MeshCore::MeshIO::PER_FACE) {
+        MeshCore::MeshIO::Format format = MeshCore::MeshOutput::GetFormat(file);
+
+        if (format == MeshCore::MeshIO::OBJ) {
+            Base::FileInfo fi(file);
+            std::string fn = fi.dirPath() + "/" + mat->library;
+            fi.setFile(fn);
+            Base::ifstream str(fi, std::ios::in | std::ios::binary);
+            aReader.LoadMTL(str);
+            str.close();
+        }
+    }
+
     return true;
 }
 
@@ -444,7 +478,7 @@ void MeshObject::swapKernel(MeshCore::MeshKernel& kernel,
         if (prop < it->_ulProp) {
             prop = it->_ulProp;
             if (!segment.empty()) {
-                this->_segments.push_back(Segment(this,segment,true));
+                this->_segments.emplace_back(this,segment,true);
                 segment.clear();
             }
         }
@@ -454,7 +488,7 @@ void MeshObject::swapKernel(MeshCore::MeshKernel& kernel,
 
     // if the whole mesh is a single object then don't mark as segment
     if (!segment.empty() && (segment.size() < faces.size())) {
-        this->_segments.push_back(Segment(this,segment,true));
+        this->_segments.emplace_back(this,segment,true);
     }
 
     // apply the group names to the segments
@@ -955,6 +989,12 @@ void MeshObject::decimate(float fTolerance, float fReduction)
     dm.simplify(fTolerance, fReduction);
 }
 
+void MeshObject::decimate(int targetSize)
+{
+    MeshCore::MeshSimplify dm(this->_kernel);
+    dm.simplify(targetSize);
+}
+
 Base::Vector3d MeshObject::getPointNormal(unsigned long index) const
 {
     std::vector<Base::Vector3f> temp = _kernel.CalcVertexNormals();
@@ -1199,7 +1239,7 @@ void MeshObject::splitEdges()
             if (!pF->IsFlag(MeshCore::MeshFacet::VISIT) && !rFace.IsFlag(MeshCore::MeshFacet::VISIT)) {
                 pF->SetFlag(MeshCore::MeshFacet::VISIT);
                 rFace.SetFlag(MeshCore::MeshFacet::VISIT);
-                adjacentFacet.push_back(std::make_pair(pF-rFacets.begin(), pF->_aulNeighbours[id]));
+                adjacentFacet.emplace_back(pF-rFacets.begin(), pF->_aulNeighbours[id]);
             }
         }
     }
@@ -1354,7 +1394,7 @@ void MeshObject::removeSelfIntersections(const std::vector<unsigned long>& indic
     for (it = indices.begin(); it != indices.end(); ) {
         unsigned long id1 = *it; ++it;
         unsigned long id2 = *it; ++it;
-        selfIntersections.push_back(std::make_pair(id1,id2));
+        selfIntersections.emplace_back(id1,id2);
     }
 
     if (!selfIntersections.empty()) {
@@ -1733,7 +1773,7 @@ void MeshObject::addSegment(const std::vector<unsigned long>& inds)
             throw Base::IndexError("Index out of range");
     }
 
-    this->_segments.push_back(Segment(this,inds,true));
+    this->_segments.emplace_back(this,inds,true);
 }
 
 const Segment& MeshObject::getSegment(unsigned long index) const
@@ -1770,7 +1810,7 @@ std::vector<Segment> MeshObject::getSegmentsOfType(MeshObject::GeometryType type
         return segm;
 
     MeshCore::MeshSegmentAlgorithm finder(this->_kernel);
-    std::unique_ptr<MeshCore::MeshDistanceSurfaceSegment> surf;
+    std::shared_ptr<MeshCore::MeshDistanceSurfaceSegment> surf;
     switch (type) {
     case PLANE:
         //surf.reset(new MeshCore::MeshDistancePlanarSegment(this->_kernel, minFacets, dev));
@@ -1790,13 +1830,13 @@ std::vector<Segment> MeshObject::getSegmentsOfType(MeshObject::GeometryType type
     }
 
     if (surf.get()) {
-        std::vector<MeshCore::MeshSurfaceSegment*> surfaces;
-        surfaces.push_back(surf.get());
+        std::vector<MeshCore::MeshSurfaceSegmentPtr> surfaces;
+        surfaces.push_back(surf);
         finder.FindSegments(surfaces);
 
         const std::vector<MeshCore::MeshSegment>& data = surf->GetSegments();
         for (std::vector<MeshCore::MeshSegment>::const_iterator it = data.begin(); it != data.end(); ++it) {
-            segm.push_back(Segment(const_cast<MeshObject*>(this), *it, false));
+            segm.emplace_back(const_cast<MeshObject*>(this), *it, false);
         }
     }
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -59,7 +59,7 @@ using namespace std;
 // PropertyVector
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyVector , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyVector , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -240,7 +240,7 @@ bool PropertyVector::getPyPathValue(const ObjectIdentifier &path, Py::Object &re
 // PropertyVectorDistance
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyVectorDistance , App::PropertyVector);
+TYPESYSTEM_SOURCE(App::PropertyVectorDistance , App::PropertyVector)
 
 //**************************************************************************
 // Construction/Destruction
@@ -260,7 +260,7 @@ PropertyVectorDistance::~PropertyVectorDistance()
 // PropertyPosition
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPosition , App::PropertyVector);
+TYPESYSTEM_SOURCE(App::PropertyPosition , App::PropertyVector)
 
 //**************************************************************************
 // Construction/Destruction
@@ -280,7 +280,7 @@ PropertyPosition::~PropertyPosition()
 // PropertyPosition
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyDirection , App::PropertyVector);
+TYPESYSTEM_SOURCE(App::PropertyDirection , App::PropertyVector)
 
 //**************************************************************************
 // Construction/Destruction
@@ -300,7 +300,7 @@ PropertyDirection::~PropertyDirection()
 // PropertyVectorList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyVectorList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyVectorList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -420,7 +420,7 @@ unsigned int PropertyVectorList::getMemSize (void) const
 // PropertyMatrix
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyMatrix , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyMatrix , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -553,7 +553,7 @@ void PropertyMatrix::Paste(const Property &from)
 // PropertyPlacement
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPlacement , App::Property);
+TYPESYSTEM_SOURCE(App::PropertyPlacement , App::Property)
 
 //**************************************************************************
 // Construction/Destruction
@@ -643,6 +643,10 @@ void PropertyPlacement::setPathValue(const ObjectIdentifier &path, const boost::
             avalue =  boost::any_cast<short>(value);
         else if (value.type() == typeid(unsigned short))
             avalue =  boost::any_cast<unsigned short>(value);
+        else if (value.type() == typeid(long))
+            avalue =  boost::any_cast<long>(value);
+        else if (value.type() == typeid(unsigned long))
+            avalue =  boost::any_cast<unsigned long>(value);
         else
             throw std::bad_cast();
 
@@ -780,7 +784,7 @@ void PropertyPlacement::Paste(const Property &from)
 // PropertyPlacementList
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPlacementList , App::PropertyLists);
+TYPESYSTEM_SOURCE(App::PropertyPlacementList , App::PropertyLists)
 
 //**************************************************************************
 // Construction/Destruction
@@ -911,7 +915,7 @@ unsigned int PropertyPlacementList::getMemSize (void) const
 // PropertyPlacement
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE(App::PropertyPlacementLink , App::PropertyLink);
+TYPESYSTEM_SOURCE(App::PropertyPlacementLink , App::PropertyLink)
 
 //**************************************************************************
 // Construction/Destruction
@@ -956,7 +960,7 @@ void PropertyPlacementLink::Paste(const Property &from)
 
 // ------------------------------------------------------------
 
-TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyGeometry , App::Property);
+TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyGeometry , App::Property)
 
 PropertyGeometry::PropertyGeometry()
 {
@@ -970,7 +974,7 @@ PropertyGeometry::~PropertyGeometry()
 
 // ------------------------------------------------------------
 
-TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyComplexGeoData , App::PropertyGeometry);
+TYPESYSTEM_SOURCE_ABSTRACT(App::PropertyComplexGeoData , App::PropertyGeometry)
 
 PropertyComplexGeoData::PropertyComplexGeoData()
 {

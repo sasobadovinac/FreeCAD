@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (c) Juergen Riegel         <juergen.riegel@web.de>          *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
+ *   Copyright (c) 2011 Werner Mayer <wmayer[at]users.sourceforge.net>     *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -40,7 +41,7 @@ using Base::XMLReader;
 #include "Document.h"
 #include "DocumentObject.h"
 
-FC_LOG_LEVEL_INIT("App",true,true);
+FC_LOG_LEVEL_INIT("App",true,true)
 
 using namespace App;
 using namespace std;
@@ -260,7 +261,7 @@ void Transaction::addObjectChange(const TransactionalObject *Obj, const Property
 // TransactionObject
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE_ABSTRACT(App::TransactionObject, Base::Persistence);
+TYPESYSTEM_SOURCE_ABSTRACT(App::TransactionObject, Base::Persistence)
 
 //**************************************************************************
 // Construction/Destruction
@@ -292,7 +293,7 @@ void TransactionObject::applyNew(Document & /*Doc*/, TransactionalObject * /*pcO
 {
 }
 
-void TransactionObject::applyChn(Document & /*Doc*/, TransactionalObject *pcObj, bool Forward)
+void TransactionObject::applyChn(Document & /*Doc*/, TransactionalObject *pcObj, bool /* Forward */)
 {
     if (status == New || status == Chn) {
         // Property change order is not preserved, as it is recursive in nature
@@ -333,17 +334,29 @@ void TransactionObject::applyChn(Document & /*Doc*/, TransactionalObject *pcObj,
                     prop->setStatusValue(data.property->getStatus());
                 }
             }
-            // Because we now allow undo/redo dynamic property adding/removing,
-            // we have to enforce property type checking before calling Copy/Paste.
-            if(data.propertyType != prop->getTypeId()) {
-                FC_WARN("Cannot " << (Forward?"redo":"undo") 
-                        << " change of property " << prop->getName()
-                        << " because of type change: "
-                        << data.propertyType.getName()
-                        << " -> " << prop->getTypeId().getName());
-                continue;
-            }
-            prop->Paste(*data.property);
+
+            // Many properties do not bother implement Copy() and accepts
+            // derived types just fine in Paste(). So we do not enforce type
+            // matching here. But instead, strengthen type checking in all
+            // Paste() implementation.
+            //
+            // if(data.propertyType != prop->getTypeId()) {
+            //     FC_WARN("Cannot " << (Forward?"redo":"undo")
+            //             << " change of property " << prop->getName()
+            //             << " because of type change: "
+            //             << data.propertyType.getName()
+            //             << " -> " << prop->getTypeId().getName());
+            //     continue;
+            // }
+            try {
+                prop->Paste(*data.property);
+            } catch (Base::Exception &e) {
+                e.ReportException();
+                FC_ERR("exception while restoring " << prop->getFullName() << ": " << e.what());
+            } catch (std::exception &e) {
+                FC_ERR("exception while restoring " << prop->getFullName() << ": " << e.what());
+            } catch (...)
+            {}
         }
     }
 }
@@ -411,7 +424,7 @@ void TransactionObject::Restore(Base::XMLReader &/*reader*/)
 // TransactionDocumentObject
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-TYPESYSTEM_SOURCE_ABSTRACT(App::TransactionDocumentObject, App::TransactionObject);
+TYPESYSTEM_SOURCE_ABSTRACT(App::TransactionDocumentObject, App::TransactionObject)
 
 //**************************************************************************
 // Construction/Destruction

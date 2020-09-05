@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Stefan Tröger          (stefantroeger@gmx.net) 2016     *
+ *   Copyright (c) 2016 Stefan Tröger <stefantroeger@gmx.net>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -134,7 +134,7 @@ public:
     template<typename ExtensionT>
     ExtensionT* getExtensionByType(bool no_except=false, bool derived=true) const {
         return static_cast<ExtensionT*>(getExtension(ExtensionT::getExtensionClassTypeId(),derived,no_except));
-    };
+    }
     
     //get all extensions which have the given base class
     std::vector<Extension*> getExtensionsDerivedFrom(Base::Type type) const;
@@ -146,7 +146,7 @@ public:
                 typevec.push_back(static_cast<ExtensionT*>(entry.second));
         }
         return typevec;
-    };
+    }
     
     ExtensionIterator extensionBegin() {return _extensions.begin();};
     ExtensionIterator extensionEnd() {return _extensions.end();};

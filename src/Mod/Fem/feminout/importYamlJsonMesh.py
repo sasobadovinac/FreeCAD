@@ -1,6 +1,7 @@
 # ***************************************************************************
+# *   Copyright (c) 2019 Johannes Hartung <j.hartung@gmx.net>               *
 # *                                                                         *
-# *   Copyright (c) 2019 - Johannes Hartung <j.hartung@gmx.net>             *
+# *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -32,13 +33,15 @@ import json
 import os
 
 import FreeCAD
+from FreeCAD import Console
+
 from . import importToolsFem
 
 has_yaml = True
 try:
     import yaml
 except ImportError:
-    FreeCAD.Console.PrintMessage(
+    Console.PrintMessage(
         "No YAML available (import yaml failure), "
         "yaml import/export won't work\n"
     )
@@ -88,13 +91,13 @@ def insert(
 def export(objectslist, fileString):
     "called when freecad exports a file"
     if len(objectslist) != 1:
-        FreeCAD.Console.PrintError(
+        Console.PrintError(
             "This exporter can only "
             "export one object.\n")
         return
     obj = objectslist[0]
     if not obj.isDerivedFrom("Fem::FemMeshObject"):
-        FreeCAD.Console.PrintError("No FEM mesh object selected.\n")
+        Console.PrintError("No FEM mesh object selected.\n")
         return
 
     write(fileString, obj.FemMesh)
@@ -162,13 +165,13 @@ def read(
         raw_mesh_data = yaml.load(fp)
         fp.close()
     else:
-        FreeCAD.Console.PrintError(
+        Console.PrintError(
             "Unknown extension, "
             "please select other importer.\n")
 
-    FreeCAD.Console.PrintMessage("Converting indices to integer numbers ...")
+    Console.PrintMessage("Converting indices to integer numbers ...")
     mesh_data = convert_raw_data_to_mesh_data(raw_mesh_data)
-    FreeCAD.Console.PrintMessage("OK\n")
+    Console.PrintMessage("OK\n")
 
     return importToolsFem.make_femmesh(mesh_data)
 

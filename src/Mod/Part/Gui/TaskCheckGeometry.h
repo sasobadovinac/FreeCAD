@@ -32,7 +32,7 @@
 #include <Gui/TaskView/TaskView.h>
 #include <QAbstractItemModel>
 #include <QProgressDialog>
-#include <QTime>
+#include <QElapsedTimer>
 
 class SoSeparator;
 class SoSwitch;
@@ -148,6 +148,7 @@ private Q_SLOTS:
     void on_runSingleThreadedCheckBox_toggled(bool isOn);
     void on_logErrorsCheckBox_toggled(bool isOn);
     void on_expandShapeContentCheckBox_toggled(bool isOn);
+    void on_advancedShapeContentCheckBox_toggled(bool isOn);
     void on_autoRunCheckBox_toggled(bool isOn);
     void on_argumentTypeModeCheckBox_toggled(bool isOn);
     void on_selfInterModeCheckBox_toggled(bool isOn);
@@ -171,6 +172,7 @@ private:
     QCheckBox *runSingleThreadedCheckBox;
     QCheckBox *logErrorsCheckBox;
     QCheckBox *expandShapeContentCheckBox;
+    QCheckBox *advancedShapeContentCheckBox;
     QCheckBox *argumentTypeModeCheckBox;
     QCheckBox *selfInterModeCheckBox;
     QCheckBox *smallEdgeModeCheckBox;
@@ -200,7 +202,7 @@ public:
 private:
     int steps;
     bool canceled;
-    QTime time;
+    QElapsedTimer time;
     QProgressDialog* myProgress;
 };
 

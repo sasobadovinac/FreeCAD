@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) 2011 Juergen Riegel                                     *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -43,6 +43,9 @@ namespace Base {
 #define UnitSignatureLuminousIntensityBits 4
 #define UnitSignatureAngleBits 4
 
+// Hint:
+// https://en.cppreference.com/w/cpp/language/bit_field
+// https://stackoverflow.com/questions/33723631/signed-bit-field-in-c14
 struct UnitSignature{
     int32_t Length:UnitSignatureLengthBits;
     int32_t Mass:UnitSignatureMassBits;
@@ -103,12 +106,21 @@ public:
     static Unit Area;
     static Unit Volume;
     static Unit TimeSpan;
+    static Unit Frequency;
     static Unit Velocity;
     static Unit Acceleration;
     static Unit Temperature;
 
     static Unit ElectricCurrent;
     static Unit ElectricPotential;
+    static Unit ElectricCharge;
+    static Unit MagneticFieldStrength;
+    static Unit MagneticFlux;
+    static Unit MagneticFluxDensity;
+    static Unit ElectricalCapacitance;
+    static Unit ElectricalInductance;
+    static Unit ElectricalConductance;
+    static Unit ElectricalResistance;
     static Unit AmountOfSubstance;
     static Unit LuminousIntensity;
 
@@ -128,6 +140,7 @@ public:
     static Unit SpecificEnergy;
     static Unit ThermalConductivity;
     static Unit ThermalExpansionCoefficient;
+    static Unit VolumetricThermalExpansionCoefficient;
     static Unit SpecificHeat;
     static Unit ThermalTransferCoefficient;
     static Unit HeatFlux;

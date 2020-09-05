@@ -1,6 +1,6 @@
 
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2007     *
+ *   Copyright (c) 2007 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -41,7 +41,7 @@
 #include "PropertyContainerPy.h"
 #include "PropertyContainerPy.cpp"
 
-FC_LOG_LEVEL_INIT("Property", true, 2);
+FC_LOG_LEVEL_INIT("Property", true, 2)
 
 using namespace App;
 
@@ -555,11 +555,8 @@ int PropertyContainerPy::setCustomAttributes(const char* attr, PyObject *obj)
             throw Py::AttributeError(s.str());
         }
 
-        PY_TRY {
-            FC_TRACE("Set property " << prop->getFullName());
-            prop->setPyObject(obj);
-        }_PY_CATCH(return(-1))
-
+        FC_TRACE("Set property " << prop->getFullName());
+        prop->setPyObject(obj);
         return 1;
     }
 

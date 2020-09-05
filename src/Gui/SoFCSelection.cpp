@@ -27,6 +27,9 @@
 # include <qstring.h>
 # include <Inventor/details/SoFaceDetail.h>
 # include <Inventor/details/SoLineDetail.h>
+# include <Inventor/nodes/SoCube.h>
+# include <Inventor/actions/SoGetBoundingBoxAction.h>
+# include <Inventor/nodes/SoCube.h>
 #endif
 
 #include <Inventor/elements/SoOverrideElement.h>
@@ -71,12 +74,16 @@
 
 using namespace Gui;
 
+namespace Gui {
+std::array<std::pair<double, std::string>,3 > schemaTranslatePoint(double x, double y, double z, double precision);
+}
+
 SoFullPath * Gui::SoFCSelection::currenthighlight = NULL;
 
 
 // *************************************************************************
 
-SO_NODE_SOURCE(SoFCSelection);
+SO_NODE_SOURCE(SoFCSelection)
 
 /*!
   Constructor.
@@ -398,14 +405,17 @@ SoFCSelection::handleEvent(SoHandleEventAction * action)
                 }
                 
                 const auto &pt = pp->getPoint();
-                snprintf(buf,512,"Preselected: %s.%s.%s (%g, %g, %g)",documentName.getValue().getString()
-                                           ,objectName.getValue().getString()
-                                           ,subElementName.getValue().getString()
-                                           ,fabs(pt[0])>1e-7?pt[0]:0.0
-                                           ,fabs(pt[1])>1e-7?pt[1]:0.0
-                                           ,fabs(pt[2])>1e-7?pt[2]:0.0);
-
-                getMainWindow()->showMessage(QString::fromLatin1(buf));
+                
+                auto pts = schemaTranslatePoint(pt[0], pt[1], pt[2], 1e-7);
+                snprintf(buf,512,"Preselected: %s.%s.%s (%f %s, %f %s, %f %s)"
+                                ,documentName.getValue().getString()
+                                ,objectName.getValue().getString()
+                                ,subElementName.getValue().getString()
+                                ,pts[0].first, pts[0].second.c_str()
+                                ,pts[1].first, pts[1].second.c_str()
+                                ,pts[2].first, pts[2].second.c_str());
+                
+                getMainWindow()->showMessage(QString::fromUtf8(buf));
             }
             else { // picked point
                 if (highlighted) {
@@ -686,10 +696,11 @@ SoFCSelection::GLRenderBelowPath(SoGLRenderAction * action)
 
 #ifdef NO_FRONTBUFFER
     // check if preselection is active
-    state->push();
-    this->setOverride(action,ctx);
-    inherited::GLRenderBelowPath(action);
-    state->pop();
+    if(this->setOverride(action,ctx)) {
+        inherited::GLRenderBelowPath(action);
+        state->pop();
+    } else 
+        inherited::GLRenderBelowPath(action);
 #else
     // Set up state for locate highlighting (if necessary)
     GLint oldDepthFunc;
@@ -726,10 +737,11 @@ void SoFCSelection::GLRender(SoGLRenderAction * action)
 
 #ifdef NO_FRONTBUFFER
     // check if preselection is active
-    state->push();
-    this->setOverride(action,ctx);
-    inherited::GLRender(action);
-    state->pop();
+    if(this->setOverride(action,ctx)) {
+        inherited::GLRender(action);
+        state->pop();
+    } else
+        inherited::GLRender(action);
 #else
     // Set up state for locate highlighting (if necessary)
     GLint oldDepthFunc;
@@ -767,10 +779,11 @@ SoFCSelection::GLRenderInPath(SoGLRenderAction * action)
 #ifdef NO_FRONTBUFFER
     // check if preselection is active
     SoState * state = action->getState();
-    state->push();
-    this->setOverride(action,ctx);
-    inherited::GLRenderInPath(action);
-    state->pop();
+    if(this->setOverride(action,ctx)) {
+        inherited::GLRenderInPath(action);
+        state->pop();
+    } else
+        inherited::GLRenderInPath(action);
 #else
     // Set up state for locate highlighting (if necessary)
     GLint oldDepthFunc;
@@ -948,13 +961,13 @@ SoFCSelection::readInstance  (  SoInput *  in, unsigned short  flags )
 //
 // update override state before rendering
 //
-void
+bool
 SoFCSelection::setOverride(SoGLRenderAction * action, SelContextPtr ctx)
 {
     HighlightModes mymode = (HighlightModes) this->highlightMode.getValue();
     bool preselected = ctx && ctx->isHighlighted() && (useNewSelection.getValue()||mymode == AUTO);
     if (!preselected && mymode!=ON && (!ctx || !ctx->isSelected()))
-        return;
+        return false;
 
     // uniqueId is returned by SoNode::getNodeId(). It is used to notify change
     // and for render cache update. In order to update cache on selection state
@@ -963,10 +976,21 @@ SoFCSelection::setOverride(SoGLRenderAction * action, SelContextPtr ctx)
     auto oldId = this->uniqueId;
     this->uniqueId ^= std::hash<void*>()(ctx.get()) + 0x9e3779b9 + (oldId << 6) + (oldId >> 2);
 
+    Styles mystyle = (Styles) this->style.getValue();
+
+    if(mystyle == SoFCSelection::BOX) {
+        SoFCSelectionRoot::renderBBox(
+                action,this,preselected?ctx->highlightColor:ctx->selectionColor);
+        this->uniqueId = oldId;
+        return false;
+    }
+
     //Base::Console().Log("SoFCSelection::setOverride() (%p)\n",this);
     SoState * state = action->getState();
+    state->push();
 
     SoMaterialBindingElement::set(state,SoMaterialBindingElement::OVERALL);
+    SoOverrideElement::setMaterialBindingOverride(state,this,true);
     
     if(!preselected)
         SoLazyElement::setEmissive(state, &ctx->selectionColor);
@@ -974,8 +998,9 @@ SoFCSelection::setOverride(SoGLRenderAction * action, SelContextPtr ctx)
         SoLazyElement::setEmissive(state, &ctx->highlightColor);
     SoOverrideElement::setEmissiveColorOverride(state, this, true);
 
-    Styles mystyle = (Styles) this->style.getValue();
-    if (mystyle == SoFCSelection::EMISSIVE_DIFFUSE) {
+    if(SoLazyElement::getLightModel(state)==SoLazyElement::BASE_COLOR
+            || mystyle == SoFCSelection::EMISSIVE_DIFFUSE) 
+    {
         if(!preselected)
             SoLazyElement::setDiffuse(state, this,1, &ctx->selectionColor,&colorpacker);
         else
@@ -984,6 +1009,7 @@ SoFCSelection::setOverride(SoGLRenderAction * action, SelContextPtr ctx)
     }
 
     this->uniqueId = oldId;
+    return true;
 }
 
 // private convenience method

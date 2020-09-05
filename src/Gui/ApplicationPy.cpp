@@ -38,6 +38,7 @@
 #include <xercesc/util/TranscodingException.hpp>
 #include <boost/regex.hpp>
 
+#include "Action.h"
 #include "Application.h"
 #include "BitmapFactory.h"
 #include "Command.h"
@@ -138,15 +139,6 @@ PyMethodDef Application::Methods[] = {
   {"runCommand",              (PyCFunction) Application::sRunCommand, METH_VARARGS,
    "runCommand(string) -> None\n\n"
    "Run command with name"},
-  {"isCommandActive",         (PyCFunction) Application::sIsCommandActive, METH_VARARGS,
-   "isCommandActive(string) -> Bool\n\n"
-   "Test if a command is active"},
-  {"listCommands",               (PyCFunction) Application::sListCommands, METH_VARARGS,
-   "listCommands() -> list of strings\n\n"
-   "Returns a list of all commands known to FreeCAD."},
-  {"updateCommands()",        (PyCFunction) Application::sUpdateCommands, METH_VARARGS,
-   "updateCommands()\n\n"
-   "Update all command active status"},
   {"SendMsgToActiveView",     (PyCFunction) Application::sSendActiveView, METH_VARARGS,
    "deprecated -- use class View"},
   {"sendMsgToFocusView",     (PyCFunction) Application::sSendFocusView, METH_VARARGS,
@@ -217,6 +209,13 @@ PyMethodDef Application::Methods[] = {
   {"reload",                    (PyCFunction) Application::sReload, METH_VARARGS,
    "reload(name) -> doc\n\n"
    "Reload a partial opened document"},
+
+  {"loadFile",       (PyCFunction) Application::sLoadFile, METH_VARARGS,
+   "loadFile(string=filename,[string=module]) -> None\n\n"
+   "Loads an arbitrary file by delegating to the given Python module:\n"
+   "* If no module is given it will be determined by the file extension.\n"
+   "* If more than one module can load a file the first one one will be taken.\n"
+   "* If no module exists to load the file an exception will be raised."},
 
   {"coinRemoveAllChildren",     (PyCFunction) Application::sCoinRemoveAllChildren, METH_VARARGS,
    "Remove all children from a group node"},
@@ -903,9 +902,9 @@ PyObject* Application::sAddWorkbenchHandler(PyObject * /*self*/, PyObject *args)
         if (PyObject_IsSubclass(object.ptr(), baseclass.ptr()) == 1) {
             // create an instance of this class
             name = object.getAttr(std::string("__name__"));
-            Py::Tuple args;
+            Py::Tuple arg;
             Py::Callable creation(object);
-            object = creation.apply(args);
+            object = creation.apply(arg);
         }
         else if (PyObject_IsInstance(object.ptr(), baseclass.ptr()) == 1) {
             // extract the class name of the instance
@@ -1144,12 +1143,20 @@ PyObject* Application::sAddCommand(PyObject * /*self*/, PyObject *args)
             return 0;
         }
         Py::Callable inspect(mod.getAttr("stack"));
-        Py::Tuple args;
-        Py::List list(inspect.apply(args));
-        args = list.getItem(0);
+        Py::List list(inspect.apply());
 
+        std::string file;
         // usually this is the file name of the calling script
-        std::string file = args.getItem(1).as_string();
+#if (PY_MAJOR_VERSION > 3 || (PY_MAJOR_VERSION==3 && PY_MINOR_VERSION>=5))
+        Py::Object info = list.getItem(0);
+        PyObject *pyfile = PyStructSequence_GET_ITEM(*info,1);
+        if(!pyfile)
+            throw Py::Exception();
+        file = Py::Object(pyfile).as_string();
+#else
+        Py::Tuple info = list.getItem(0);
+        file = info.getItem(1).as_string();
+#endif
         Base::FileInfo fi(file);
         // convert backslashes to slashes
         file = fi.filePath();
@@ -1231,50 +1238,6 @@ PyObject* Application::sRunCommand(PyObject * /*self*/, PyObject *args)
         PyErr_Format(Base::BaseExceptionFreeCADError, "No such command '%s'", pName);
         return 0;
     }
-}
-
-PyObject* Application::sIsCommandActive(PyObject * /*self*/, PyObject *args)
-{
-    char* pName;
-    if (!PyArg_ParseTuple(args, "s", &pName))
-        return NULL;
-
-    Command* cmd = Application::Instance->commandManager().getCommandByName(pName);
-    if (!cmd) {
-        PyErr_Format(Base::BaseExceptionFreeCADError, "No such command '%s'", pName);
-        return 0;
-    }
-    PY_TRY {
-        return Py::new_reference_to(Py::Boolean(cmd->isActive()));
-    }PY_CATCH;
-}
-
-PyObject* Application::sUpdateCommands(PyObject * /*self*/, PyObject *args)
-{
-    if (!PyArg_ParseTuple(args, ""))
-        return NULL;
-
-    getMainWindow()->updateActions();
-    Py_Return;
-}
-
-PyObject* Application::sListCommands(PyObject * /*self*/, PyObject *args)
-{
-    if (!PyArg_ParseTuple(args, ""))
-        return NULL;
-
-    std::vector <Command*> cmds = Application::Instance->commandManager().getAllCommands();
-    PyObject* pyList = PyList_New(cmds.size());
-    int i=0;
-    for ( std::vector<Command*>::iterator it = cmds.begin(); it != cmds.end(); ++it ) {
-#if PY_MAJOR_VERSION >= 3
-        PyObject* str = PyUnicode_FromString((*it)->getName());
-#else
-        PyObject* str = PyString_FromString((*it)->getName());
-#endif
-        PyList_SetItem(pyList, i++, str);
-    }
-    return pyList;
 }
 
 PyObject* Application::sDoCommand(PyObject * /*self*/, PyObject *args)
@@ -1460,6 +1423,37 @@ PyObject* Application::sReload(PyObject * /*self*/, PyObject *args)
             return doc->getPyObject();
     }PY_CATCH;
     Py_Return;
+}
+
+PyObject* Application::sLoadFile(PyObject * /*self*/, PyObject *args)
+{
+    char *path, *mod="";
+    if (!PyArg_ParseTuple(args, "s|s", &path, &mod))     // convert args: Python->C
+        return 0;                             // NULL triggers exception
+    PY_TRY {
+        Base::FileInfo fi(path);
+        if (!fi.isFile() || !fi.exists()) {
+            PyErr_Format(PyExc_IOError, "File %s doesn't exist.", path);
+            return 0;
+        }
+
+        std::string module = mod;
+        if (module.empty()) {
+            std::string ext = fi.extension();
+            std::vector<std::string> modules = App::GetApplication().getImportModules(ext.c_str());
+            if (modules.empty()) {
+                PyErr_Format(PyExc_IOError, "Filetype %s is not supported.", ext.c_str());
+                return 0;
+            }
+            else {
+                module = modules.front();
+            }
+        }
+
+        Application::Instance->open(path,module.c_str());
+
+        Py_Return;
+    } PY_CATCH
 }
 
 PyObject* Application::sAddDocObserver(PyObject * /*self*/, PyObject *args)

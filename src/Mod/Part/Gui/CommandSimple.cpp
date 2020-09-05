@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -48,7 +48,7 @@
 //===========================================================================
 // Part_SimpleCylinder
 //===========================================================================
-DEF_STD_CMD_A(CmdPartSimpleCylinder);
+DEF_STD_CMD_A(CmdPartSimpleCylinder)
 
 CmdPartSimpleCylinder::CmdPartSimpleCylinder()
   :Command("Part_SimpleCylinder")
@@ -68,6 +68,7 @@ void CmdPartSimpleCylinder::activated(int iMsg)
     PartGui::DlgPartCylinderImp dlg(Gui::getMainWindow());
     if (dlg.exec()== QDialog::Accepted) {
         Base::Vector3d dir = dlg.getDirection();
+        Base::Vector3d pos = dlg.getPosition();
         openCommand("Create Part Cylinder");
         doCommand(Doc,"from FreeCAD import Base");
         doCommand(Doc,"import Part");
@@ -75,11 +76,9 @@ void CmdPartSimpleCylinder::activated(int iMsg)
                       ".Shape=Part.makeCylinder(%f,%f,"
                       "Base.Vector(%f,%f,%f),"
                       "Base.Vector(%f,%f,%f))"
-                     ,dlg.radius->value().getValue()
-                     ,dlg.length->value().getValue()
-                     ,dlg.xPos->value().getValue()
-                     ,dlg.yPos->value().getValue()
-                     ,dlg.zPos->value().getValue()
+                     ,dlg.getRadius()
+                     ,dlg.getLength()
+                     ,pos.x,pos.y,pos.z
                      ,dir.x,dir.y,dir.z);
         commitCommand();
         updateActive();
@@ -99,7 +98,7 @@ bool CmdPartSimpleCylinder::isActive(void)
 //===========================================================================
 // Part_ShapeFromMesh
 //===========================================================================
-DEF_STD_CMD_A(CmdPartShapeFromMesh);
+DEF_STD_CMD_A(CmdPartShapeFromMesh)
 
 CmdPartShapeFromMesh::CmdPartShapeFromMesh()
   :Command("Part_ShapeFromMesh")
@@ -171,7 +170,7 @@ bool CmdPartShapeFromMesh::isActive(void)
 //===========================================================================
 // Part_PointsFromMesh
 //===========================================================================
-DEF_STD_CMD_A(CmdPartPointsFromMesh);
+DEF_STD_CMD_A(CmdPartPointsFromMesh)
 
 CmdPartPointsFromMesh::CmdPartPointsFromMesh()
   :Command("Part_PointsFromMesh")
@@ -221,7 +220,7 @@ bool CmdPartPointsFromMesh::isActive(void)
 //===========================================================================
 // Part_SimpleCopy
 //===========================================================================
-DEF_STD_CMD_A(CmdPartSimpleCopy);
+DEF_STD_CMD_A(CmdPartSimpleCopy)
 
 CmdPartSimpleCopy::CmdPartSimpleCopy()
   : Command("Part_SimpleCopy")
@@ -292,7 +291,7 @@ bool CmdPartSimpleCopy::isActive(void)
 //===========================================================================
 // Part_TransformedCopy
 //===========================================================================
-DEF_STD_CMD_A(CmdPartTransformedCopy);
+DEF_STD_CMD_A(CmdPartTransformedCopy)
 
 CmdPartTransformedCopy::CmdPartTransformedCopy()
   : Command("Part_TransformedCopy")
@@ -320,7 +319,7 @@ bool CmdPartTransformedCopy::isActive(void)
 //===========================================================================
 // Part_ElementCopy
 //===========================================================================
-DEF_STD_CMD_A(CmdPartElementCopy);
+DEF_STD_CMD_A(CmdPartElementCopy)
 
 CmdPartElementCopy::CmdPartElementCopy()
   : Command("Part_ElementCopy")
@@ -348,7 +347,7 @@ bool CmdPartElementCopy::isActive(void)
 //===========================================================================
 // Part_RefineShape
 //===========================================================================
-DEF_STD_CMD_A(CmdPartRefineShape);
+DEF_STD_CMD_A(CmdPartRefineShape)
 
 CmdPartRefineShape::CmdPartRefineShape()
   : Command("Part_RefineShape")
@@ -365,7 +364,39 @@ CmdPartRefineShape::CmdPartRefineShape()
 void CmdPartRefineShape::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    _copyShape("Refined copy",true,false,true);
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Part");
+    bool parametric = hGrp->GetBool("ParametricRefine", true);
+    if (parametric) {
+        Gui::WaitCursor wc;
+        Base::Type partid = Base::Type::fromName("Part::Feature");
+        std::vector<App::DocumentObject*> objs = Gui::Selection().getObjectsOfType(partid);
+        openCommand("Refine shape");
+        std::for_each(objs.begin(), objs.end(), [](App::DocumentObject* obj) {
+            try {
+                doCommand(Doc,"App.ActiveDocument.addObject('Part::Refine','%s').Source="
+                              "App.ActiveDocument.%s\n"
+                              "App.ActiveDocument.ActiveObject.Label="
+                              "App.ActiveDocument.%s.Label\n"
+                              "Gui.ActiveDocument.%s.hide()\n",
+                              obj->getNameInDocument(),
+                              obj->getNameInDocument(),
+                              obj->getNameInDocument(),
+                              obj->getNameInDocument());
+
+                copyVisual("ActiveObject", "ShapeColor", obj->getNameInDocument());
+                copyVisual("ActiveObject", "LineColor", obj->getNameInDocument());
+                copyVisual("ActiveObject", "PointColor", obj->getNameInDocument());
+            }
+            catch (const Base::Exception& e) {
+                Base::Console().Warning("%s: %s\n", obj->Label.getValue(), e.what());
+            }
+        });
+        commitCommand();
+        updateActive();
+    }
+    else {
+        _copyShape("Refined copy",true,false,true);
+    }
 }
 
 bool CmdPartRefineShape::isActive(void)
@@ -376,7 +407,7 @@ bool CmdPartRefineShape::isActive(void)
 //===========================================================================
 // Part_Defeaturing
 //===========================================================================
-DEF_STD_CMD_A(CmdPartDefeaturing);
+DEF_STD_CMD_A(CmdPartDefeaturing)
 
 CmdPartDefeaturing::CmdPartDefeaturing()
   : Command("Part_Defeaturing")

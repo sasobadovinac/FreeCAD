@@ -144,9 +144,9 @@ FillingUnboundPanel::~FillingUnboundPanel()
 }
 
 // stores object pointer, its old fill type and adjusts radio buttons according to it.
-void FillingUnboundPanel::setEditedObject(Surface::Filling* obj)
+void FillingUnboundPanel::setEditedObject(Surface::Filling* fea)
 {
-    editedObject = obj;
+    editedObject = fea;
 
     // get the unbound edges, if set their adjacent faces and continuities
     auto objects = editedObject->UnboundEdges.getValues();
@@ -401,7 +401,7 @@ void FillingUnboundPanel::onSelectionChanged(const Gui::SelectionChanges& msg)
             // extend faces and continuities lists if needed
             auto faces = editedObject->UnboundFaces.getValues();
             if (count == faces.size()) {
-                faces.push_back(std::string());
+                faces.emplace_back();
                 editedObject->UnboundFaces.setValues(faces);
             }
             auto conts = editedObject->UnboundOrder.getValues();

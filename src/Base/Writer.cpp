@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Riegel         <juergen.riegel@web.de>                  *
+ *   Copyright (c) 2011 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -246,7 +246,6 @@ ZipWriter::ZipWriter(const char* FileName)
 #ifdef _MSC_VER
     ZipStream.imbue(std::locale::empty());
 #else
-    //FIXME: Check whether this is correct
     ZipStream.imbue(std::locale::classic());
 #endif
     ZipStream.precision(std::numeric_limits<double>::digits10 + 1);
@@ -259,7 +258,6 @@ ZipWriter::ZipWriter(std::ostream& os)
 #ifdef _MSC_VER
     ZipStream.imbue(std::locale::empty());
 #else
-    //FIXME: Check whether this is correct
     ZipStream.imbue(std::locale::classic());
 #endif
     ZipStream.precision(std::numeric_limits<double>::digits10 + 1);
@@ -317,7 +315,7 @@ void FileWriter::writeFiles(void)
         if (shouldWrite(entry.FileName, entry.Object)) {
             std::string filePath = entry.FileName;
             std::string::size_type pos = 0;
-            while ((pos = filePath.find("/", pos)) != std::string::npos) {
+            while ((pos = filePath.find('/', pos)) != std::string::npos) {
                 std::string dirName = DirName + "/" + filePath.substr(0, pos);
                 pos++;
                 Base::FileInfo fi(dirName);

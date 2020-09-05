@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Konstantinos Poulios      (logari81@gmail.com) 2011     *
+ *   Copyright (c) 2011 Konstantinos Poulios <logari81@gmail.com>          *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -1740,7 +1740,7 @@ int System::solve_LM(SubSystem* subsys, bool isRedundantsolving)
 
         // check error
         double err=e.squaredNorm();
-        if (err <= eps) { // error is small, Success
+        if (err <= eps*eps) { // error is small, Success
             stop = 1;
             break;
         }
@@ -4060,14 +4060,14 @@ SolverReportingManager::Manager().LogToFile("GCS::System::diagnose()\n");
 
         // If not independent, must be dependent
         for(int j=0; j < paramsNum; j++) {
-            auto result = std::find(indepParamCols.begin(), indepParamCols.end(), j);
+            auto result = indepParamCols.find(j);
             if(result == indepParamCols.end()) {
                 depParamCols.insert(j);
             }
         }
 
         // Last (NumParams-rank) rows of Q construct the dependent part of J
-        // in conjuntion with the R matrix
+        // in conjunction with the R matrix
         // Last (NumParams-rank) cols of Q never contribute as R is zero after the rank
         /*std::set<int> associatedParamCols;
         for(int i = rank; i < paramsNum; i++) {
@@ -4204,7 +4204,7 @@ SolverReportingManager::Manager().LogToFile("GCS::System::diagnose()\n");
             clistTmp.reserve(clist.size());
             for (std::vector<Constraint *>::iterator constr=clist.begin();
                 constr != clist.end(); ++constr) {
-                if (skipped.count(*constr) == 0)
+                if ((*constr)->isDriving() && skipped.count(*constr) == 0)
                     clistTmp.push_back(*constr);
             }
 
@@ -4249,6 +4249,11 @@ SolverReportingManager::Manager().LogToFile("GCS::System::diagnose()\n");
                     for (std::size_t j=0; j < conflictGroupsOrig[i].size(); j++) {
                         if (redundant.count(conflictGroupsOrig[i][j]) > 0) {
                             isRedundant = true;
+
+                            if(debugMode==IterationLevel) {
+                                Base::Console().Log("(Partially) Redundant, Group %d, index %d, Tag: %d\n", i,j, (conflictGroupsOrig[i][j])->getTag());
+                            }
+
                             break;
                         }
                     }

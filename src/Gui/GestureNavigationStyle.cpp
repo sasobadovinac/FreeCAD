@@ -93,7 +93,7 @@ namespace Gui {
 class NS::Event : public sc::event<NS::Event>
 {
 public:
-    Event():flags(new Flags){}
+    Event():inventor_event(nullptr), flags(new Flags){}
     virtual ~Event(){}
 
     void log() const {
@@ -301,16 +301,6 @@ public:
             return transit<NS::AwaitingReleaseState>();
         }
 
-        //wheel events
-        if(ev.isMouseButtonEvent() && ev.asMouseButtonEvent()->getButton() == SoMouseButtonEvent::BUTTON4){
-            ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), true, posn);
-            ev.flags->processed = true;
-        }
-        if(ev.isMouseButtonEvent() && ev.asMouseButtonEvent()->getButton() == SoMouseButtonEvent::BUTTON5){
-            ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), false, posn);
-            ev.flags->processed = true;
-        }
-
         //touchscreen gestures
         if(ev.isGestureActive()){
             ev.flags->processed = true;
@@ -324,17 +314,17 @@ public:
             bool press = (kbev->getState() == SoKeyboardEvent::DOWN);
             switch (kbev->getKey()) {
                 case SoKeyboardEvent::H:
-                    if (press)
+                    if (!press)
                         ns.onSetRotationCenter(kbev->getPosition());
                 break;
                 case SoKeyboardEvent::PAGE_UP:
-                    if(press){
-                        ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), true, posn);
+                    if(!press){
+                        ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), ns.getDelta(), posn);
                     }
                 break;
                 case SoKeyboardEvent::PAGE_DOWN:
-                    if(press){
-                        ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), false, posn);
+                    if(!press){
+                        ns.doZoom(ns.viewer->getSoRenderManager()->getCamera(), -ns.getDelta(), posn);
                     }
                 break;
                 default:
@@ -838,7 +828,7 @@ public:
 
 /* TRANSLATOR Gui::GestureNavigationStyle */
 
-TYPESYSTEM_SOURCE(Gui::GestureNavigationStyle, Gui::UserNavigationStyle);
+TYPESYSTEM_SOURCE(Gui::GestureNavigationStyle, Gui::UserNavigationStyle)
 
 
 GestureNavigationStyle::GestureNavigationStyle()
@@ -1008,7 +998,7 @@ void GestureNavigationStyle::onRollGesture(int direction)
     code << "Gui.runCommand(\"" << cmd << "\")";
     try {
         Base::Interpreter().runString(code.str().c_str());
-    } catch (Base::PyException exc) {
+    } catch (Base::PyException& exc) {
         exc.ReportException();
     } catch (...) {
         Base::Console().Error("GestureNavigationStyle::onRollGesture: unknown C++ exception when invoking command %s\n", cmd.c_str());

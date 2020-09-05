@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (c) Jürgen Riegel          (juergen.riegel@web.de) 2002     *
+ *   Copyright (c) 2002 Jürgen Riegel <juergen.riegel@web.de>              *
  *                                                                         *
  *   This file is part of the FreeCAD CAx development system.              *
  *                                                                         *
@@ -72,7 +72,7 @@
 
 using namespace Part;
 
-TYPESYSTEM_SOURCE(Part::PropertyPartShape , App::PropertyComplexGeoData);
+TYPESYSTEM_SOURCE(Part::PropertyPartShape , App::PropertyComplexGeoData)
 
 PropertyPartShape::PropertyPartShape()
 {
@@ -445,7 +445,7 @@ void PropertyPartShape::RestoreDocFile(Base::Reader &reader)
 
 // -------------------------------------------------------------------------
 
-TYPESYSTEM_SOURCE(Part::PropertyShapeHistory , App::PropertyLists);
+TYPESYSTEM_SOURCE(Part::PropertyShapeHistory , App::PropertyLists)
 
 PropertyShapeHistory::PropertyShapeHistory()
 {
@@ -511,7 +511,7 @@ void PropertyShapeHistory::Paste(const Property &from)
 
 // -------------------------------------------------------------------------
 
-TYPESYSTEM_SOURCE(Part::PropertyFilletEdges , App::PropertyLists);
+TYPESYSTEM_SOURCE(Part::PropertyFilletEdges , App::PropertyLists)
 
 PropertyFilletEdges::PropertyFilletEdges()
 {

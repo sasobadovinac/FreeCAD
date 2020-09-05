@@ -25,6 +25,7 @@
 #define GUI_QUANTITYSPINBOX_H
 
 #include <QAbstractSpinBox>
+#include <Base/UnitsSchema.h>
 #include <Gui/MetaTypes.h>
 #include "ExpressionBinding.h"
 
@@ -91,6 +92,18 @@ public:
     /// Sets the value of the maximum property 
     void setMaximum(double max);
 
+    /// Gets the number of decimals
+    int decimals() const;
+    /// Sets the number of decimals
+    void setDecimals(int v);
+
+    /// Sets a specific unit schema to handle quantities.
+    /// The system-wide schema won't be used any more.
+    void setSchema(const Base::UnitSystem& s);
+
+    /// Clears the schemaand again use the system-wide schema.
+    void clearSchema();
+
     /// Gets the path of the bound property
     QString boundToName() const;
     /// Sets the path of the bound property
@@ -111,6 +124,8 @@ public:
     virtual QValidator::State validate(QString &input, int &pos) const;
     virtual void fixup(QString &str) const;
 
+    QSize sizeHint() const;
+    QSize minimumSizeHint() const;
     bool event(QEvent *event);
 
     void setExpression(boost::shared_ptr<App::Expression> expr);
@@ -127,13 +142,16 @@ protected Q_SLOTS:
     void userInput(const QString & text);
     void openFormulaDialog();
     void finishFormulaDialog();
-    
+    void handlePendingEmit();
+
     //get notified on expression change
     virtual void onChange();
 
 protected:
     virtual StepEnabled stepEnabled() const;
     virtual void showEvent(QShowEvent * event);
+    virtual void hideEvent(QHideEvent * event);
+    virtual void closeEvent(QCloseEvent * event);
     virtual void focusInEvent(QFocusEvent * event);
     virtual void focusOutEvent(QFocusEvent * event);
     virtual void keyPressEvent(QKeyEvent *event);
@@ -141,6 +159,9 @@ protected:
 
 private:
     void updateText(const Base::Quantity&);
+    void updateFromCache(bool);
+    QString getUserString(const Base::Quantity& val, double& factor, QString& unitString) const;
+    QString getUserString(const Base::Quantity& val) const;
 
 Q_SIGNALS:
     /** Gets emitted if the user has entered a VALID input
@@ -153,6 +174,10 @@ Q_SIGNALS:
      *  like: minimum, maximum and/or the right Unit (if specified).
      */
     void valueChanged(double);
+    /**
+     * The new value is passed in \a text with unit.
+     */
+    void textChanged(const QString&);
     /** Gets emitted if formula dialog is about to be opened (true)
      *  or finished (false).
      */
