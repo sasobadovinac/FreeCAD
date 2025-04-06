@@ -26,6 +26,7 @@
 #ifndef _PreComp_
 #include <algorithm>
 #include <iomanip>
+#include <limits>
 #include <QApplication>
 #include <QComboBox>
 #include <QFontDatabase>
@@ -295,7 +296,7 @@ int PropertyItem::childCount() const
 
 int PropertyItem::columnCount() const
 {
-    return 2;
+    return PropertyItem::ColumnCount;
 }
 
 void PropertyItem::setReadOnly(bool ro)
@@ -649,7 +650,7 @@ void PropertyItem::setPropertyValue(const QString& value)
     setPropertyValue(value.toStdString());
 }
 
-QVariant PropertyItem::dataProperty(int role) const
+QVariant PropertyItem::dataPropertyName(int role) const
 {
     if (role == Qt::ForegroundRole && linked) {
         return QVariant::fromValue(QColor(0x20, 0xaa, 0x20));  // NOLINT
@@ -742,9 +743,8 @@ QVariant PropertyItem::dataValue(int role) const
 
 QVariant PropertyItem::data(int column, int role) const
 {
-    // property name
-    if (column == 0) {
-        return dataProperty(role);
+    if (column == PropertyItem::NameColumn) {
+        return dataPropertyName(role);
     }
 
     return dataValue(role);
@@ -968,7 +968,8 @@ QWidget* PropertyIntegerItem::createEditor(QWidget* parent,
 void PropertyIntegerItem::setEditorData(QWidget* editor, const QVariant& data) const
 {
     auto sb = qobject_cast<QSpinBox*>(editor);
-    sb->setRange(INT_MIN, INT_MAX);
+    sb->setRange(std::numeric_limits<int>::min(),
+                 std::numeric_limits<int>::max());
     sb->setValue(data.toInt());
 }
 
@@ -1128,7 +1129,8 @@ QWidget* PropertyFloatItem::createEditor(QWidget* parent, const std::function<vo
 void PropertyFloatItem::setEditorData(QWidget* editor, const QVariant& data) const
 {
     auto sb = qobject_cast<QDoubleSpinBox*>(editor);
-    sb->setRange((double)INT_MIN, (double)INT_MAX);
+    sb->setRange(static_cast<double>(std::numeric_limits<int>::min()),
+                static_cast<double>(std::numeric_limits<int>::max()));
     sb->setValue(data.toDouble());
 }
 
