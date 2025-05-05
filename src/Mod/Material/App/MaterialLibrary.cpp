@@ -56,6 +56,11 @@ MaterialLibrary::MaterialLibrary(const QString& libraryName,
     , _local(false)
 {}
 
+MaterialLibrary::MaterialLibrary(const Library& library)
+    : Library(library)
+    , _local(false)
+{}
+
 bool MaterialLibrary::isLocal() const
 {
     return _local;
@@ -87,7 +92,7 @@ MaterialLibrary::getMaterialTree(const std::shared_ptr<Materials::MaterialFilter
         for (auto& itp : list) {
             if (!itp.isEmpty()) {
                 // Add the folder only if it's not already there
-                if (node->count(itp) == 0) {
+                if (!node->contains(itp)) {
                     auto mapPtr = std::make_shared<
                         std::map<QString, std::shared_ptr<MaterialTreeNode>>>();
                     std::shared_ptr<MaterialTreeNode> child =
@@ -120,7 +125,7 @@ MaterialLibrary::getMaterialTree(const std::shared_ptr<Materials::MaterialFilter
     //             auto node = materialTree;
     //             for (auto& itp : list) {
     //                 // Add the folder only if it's not already there
-    //                 if (node->count(itp) == 0) {
+    //                 if (!node->contains(itp)) {
     //                     std::shared_ptr<std::map<QString, std::shared_ptr<MaterialTreeNode>>>
     //                         mapPtr = std::make_shared<
     //                             std::map<QString, std::shared_ptr<MaterialTreeNode>>>();

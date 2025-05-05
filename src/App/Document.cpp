@@ -797,7 +797,7 @@ void Document::onChanged(const Property* prop)
     }
     else if (prop == &UseHasher) {
         for (auto obj : d->objectArray) {
-            auto geofeature = dynamic_cast<GeoFeature*>(obj);
+            auto geofeature = freecad_cast<GeoFeature*>(obj);
             if (geofeature && geofeature->getPropertyOfGeometry()) {
                 geofeature->enforceRecompute();
             }
@@ -840,6 +840,7 @@ Document::Document(const char* documentName)
     // So, we must increment only if the interpreter gets a reference.
     // Remark: We force the document Python object to own the DocumentPy instance, thus we don't
     // have to care about ref counting any more.
+    setAutoCreated(false);
     d = new DocumentP;
     Base::PyGILStateLocker lock;
     d->DocumentPythonObject = Py::Object(new DocumentPy(this), true);
@@ -876,13 +877,8 @@ Document::Document(const char* documentName)
                       "Additional tag to save the name of the company");
     ADD_PROPERTY_TYPE(UnitSystem, (""), 0, Prop_None, "Unit system to use in this project");
     // Set up the possible enum values for the unit system
-    int num = static_cast<int>(Base::UnitSystem::NumUnitSystemTypes);
-    std::vector<std::string> enumValsAsVector;
-    for (int i = 0; i < num; i++) {
-        QString item = Base::UnitsApi::getDescription(static_cast<Base::UnitSystem>(i));
-        enumValsAsVector.emplace_back(item.toStdString());
-    }
-    UnitSystem.setEnums(enumValsAsVector);
+
+    UnitSystem.setEnums(Base::UnitsApi::getDescriptions());
     // Get the preferences/General unit system as the default for a new document
     ParameterGrp::handle hGrpu =
         App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Units");
@@ -1630,9 +1626,9 @@ std::vector<App::DocumentObject*> Document::importObjects(Base::XMLReader& reade
             o->setStatus(App::ObjImporting, true);
             FC_LOG("importing " << o->getFullName());
             if (auto propUUID =
-                    Base::freecad_dynamic_cast<PropertyUUID>(o->getPropertyByName("_ObjectUUID"))) {
+                    freecad_cast<PropertyUUID*>(o->getPropertyByName("_ObjectUUID"))) {
                 auto propSource =
-                    Base::freecad_dynamic_cast<PropertyUUID>(o->getPropertyByName("_SourceUUID"));
+                    freecad_cast<PropertyUUID*>(o->getPropertyByName("_SourceUUID"));
                 if (!propSource) {
                     propSource = static_cast<PropertyUUID*>(
                         o->addDynamicProperty("App::PropertyUUID",
@@ -2439,7 +2435,7 @@ bool Document::afterRestore(const std::vector<DocumentObject*>& objArray, bool c
             // refresh properties in case the object changes its property list
             obj->getPropertyList(props);
             for (auto prop : props) {
-                auto link = Base::freecad_dynamic_cast<PropertyLinkBase>(prop);
+                auto link = freecad_cast<PropertyLinkBase*>(prop);
                 int res;
                 std::string errMsg;
                 if (link && (res = link->checkRestore(&errMsg))) {
@@ -2464,7 +2460,7 @@ bool Document::afterRestore(const std::vector<DocumentObject*>& objArray, bool c
             // partial document touched, signal full reload
             return false;
         }
-        else if (!d->touchedObjs.count(obj)) {
+        else if (!d->touchedObjs.contains(obj)) {
             obj->purgeTouched();
         }
 
@@ -2503,6 +2499,14 @@ const char* Document::getName() const
 std::string Document::getFullName() const
 {
     return myName;
+}
+
+void Document::setAutoCreated(bool value) {
+    autoCreated = value;
+}
+
+bool Document::isAutoCreated() const {
+    return autoCreated;
 }
 
 const char* Document::getProgramVersion() const
@@ -3056,7 +3060,7 @@ int Document::recompute(const std::vector<App::DocumentObject*>& objs,
             for (size_t i = 0; i < topoSortedObjects.size(); ++i) {
                 auto obj = topoSortedObjects[i];
                 obj->setStatus(ObjectStatus::Recompute2, false);
-                if (!filter.count(obj) && obj->isTouched()) {
+                if (!filter.contains(obj) && obj->isTouched()) {
                     if (passes > 0) {
                         FC_ERR(obj->getFullName() << " still touched after recompute");
                     }
@@ -3987,7 +3991,7 @@ Document::importLinks(const std::vector<App::DocumentObject*>& objArray)
         propList.clear();
         obj->getPropertyList(propList);
         for (auto prop : propList) {
-            auto linkProp = Base::freecad_dynamic_cast<PropertyLinkBase>(prop);
+            auto linkProp = freecad_cast<PropertyLinkBase*>(prop);
             if (linkProp && !prop->testStatus(Property::Immutable) && !obj->isReadOnly(prop)) {
                 auto copy = linkProp->CopyOnImportExternal(nameMap);
                 if (copy) {
@@ -4154,13 +4158,26 @@ const std::vector<DocumentObject*>& Document::getObjects() const
     return d->objectArray;
 }
 
-
 std::vector<DocumentObject*> Document::getObjectsOfType(const Base::Type& typeId) const
 {
     std::vector<DocumentObject*> Objects;
     for (auto it : d->objectArray) {
         if (it->isDerivedFrom(typeId)) {
             Objects.push_back(it);
+        }
+    }
+    return Objects;
+}
+
+std::vector<DocumentObject*> Document::getObjectsOfType(const std::vector<Base::Type>& types) const
+{
+    std::vector<DocumentObject*> Objects;
+    for (auto it : d->objectArray) {
+        for (auto& typeId : types) {
+            if (it->isDerivedFrom(typeId)) {
+                Objects.push_back(it);
+                break; // Prevent adding several times the same object.
+            }
         }
     }
     return Objects;

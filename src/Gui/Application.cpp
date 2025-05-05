@@ -35,6 +35,7 @@
 #include <QMessageLogContext>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
+#include <QScreen>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTextStream>
@@ -159,7 +160,7 @@ public:
     void newObject(const ViewProvider& vp)
     {
         auto vpd =
-            Base::freecad_dynamic_cast<ViewProviderDocumentObject>(const_cast<ViewProvider*>(&vp));
+            freecad_cast<ViewProviderDocumentObject*>(const_cast<ViewProvider*>(&vp));
         if (vpd && vpd->getObject()) {
             map[vpd->getObject()] = vpd;
         }
@@ -167,7 +168,7 @@ public:
     void deleteObject(const ViewProvider& vp)
     {
         auto vpd =
-            Base::freecad_dynamic_cast<ViewProviderDocumentObject>(const_cast<ViewProvider*>(&vp));
+            freecad_cast<ViewProviderDocumentObject*>(const_cast<ViewProvider*>(&vp));
         if (vpd && vpd->getObject()) {
             map.erase(vpd->getObject());
         }
@@ -630,7 +631,7 @@ void Application::open(const char* FileName, const char* Module)
     // in case of an automatically created empty document at startup
     App::Document* act = App::GetApplication().getActiveDocument();
     Gui::Document* gui = this->getDocument(act);
-    if (act && act->countObjects() == 0 && gui && !gui->isModified()) {
+    if (act && act->countObjects() == 0 && gui && !gui->isModified() && act->isAutoCreated()) {
         Command::doCommand(Command::App, "App.closeDocument('%s')", act->getName());
         qApp->processEvents();  // an update is needed otherwise the new view isn't shown
     }
@@ -1071,12 +1072,12 @@ void Application::slotActiveDocument(const App::Document& Doc)
             "User parameter:BaseApp/Preferences/Units");
         if (!hGrp->GetBool("IgnoreProjectSchema")) {
             int userSchema = Doc.UnitSystem.getValue();
-            Base::UnitsApi::setSchema(static_cast<Base::UnitSystem>(userSchema));
+            Base::UnitsApi::setSchema(userSchema);
             getMainWindow()->setUserSchema(userSchema);
             Application::Instance->onUpdate();
         }
         else {  // set up Unit system default
-            Base::UnitsApi::setSchema((Base::UnitSystem)hGrp->GetInt("UserSchema", 0));
+            Base::UnitsApi::setSchema(hGrp->GetInt("UserSchema", 0));
             Base::UnitsApi::setDecimals(hGrp->GetInt("Decimals", Base::UnitsApi::getDecimals()));
         }
         signalActiveDocument(*doc->second);
@@ -2601,7 +2602,7 @@ App::Document* Application::reopen(App::Document* doc)
         if (name == v.first->FileName.getValue()) {
             doc = const_cast<App::Document*>(v.first);
         }
-        if (untouchedDocs.count(v.second)) {
+        if (untouchedDocs.contains(v.second)) {
             if (!v.second->isModified()) {
                 continue;
             }
@@ -2630,4 +2631,45 @@ App::Document* Application::reopen(App::Document* doc)
         }
     }
     return doc;
+}
+
+void Application::getVerboseDPIStyleInfo(QTextStream& str) {
+    // Add Stylesheet/Theme/Qtstyle information
+    std::string styleSheet =
+        App::GetApplication()
+            .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow")
+            ->GetASCII("StyleSheet");
+    std::string theme =
+        App::GetApplication()
+            .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow")
+            ->GetASCII("Theme");
+#if QT_VERSION >= QT_VERSION_CHECK(6, 1, 0)
+    std::string style = qApp->style()->name().toStdString();
+#else
+    std::string style =
+        App::GetApplication()
+            .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow")
+            ->GetASCII("QtStyle");
+    if (style.empty()) {
+        style = "Qt default";
+    }
+#endif
+    if (styleSheet.empty()) {
+        styleSheet = "unset";
+    }
+    if (theme.empty()) {
+        theme = "unset";
+    }
+
+    str << "Stylesheet/Theme/QtStyle: " << QString::fromStdString(styleSheet) << "/"
+        << QString::fromStdString(theme) << "/" << QString::fromStdString(style) << "\n";
+
+    // Add DPI information
+    str << "Logical DPI/Physical DPI/Pixel Ratio: "
+        << QApplication::primaryScreen()->logicalDotsPerInch()
+        << "/"
+        << QApplication::primaryScreen()->physicalDotsPerInch()
+        << "/"
+        << QApplication::primaryScreen()->devicePixelRatio()
+        << "\n";
 }

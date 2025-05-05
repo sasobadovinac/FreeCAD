@@ -149,7 +149,7 @@ void QGIBalloonLabel::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         return;
     }
 
-    auto ViewProvider = dynamic_cast<ViewProviderBalloon*>(
+    auto ViewProvider = freecad_cast<ViewProviderBalloon*>(
         qgivBalloon->getViewProvider(qgivBalloon->getViewObject()));
     if (!ViewProvider) {
         qWarning() << "QGIBalloonLabel::mouseDoubleClickEvent: No valid view provider";
@@ -366,7 +366,7 @@ void QGIViewBalloon::setViewPartFeature(TechDraw::DrawViewBalloon* balloonFeat)
     double scale = 1.0;
     App::DocumentObject* docObj = balloonFeat->SourceView.getValue();
     if (docObj) {
-        balloonParent = dynamic_cast<DrawView*>(docObj);
+        balloonParent = freecad_cast<DrawView*>(docObj);
         if (balloonParent) {
             scale = balloonParent->getScale();
         }
@@ -547,7 +547,7 @@ void QGIViewBalloon::placeBalloon(QPointF pos)
         return;
     }
 
-    DrawView* balloonParent = dynamic_cast<DrawView*>(balloon->SourceView.getValue());
+    DrawView* balloonParent = freecad_cast<DrawView*>(balloon->SourceView.getValue());
     if (!balloonParent) {
         return;
     }
@@ -565,7 +565,7 @@ void QGIViewBalloon::placeBalloon(QPointF pos)
     QGIView* qgivParent = nullptr;
     QPointF viewPos;
     Gui::ViewProvider* objVp = QGIView::getViewProvider(balloonParent);
-    auto partVP = dynamic_cast<ViewProviderViewPart*>(objVp);
+    auto partVP = freecad_cast<ViewProviderViewPart*>(objVp);
     if (partVP) {
         qgivParent = partVP->getQView();
         if (qgivParent) {
@@ -698,7 +698,7 @@ void QGIViewBalloon::drawBalloon(bool originDrag)
         double radius = sqrt(pow((textHeight / 2.0), 2) + pow((textWidth / 2.0), 2));
         radius = radius * scale;
         radius += Rez::guiX(3.0);
-        offsetLR = (tan(30 * pi / 180) * radius);
+        offsetLR = tan(Base::toRadians(30.0)) * radius;
         QPolygonF triangle;
         double startAngle = -pi / 2;
         double angle = startAngle;
@@ -807,7 +807,7 @@ void QGIViewBalloon::drawBalloon(bool originDrag)
             dirballoonLinesLine = (arrowTipPosInParent - dLineStart).Normalize();
         }
 
-        float arAngle = atan2(dirballoonLinesLine.y, dirballoonLinesLine.x) * 180 / pi;
+        float arAngle = Base::toDegrees(atan2(dirballoonLinesLine.y, dirballoonLinesLine.x));
 
         if ((endType == ArrowType::FILLED_TRIANGLE) && (prefOrthoPyramid())) {
             if (arAngle < 0.0) {
@@ -826,7 +826,7 @@ void QGIViewBalloon::drawBalloon(bool originDrag)
             else {
                 arAngle = 0;
             }
-            double radAngle = arAngle * pi / 180.0;
+            double radAngle = Base::toRadians(arAngle);
             double sinAngle = sin(radAngle);
             double cosAngle = cos(radAngle);
             xAdj = Rez::guiX(arrowAdj * cosAngle);
@@ -944,7 +944,7 @@ QColor QGIViewBalloon::prefNormalColor()
     ViewProviderBalloon* vpBalloon = nullptr;
     Gui::ViewProvider* vp = getViewProvider(getBalloonFeat());
     if (vp) {
-        vpBalloon = dynamic_cast<ViewProviderBalloon*>(vp);
+        vpBalloon = freecad_cast<ViewProviderBalloon*>(vp);
         if (vpBalloon) {
             Base::Color fcColor = Preferences::getAccessibleColor(vpBalloon->Color.getValue());
             setNormalColor(fcColor.asValue<QColor>());
@@ -968,9 +968,9 @@ DrawView* QGIViewBalloon::getSourceView() const
 {
     DrawView* balloonParent = nullptr;
     App::DocumentObject* docObj = getViewObject();
-    DrawViewBalloon* dvb = dynamic_cast<DrawViewBalloon*>(docObj);
+    DrawViewBalloon* dvb = freecad_cast<DrawViewBalloon*>(docObj);
     if (dvb) {
-        balloonParent = dynamic_cast<DrawView*>(dvb->SourceView.getValue());
+        balloonParent = freecad_cast<DrawView*>(dvb->SourceView.getValue());
     }
     return balloonParent;
 }

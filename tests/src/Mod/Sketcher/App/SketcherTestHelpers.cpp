@@ -6,7 +6,9 @@
 #include <App/ObjectIdentifier.h>
 #include <Mod/Sketcher/App/GeoEnum.h>
 #include <Mod/Sketcher/App/SketchObject.h>
+#include <src/App/InitApplication.h>
 #include "SketcherTestHelpers.h"
+
 
 void SketchObjectTest::SetUpTestSuite()
 {
@@ -46,7 +48,6 @@ void setupLineSegment(Part::GeomLineSegment& lineSeg)
 void setupCircle(Part::GeomCircle& circle)
 {
     Base::Vector3d coordsCenter(1.0, 2.0, 0.0);
-    Base::Vector3d splitPoint(2.0, 3.1, 0.0);
     double radius = 3.0;
     circle.setCenter(coordsCenter);
     circle.setRadius(radius);
@@ -138,11 +139,7 @@ int countConstraintsOfType(const Sketcher::SketchObject* obj, const Sketcher::Co
 {
     const std::vector<Sketcher::Constraint*>& constraints = obj->Constraints.getValues();
 
-    int result = std::count_if(constraints.begin(),
-                               constraints.end(),
-                               [&cType](const Sketcher::Constraint* constr) {
-                                   return constr->Type == cType;
-                               });
+    int result = std::ranges::count(constraints, cType, &Constraint::Type);
 
     return result;
 }

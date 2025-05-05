@@ -53,6 +53,7 @@
 #include <Base/Converter.h>
 #include <Base/FileInfo.h>
 #include <Base/Parameter.h>
+#include <Base/Tools.h>
 
 #include "DrawGeomHatch.h"
 #include "DrawGeomHatchPy.h" // generated from DrawGeomHatchPy.xml
@@ -167,7 +168,7 @@ void DrawGeomHatch::unsetupObject()
 {
 //    Base::Console().Message("DGH::unsetupObject() - status: %lu  removing: %d \n", getStatus(), isRemoving());
     App::DocumentObject* source = Source.getValue();
-    DrawView* dv = dynamic_cast<DrawView*>(source);
+    DrawView* dv = freecad_cast<DrawView*>(source);
     if (dv) {
         dv->requestPaint();
     }
@@ -210,7 +211,7 @@ std::vector<LineSet> DrawGeomHatch::makeLineSets(std::string fileSpec, std::stri
 DrawViewPart* DrawGeomHatch::getSourceView() const
 {
     App::DocumentObject* obj = Source.getValue();
-    DrawViewPart* result = dynamic_cast<DrawViewPart*>(obj);
+    DrawViewPart* result = freecad_cast<DrawViewPart*>(obj);
     return result;
 }
 
@@ -402,12 +403,13 @@ std::vector<TopoDS_Edge> DrawGeomHatch::makeEdgeOverlay(PATLineSpec hatchLine, B
     double interval = hatchLine.getInterval() * scale;
     double offset = hatchLine.getOffset() * scale;
     double angle = hatchLine.getAngle() + rotation;
-    origin.RotateZ(rotation * pi / 180.);
+    origin.RotateZ(Base::toRadians(rotation));
 
     if (scale == 0. || interval == 0.)
         return {};
 
-    Base::Vector3d hatchDirection(cos(angle * pi / 180.), sin(angle * pi / 180.), 0.);
+    const double hatchAngle = Base::toRadians(angle);
+    Base::Vector3d hatchDirection(cos(hatchAngle), sin(hatchAngle), 0.);
     Base::Vector3d hatchPerpendicular(-hatchDirection.y, hatchDirection.x, 0.);
     Base::Vector3d hatchIntervalAndOffset = offset * hatchDirection + interval * hatchPerpendicular;
 

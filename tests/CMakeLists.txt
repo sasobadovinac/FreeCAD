@@ -114,6 +114,9 @@ endif(BUILD_SKETCHER)
 if(BUILD_SPREADSHEET)
   list (APPEND TestExecutables Spreadsheet_tests_run)
 endif()
+if(BUILD_START)
+  list (APPEND TestExecutables Start_tests_run)
+endif()
 
 # -------------------------
 
@@ -131,6 +134,7 @@ target_link_libraries(Tests_run
     gmock_main
     ${Google_Tests_LIBS}
     FreeCADApp
+    FreeCADGui
 )
 
 include(GoogleTest)
