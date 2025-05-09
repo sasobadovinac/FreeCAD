@@ -77,7 +77,9 @@ jobs:
         fetch-depth: 2
         submodules: recursive
 
+    # Install FreeCAD dependencies (cpp)
     - name: Setup build environment
+      if: ${{ matrix.language == 'c-cpp' }}
       run: |
         sudo apt-get update -qq
         sudo apt-get install -y --no-install-recommends               \
