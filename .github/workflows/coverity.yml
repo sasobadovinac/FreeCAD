@@ -9,6 +9,9 @@ on:
 #    - cron: '28 12 * * 6'
   workflow_dispatch:  # Allow manual triggers
 
+permissions:
+  contents: read
+
 jobs:
   coverity:
     runs-on: ubuntu-latest
