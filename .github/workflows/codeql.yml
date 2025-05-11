@@ -77,6 +77,15 @@ jobs:
         fetch-depth: 2
         submodules: recursive
 
+    # prevent running out of disk space on Ubuntu runners.
+    - name: Maximize build space
+      if: runner.os == 'Linux'
+      uses: AdityaGarg8/remove-unwanted-software@v5
+      with:
+        verbose: 'true'
+        remove-android: 'true'      # (frees ~9 GB)
+        remove-cached-tools: 'true' # (frees ~8.3 GB)
+
     # Install FreeCAD dependencies (cpp)
     - name: Setup build environment
       if: ${{ matrix.language == 'c-cpp' }}
