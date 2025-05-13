@@ -765,7 +765,7 @@ void Document::onChanged(const Property* prop)
         if (!TransDirNew.exists()) {
             if (TransDirOld.exists()) {
                 if (!TransDirOld.renameFile(new_dir.c_str())) {
-                    Base::Console().Warning("Failed to rename '%s' to '%s'\n",
+                    Base::Console().warning("Failed to rename '%s' to '%s'\n",
                                             old_dir.c_str(),
                                             new_dir.c_str());
                 }
@@ -775,7 +775,7 @@ void Document::onChanged(const Property* prop)
             }
             else {
                 if (!TransDirNew.createDirectories()) {
-                    Base::Console().Warning("Failed to create '%s'\n", new_dir.c_str());
+                    Base::Console().warning("Failed to create '%s'\n", new_dir.c_str());
                 }
                 else {
                     this->TransientDir.setValue(new_dir);
@@ -788,7 +788,7 @@ void Document::onChanged(const Property* prop)
             // make sure that the uuid is unique
             std::string uuid = this->Uid.getValueStr();
             Base::Uuid id;
-            Base::Console().Warning("Document with the UUID '%s' already exists, change to '%s'\n",
+            Base::Console().warning("Document with the UUID '%s' already exists, change to '%s'\n",
                                     uuid.c_str(),
                                     id.getValue().c_str());
             // recursive call of onChanged()
@@ -846,7 +846,7 @@ Document::Document(const char* documentName)
     d->DocumentPythonObject = Py::Object(new DocumentPy(this), true);
 
 #ifdef FC_LOGUPDATECHAIN
-    Console().Log("+App::Document: %p\n", this);
+    Console().log("+App::Document: %p\n", this);
 #endif
     std::string CreationDateString = Base::Tools::currentDateTimeString();
     std::string Author = App::GetApplication()
@@ -942,7 +942,7 @@ Document::Document(const char* documentName)
 Document::~Document()
 {
 #ifdef FC_LOGUPDATECHAIN
-    Console().Log("-App::Document: %s %p\n", getName(), this);
+    Console().log("-App::Document: %s %p\n", getName(), this);
 #endif
 
     try {
@@ -952,7 +952,7 @@ Document::~Document()
     }
 
 #ifdef FC_LOGUPDATECHAIN
-    Console().Log("-Delete Features of %s \n", getName());
+    Console().log("-Delete Features of %s \n", getName());
 #endif
 
     d->clearDocument();
@@ -1038,16 +1038,16 @@ void Document::Restore(Base::XMLReader& reader)
     setStatus(Document::PartialDoc, false);
 
     reader.readElement("Document");
-    long scheme = reader.getAttributeAsInteger("SchemaVersion");
+    long scheme = reader.getAttribute<long>("SchemaVersion");
     reader.DocumentSchema = scheme;
     if (reader.hasAttribute("ProgramVersion")) {
-        reader.ProgramVersion = reader.getAttribute("ProgramVersion");
+        reader.ProgramVersion = reader.getAttribute<const char*>("ProgramVersion");
     }
     else {
         reader.ProgramVersion = "pre-0.14";
     }
     if (reader.hasAttribute("FileVersion")) {
-        reader.FileVersion = reader.getAttributeAsUnsigned("FileVersion");
+        reader.FileVersion = reader.getAttribute<unsigned long>("FileVersion");
     }
     else {
         reader.FileVersion = 0;
@@ -1083,26 +1083,26 @@ void Document::Restore(Base::XMLReader& reader)
     if (scheme == 2) {
         // read the feature types
         reader.readElement("Features");
-        Cnt = reader.getAttributeAsInteger("Count");
+        Cnt = reader.getAttribute<long>("Count");
         for (i = 0; i < Cnt; i++) {
             reader.readElement("Feature");
-            string type = reader.getAttribute("type");
-            string name = reader.getAttribute("name");
+            string type = reader.getAttribute<const char*>("type");
+            string name = reader.getAttribute<const char*>("name");
             try {
                 addObject(type.c_str(), name.c_str(), /*isNew=*/false);
             }
             catch (Base::Exception&) {
-                Base::Console().Message("Cannot create object '%s'\n", name.c_str());
+                Base::Console().message("Cannot create object '%s'\n", name.c_str());
             }
         }
         reader.readEndElement("Features");
 
         // read the features itself
         reader.readElement("FeatureData");
-        Cnt = reader.getAttributeAsInteger("Count");
+        Cnt = reader.getAttribute<long>("Count");
         for (i = 0; i < Cnt; i++) {
             reader.readElement("Feature");
-            string name = reader.getAttribute("name");
+            string name = reader.getAttribute<const char*>("name");
             DocumentObject* pObj = getObject(name.c_str());
             if (pObj) {  // check if this feature has been registered
                 pObj->setStatus(ObjectStatus::Restore, true);
@@ -1128,7 +1128,7 @@ void Document::Restore(Base::XMLReader& reader)
 void DocumentP::checkStringHasher(const Base::XMLReader& reader)
 {
     if (reader.hasReadFailed("StringHasher.Table.txt")) {
-        Base::Console().Error(QT_TRANSLATE_NOOP(
+        Base::Console().error(QT_TRANSLATE_NOOP(
             "Notifications",
             "\nIt is recommended that the user right-click the root of "
             "the document and select Mark to recompute.\n"
@@ -1405,7 +1405,7 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
 
     // read the object types
     reader.readElement("Objects");
-    int Cnt = reader.getAttributeAsInteger("Count");
+    int Cnt = reader.getAttribute<long>("Count");
 
     if (!reader.hasAttribute(FC_ATTR_DEPENDENCIES)) {
         d->partialLoadObjects.clear();
@@ -1414,17 +1414,17 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
         std::unordered_map<std::string, DepInfo> deps;
         for (int i = 0; i < Cnt; i++) {
             reader.readElement(FC_ELEMENT_OBJECT_DEPS);
-            int dcount = reader.getAttributeAsInteger(FC_ATTR_DEP_COUNT);
+            int dcount = reader.getAttribute<long>(FC_ATTR_DEP_COUNT);
             if (!dcount) {
                 continue;
             }
-            auto& info = deps[reader.getAttribute(FC_ATTR_DEP_OBJ_NAME)];
+            auto& info = deps[reader.getAttribute<const char*>(FC_ATTR_DEP_OBJ_NAME)];
             if (reader.hasAttribute(FC_ATTR_DEP_ALLOW_PARTIAL)) {
-                info.canLoadPartial = reader.getAttributeAsInteger(FC_ATTR_DEP_ALLOW_PARTIAL);
+                info.canLoadPartial = reader.getAttribute<long>(FC_ATTR_DEP_ALLOW_PARTIAL);
             }
             for (int j = 0; j < dcount; ++j) {
                 reader.readElement(FC_ELEMENT_OBJECT_DEP);
-                const char* name = reader.getAttribute(FC_ATTR_DEP_OBJ_NAME);
+                const char* name = reader.getAttribute<const char*>(FC_ATTR_DEP_OBJ_NAME);
                 if (!Base::Tools::isNullOrEmpty(name)) {
                     info.deps.insert(name);
                 }
@@ -1458,10 +1458,10 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
     long lastId = 0;
     for (int i = 0; i < Cnt; i++) {
         reader.readElement("Object");
-        std::string type = reader.getAttribute("type");
-        std::string name = reader.getAttribute("name");
+        std::string type = reader.getAttribute<const char*>("type");
+        std::string name = reader.getAttribute<const char*>("name");
         std::string viewType =
-            reader.hasAttribute("ViewType") ? reader.getAttribute("ViewType") : "";
+            reader.hasAttribute("ViewType") ? reader.getAttribute<const char*>("ViewType") : "";
 
         bool partial = false;
         if (!d->partialLoadObjects.empty()) {
@@ -1475,7 +1475,7 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
         if (!testStatus(Status::Importing) && reader.hasAttribute("id")) {
             // if not importing, then temporary reset lastObjectId and make the
             // following addObject() generate the correct id for this object.
-            d->lastObjectId = reader.getAttributeAsInteger("id") - 1;
+            d->lastObjectId = reader.getAttribute<long>("id") - 1;
         }
 
         // To prevent duplicate name when export/import of objects from
@@ -1514,21 +1514,21 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
 
                 // restore touch/error status flags
                 if (reader.hasAttribute("Touched")) {
-                    if (reader.getAttributeAsInteger("Touched") != 0) {
+                    if (reader.getAttribute<long>("Touched") != 0) {
                         d->touchedObjs.insert(obj);
                     }
                 }
                 if (reader.hasAttribute("Invalid")) {
                     obj->setStatus(ObjectStatus::Error,
-                                   reader.getAttributeAsInteger("Invalid") != 0);
+                                   reader.getAttribute<bool>("Invalid"));
                     if (obj->isError() && reader.hasAttribute("Error")) {
-                        d->addRecomputeLog(reader.getAttribute("Error"), obj);
+                        d->addRecomputeLog(reader.getAttribute<const char*>("Error"), obj);
                     }
                 }
             }
         }
         catch (const Base::Exception& e) {
-            Base::Console().Error("Cannot create object '%s': (%s)\n", name.c_str(), e.what());
+            Base::Console().error("Cannot create object '%s': (%s)\n", name.c_str(), e.what());
         }
     }
     if (!testStatus(Status::Importing)) {
@@ -1541,10 +1541,10 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
     // read the features itself
     reader.clearPartialRestoreDocumentObject();
     reader.readElement("ObjectData");
-    Cnt = reader.getAttributeAsInteger("Count");
+    Cnt = reader.getAttribute<long>("Count");
     for (int i = 0; i < Cnt; i++) {
         reader.readElement("Object");
-        std::string name = reader.getName(reader.getAttribute("name"));
+        std::string name = reader.getName(reader.getAttribute<const char*>("name"));
         DocumentObject* pObj = getObject(name.c_str());
         if (pObj
             && !pObj->testStatus(
@@ -1557,25 +1557,25 @@ std::vector<App::DocumentObject*> Document::readObjects(Base::XMLReader& reader)
             // Try to continue only for certain exception types if not handled
             // by the feature type. For all other exception types abort the process.
             catch (const Base::UnicodeError& e) {
-                e.ReportException();
+                e.reportException();
             }
             catch (const Base::ValueError& e) {
-                e.ReportException();
+                e.reportException();
             }
             catch (const Base::IndexError& e) {
-                e.ReportException();
+                e.reportException();
             }
             catch (const Base::RuntimeError& e) {
-                e.ReportException();
+                e.reportException();
             }
             catch (const Base::XMLAttributeError& e) {
-                e.ReportException();
+                e.reportException();
             }
 
             pObj->setStatus(ObjectStatus::Restore, false);
 
             if (reader.testStatus(Base::XMLReader::ReaderStatus::PartialRestoreInDocumentObject)) {
-                Base::Console().Error("Object \"%s\" was subject to a partial restore. As a result "
+                Base::Console().error("Object \"%s\" was subject to a partial restore. As a result "
                                       "geometry may have changed or be incomplete.\n",
                                       name.c_str());
                 reader.clearPartialRestoreDocumentObject();
@@ -1605,16 +1605,16 @@ std::vector<App::DocumentObject*> Document::importObjects(Base::XMLReader& reade
     Base::ObjectStatusLocker<Status, Document> restoreBit2(Status::Importing, this);
     ExpressionParser::ExpressionImporter expImporter(reader);
     reader.readElement("Document");
-    long scheme = reader.getAttributeAsInteger("SchemaVersion");
+    long scheme = reader.getAttribute<long>("SchemaVersion");
     reader.DocumentSchema = scheme;
     if (reader.hasAttribute("ProgramVersion")) {
-        reader.ProgramVersion = reader.getAttribute("ProgramVersion");
+        reader.ProgramVersion = reader.getAttribute<const char*>("ProgramVersion");
     }
     else {
         reader.ProgramVersion = "pre-0.14";
     }
     if (reader.hasAttribute("FileVersion")) {
-        reader.FileVersion = reader.getAttributeAsUnsigned("FileVersion");
+        reader.FileVersion = reader.getAttribute<unsigned long>("FileVersion");
     }
     else {
         reader.FileVersion = 0;
@@ -1861,7 +1861,7 @@ private:
                 }
 
                 if (!fi.renameFile(fn.c_str())) {
-                    Base::Console().Warning("Cannot rename project file to backup file\n");
+                    Base::Console().warning("Cannot rename project file to backup file\n");
                 }
             }
             else {
@@ -1941,13 +1941,13 @@ private:
                                 try {
                                     if (!it.deleteFile()) {
                                         backupManagementError = true;
-                                        Base::Console().Warning("Cannot remove backup file : %s\n",
+                                        Base::Console().warning("Cannot remove backup file : %s\n",
                                                                 it.fileName().c_str());
                                     }
                                 }
                                 catch (...) {
                                     backupManagementError = true;
-                                    Base::Console().Warning("Cannot remove backup file : %s\n",
+                                    Base::Console().warning("Cannot remove backup file : %s\n",
                                                             it.fileName().c_str());
                                 }
                             }
@@ -2009,7 +2009,7 @@ private:
                     }
 
                     if (ext >= numberOfFiles + 10) {
-                        Base::Console().Error(
+                        Base::Console().error(
                             "File not saved: Cannot rename project file to backup file\n");
                         // throw Base::FileException("File not saved: Cannot rename project file to
                         // backup file", fi);
@@ -2021,7 +2021,7 @@ private:
                     fi.deleteFile();
                 }
                 catch (...) {
-                    Base::Console().Warning("Cannot remove backup file: %s\n",
+                    Base::Console().warning("Cannot remove backup file: %s\n",
                                             fi.fileName().c_str());
                     backupManagementError = true;
                 }
@@ -2320,7 +2320,7 @@ void Document::restore(const char* filename,
         Document::Restore(reader);
     }
     catch (const Base::Exception& e) {
-        Base::Console().Error("Invalid Document.xml: %s\n", e.what());
+        Base::Console().error("Invalid Document.xml: %s\n", e.what());
         setStatus(Document::RestoreError, true);
     }
 
@@ -2338,7 +2338,7 @@ void Document::restore(const char* filename,
 
     if (reader.testStatus(Base::XMLReader::ReaderStatus::PartialRestore)) {
         setStatus(Document::PartialRestore, true);
-        Base::Console().Error("There were errors while loading the file. Some data might have been "
+        Base::Console().error("There were errors while loading the file. Some data might have been "
                               "modified or not recovered at all. Look above for more specific "
                               "information about the objects involved.\n");
     }
@@ -3077,7 +3077,7 @@ int Document::recompute(const std::vector<App::DocumentObject*>& objs,
         }
     }
     catch (Base::Exception& e) {
-        e.ReportException();
+        e.reportException();
     }
 
     FC_TIME_LOG(t2, "Recompute");
@@ -3100,7 +3100,7 @@ int Document::recompute(const std::vector<App::DocumentObject*>& objs,
                 if (it->isError()) {
                     const char* text = getErrorDescription(it);
                     if (text) {
-                        Base::Console().Error("%s: %s\n", it->Label.getValue(), text);
+                        Base::Console().error("%s: %s\n", it->Label.getValue(), text);
                     }
                 }
             }
@@ -3117,7 +3117,7 @@ int Document::recompute(const std::vector<App::DocumentObject*>& objs,
                 }
             }
             catch (Base::Exception& e) {
-                e.ReportException();
+                e.reportException();
                 FC_ERR("error when removing object " << o.getDocumentName() << '#'
                                                      << o.getObjectName());
             }
@@ -3326,7 +3326,7 @@ int Document::_recomputeFeature(DocumentObject* Feat)
         }
     }
     catch (Base::AbortException& e) {
-        e.ReportException();
+        e.reportException();
         FC_LOG("Failed to recompute " << Feat->getFullName() << ": " << e.what());
         d->addRecomputeLog("User abort", Feat);
         return -1;
@@ -3337,7 +3337,7 @@ int Document::_recomputeFeature(DocumentObject* Feat)
         return 1;
     }
     catch (Base::Exception& e) {
-        e.ReportException();
+        e.reportException();
         FC_LOG("Failed to recompute " << Feat->getFullName() << ": " << e.what());
         d->addRecomputeLog(e.what(), Feat);
         return 1;
