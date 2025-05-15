@@ -28,14 +28,12 @@ permissions:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    # if: ${{ (matrix.language != 'c-cpp') || (matrix.language == 'c-cpp' && github.event_name == 'schedule') }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
     #   - https://gh.io/using-larger-runners (GitHub.com only)
     # Consider using larger runners or machines with greater resources for possible analysis time improvements.
-    # runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    runs-on: ${{ ((matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest') && ((matrix.language != 'c-cpp') || (matrix.language == 'c-cpp' && github.event_name == 'schedule')) }}
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     permissions:
       # required for all workflows
       security-events: write
@@ -81,7 +79,7 @@ jobs:
 
     # prevent running out of disk space on Ubuntu runners.
     - name: Maximize build space
-      if: ${{ matrix.language == 'c-cpp' }}
+      if: ${{ matrix.language == 'c-cpp' && github.event_name == 'schedule' }}
       uses: AdityaGarg8/remove-unwanted-software@90e01b21170618765a73370fcc3abbd1684a7793 # v5
       with:
         verbose: 'true'
@@ -90,7 +88,7 @@ jobs:
 
     # Install FreeCAD dependencies (cpp)
     - name: Setup build environment
-      if: ${{ matrix.language == 'c-cpp' }}
+      if: ${{ matrix.language == 'c-cpp' && github.event_name == 'schedule' }}
       run: ./package/ubuntu/install-apt-packages.sh
 
     # Add any setup steps before running the `github/codeql-action/init` action.
@@ -101,6 +99,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
+      if: ${{ (matrix.language != 'c-cpp') || (matrix.language == 'c-cpp' && github.event_name == 'schedule') }}
       uses: github/codeql-action/init@28deaeda66b76a05916b6923827895f2b14ab387 # v3.28.16
       with:
         languages: ${{ matrix.language }}
@@ -135,6 +134,7 @@ jobs:
         exit 1
 
     - name: Perform CodeQL Analysis
+      if: ${{ (matrix.language != 'c-cpp') || (matrix.language == 'c-cpp' && github.event_name == 'schedule') }}
       uses: github/codeql-action/analyze@28deaeda66b76a05916b6923827895f2b14ab387 # v3.28.16
       with:
         category: "/language:${{matrix.language}}"
