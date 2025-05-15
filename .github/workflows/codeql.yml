@@ -66,6 +66,7 @@ jobs:
         # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
         # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
     steps:
+    if: ${{ (matrix.language != 'c-cpp') || (matrix.language == 'c-cpp' && github.event_name == 'schedule') }}
     - name: Harden the runner (Audit all outbound calls)
       uses: step-security/harden-runner@4d991eb9b905ef189e4c376166672c3f2f230481 # v2.11.0
       with:
