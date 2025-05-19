@@ -19,7 +19,6 @@ on:
   schedule:
     - cron: '28 12 * * 0'
   workflow_dispatch:  # Allow manual triggers
-    branches: [ "main" ]
 
 env:
   CODEQL_EXTRACTOR_CPP_AUTOINSTALL_DEPENDENCIES: false
