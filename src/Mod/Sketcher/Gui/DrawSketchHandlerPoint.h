@@ -27,6 +27,7 @@
 #include <Gui/Notifications.h>
 #include <Gui/Command.h>
 #include <Gui/CommandT.h>
+#include <Gui/InputHint.h>
 
 #include <Mod/Sketcher/App/SketchObject.h>
 
@@ -34,6 +35,9 @@
 
 #include "DrawSketchDefaultWidgetController.h"
 #include "DrawSketchControllableHandler.h"
+
+#include <vector>
+#include <algorithm>
 
 namespace SketcherGui
 {
@@ -59,6 +63,12 @@ public:
     ~DrawSketchHandlerPoint() override = default;
 
 private:
+    std::list<Gui::InputHint> getToolHints() const override
+    {
+        using enum Gui::InputHint::UserInput;
+        return {{QObject::tr("%1 place a point", "Sketcher Point: hint"), {MouseLeft}}};
+    }
+
     void updateDataAndDrawToPosition(Base::Vector2d onSketchPos) override
     {
         switch (state()) {
@@ -217,8 +227,8 @@ void DSHPointController::doChangeDrawSketchHandlerMode()
 {
     switch (handler->state()) {
         case SelectMode::SeekFirst: {
-            if (onViewParameters[OnViewParameter::First]->isSet
-                && onViewParameters[OnViewParameter::Second]->isSet) {
+            if (onViewParameters[OnViewParameter::First]->hasFinishedEditing
+                || onViewParameters[OnViewParameter::Second]->hasFinishedEditing) {
 
                 handler->setState(SelectMode::End);
                 // handler->finish(); // Called by the change of mode

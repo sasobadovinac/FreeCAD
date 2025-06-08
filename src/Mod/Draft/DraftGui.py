@@ -169,8 +169,8 @@ class DraftToolBar:
         self.x = 0  # coord of the point as displayed in the task panel (global/local and relative/absolute)
         self.y = 0  # idem
         self.z = 0  # idem
-        self.new_point = FreeCAD.Vector()   # global point value
-        self.last_point = FreeCAD.Vector()  # idem
+        self.new_point = None   # global point value
+        self.last_point = None  # idem
         self.lvalue = 0
         self.pvalue = 90
         self.avalue = 0
@@ -615,31 +615,30 @@ class DraftToolBar:
 # Interface modes
 #---------------------------------------------------------------------------
 
-    def taskUi(self,title="Draft",extra=None,icon="Draft_Draft"):
+    def _show_dialog(self, panel):
+        task = FreeCADGui.Control.showDialog(panel)
+        task.setDocumentName(FreeCADGui.ActiveDocument.Document.Name)
+        task.setAutoCloseOnDeletedDocument(True)
+
+    def taskUi(self,title="Draft", extra=None, icon="Draft_Draft"):
         # reset InputField values
         self.reset_ui_values()
         self.isTaskOn = True
-        todo.delay(FreeCADGui.Control.closeDialog,None)
+        todo.delay(FreeCADGui.Control.closeDialog, None)
         self.baseWidget = DraftBaseWidget()
         self.layout = QtWidgets.QVBoxLayout(self.baseWidget)
         self.setupToolBar(task=True)
         self.retranslateUi(self.baseWidget)
-        self.panel = DraftTaskPanel(self.baseWidget,extra)
-        todo.delay(FreeCADGui.Control.showDialog,self.panel)
-        self.setTitle(title,icon)
+        self.panel = DraftTaskPanel(self.baseWidget, extra)
+        todo.delay(self._show_dialog, self.panel)
+        self.setTitle(title, icon)
 
     def redraw(self):
         """utility function that is performed after each clicked point"""
         self.checkLocal()
 
     def setFocus(self,f=None):
-        if params.get_param("focusOnLength") and self.lengthValue.isVisible():
-            self.lengthValue.setFocus()
-            self.lengthValue.setSelection(0,self.number_length(self.lengthValue.text()))
-        elif self.angleLock.isVisible() and self.angleLock.isChecked():
-            self.lengthValue.setFocus()
-            self.lengthValue.setSelection(0,self.number_length(self.lengthValue.text()))
-        elif (f is None) or (f == "x"):
+        if f == "x":
             self.xValue.setFocus()
             self.xValue.setSelection(0,self.number_length(self.xValue.text()))
         elif f == "y":
@@ -651,6 +650,16 @@ class DraftToolBar:
         elif f == "radius":
             self.radiusValue.setFocus()
             self.radiusValue.setSelection(0,self.number_length(self.radiusValue.text()))
+        elif params.get_param("focusOnLength") and self.lengthValue.isVisible():
+            self.lengthValue.setFocus()
+            self.lengthValue.setSelection(0,self.number_length(self.lengthValue.text()))
+        elif self.angleLock.isVisible() and self.angleLock.isChecked():
+            self.lengthValue.setFocus()
+            self.lengthValue.setSelection(0,self.number_length(self.lengthValue.text()))
+        else:
+            # f is None
+            self.xValue.setFocus()
+            self.xValue.setSelection(0,self.number_length(self.xValue.text()))
 
     def number_length(self, str):
         nl = 0
@@ -748,8 +757,8 @@ class DraftToolBar:
         self.x = 0
         self.y = 0
         self.z = 0
-        self.new_point = FreeCAD.Vector()
-        self.last_point = FreeCAD.Vector()
+        self.new_point = None
+        self.last_point = None
         self.pointButton.show()
         if rel: self.isRelative.show()
         todo.delay(self.setFocus, None)
@@ -922,9 +931,9 @@ class DraftToolBar:
                 if self.callback:
                     self.callback()
                 return True
-        todo.delay(FreeCADGui.Control.closeDialog,None)
+        todo.delay(FreeCADGui.Control.closeDialog, None)
         panel = TaskPanel(extra, on_close_call)
-        todo.delay(FreeCADGui.Control.showDialog,panel)
+        todo.delay(self._show_dialog, panel)
 
 
 #---------------------------------------------------------------------------
@@ -940,6 +949,10 @@ class DraftToolBar:
         params.set_param("ChainedMode", bool(val))
         self.chainedMode = bool(val)
         self.continueCmd.setEnabled(not val)
+        if val == False:
+            # If user has deselected the checkbox, reactive the command
+            # which will result in closing it
+            FreeCAD.activeDraftCommand.Activated()
 
     # val=-1 is used to temporarily switch to relativeMode and disable the checkbox.
     # val=-2 is used to switch back.
@@ -1146,6 +1159,10 @@ class DraftToolBar:
             if hasattr(FreeCADGui,"Snapper"):
                 FreeCADGui.Snapper.addHoldPoint()
             spec = True
+        elif txt == _get_incmd_shortcut("Recenter"):
+            if hasattr(FreeCADGui,"Snapper"):
+                FreeCADGui.Snapper.recenter_workingplane()
+            spec = True
         elif txt == _get_incmd_shortcut("Snap"):
             self.togglesnap()
             spec = True
@@ -1246,7 +1263,7 @@ class DraftToolBar:
                 plane = WorkingPlane.get_working_plane(update=False)
             if not last:
                 if self.globalMode:
-                    last = FreeCAD.Vector(0,0,0)
+                    last = FreeCAD.Vector()
                 else:
                     last = plane.position
 
@@ -1285,7 +1302,7 @@ class DraftToolBar:
             self.yValue.setEnabled(False)
             self.zValue.setEnabled(False)
             self.angleValue.setEnabled(False)
-            self.setFocus()
+            self.setFocus("x")
         elif (mask == "y") or (self.mask == "y"):
             self.xValue.setEnabled(False)
             self.yValue.setEnabled(True)
@@ -1594,9 +1611,13 @@ class DraftToolBar:
 
     def get_last_point(self):
         """Get the last point in the GCS."""
-        if hasattr(self.sourceCmd, "node") and self.sourceCmd.node:
+        if getattr(self.sourceCmd, "node", []):
             return self.sourceCmd.node[-1]
-        return self.last_point
+        if self.last_point is not None:
+            return self.last_point
+        if self.globalMode:
+            return FreeCAD.Vector()
+        return WorkingPlane.get_working_plane(update=False).position
 
     def get_new_point(self, delta):
         """Get the new point in the GCS.
@@ -1604,9 +1625,10 @@ class DraftToolBar:
         The delta vector (from the task panel) can be global/local
         and relative/absolute.
         """
-        plane = WorkingPlane.get_working_plane(update=False)
-        base_point = FreeCAD.Vector()
-        if plane and not self.globalMode:
+        if self.globalMode:
+            base_point = FreeCAD.Vector()
+        else:
+            plane = WorkingPlane.get_working_plane(update=False)
             delta = plane.get_global_coords(delta, as_vector=True)
             base_point = plane.position
         if self.relativeMode:
@@ -1665,8 +1687,8 @@ class DraftToolBar:
         self.x = 0
         self.y = 0
         self.z = 0
-        self.new_point = FreeCAD.Vector()
-        self.last_point = FreeCAD.Vector()
+        self.new_point = None
+        self.last_point = None
         self.lvalue = 0
         self.pvalue = 90
         self.avalue = 0

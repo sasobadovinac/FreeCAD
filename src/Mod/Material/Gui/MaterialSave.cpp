@@ -32,6 +32,7 @@
 
 #include <Mod/Material/App/MaterialLibrary.h>
 
+#include "MaterialsEditor.h"
 #include "MaterialSave.h"
 #include "ui_MaterialSave.h"
 
@@ -153,7 +154,7 @@ void MaterialSave::onOk(bool checked)
     bool saveAsCopy = false;
     if (Materials::MaterialManager::getManager().exists(_material->getUUID())) {
         // Does it already exist in this library?
-        if (Materials::MaterialManager::getManager().exists(library, _material->getUUID())) {
+        if (Materials::MaterialManager::getManager().exists(*library, _material->getUUID())) {
             // Confirm saving a new material
             auto res = confirmNewMaterial();
             if (res == QMessageBox::Cancel) {
@@ -360,7 +361,7 @@ void MaterialSave::showSelectedTree()
     if (ui->comboLibrary->count() > 0) {
         auto variant = ui->comboLibrary->currentData();
         auto library = variant.value<std::shared_ptr<Materials::MaterialLibrary>>();
-        QIcon icon(library->getIconPath());
+        auto icon = MaterialsEditor::getIcon(library);
         QIcon folderIcon(QStringLiteral(":/icons/folder.svg"));
         _libraryName = library->getName();
         _selectedPath = QStringLiteral("/") + _libraryName;
@@ -370,7 +371,7 @@ void MaterialSave::showSelectedTree()
         lib->setFlags(Qt::ItemIsEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         addExpanded(tree, model, lib);
 
-        auto modelTree = Materials::MaterialManager::getManager().getMaterialTree(library);
+        auto modelTree = Materials::MaterialManager::getManager().getMaterialTree(*library);
         addMaterials(*lib, modelTree, folderIcon, icon);
     }
     else {
