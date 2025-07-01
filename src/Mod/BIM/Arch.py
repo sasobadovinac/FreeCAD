@@ -741,6 +741,7 @@ def makePipe(baseobj=None, diameter=0, length=0, placement=None, name=None):
         baseClassName="_ArchPipe",
         internalName="Pipe",
         defaultLabel=name if name else translate("Arch", "Pipe"),
+        viewProviderName="_ViewProviderPipe",
     )
 
     # Initialize all relevant properties
@@ -1200,7 +1201,7 @@ def makeSectionPlane(objectslist=None, name=None):
     from WorkingPlane import get_working_plane
 
     sectionPlane = _initializeArchObject(
-        "Part::FeaturePython",
+        "App::FeaturePython",
         baseClassName="_SectionPlane",
         internalName="Section",
         defaultLabel=name if name else translate("Arch", "Section"),
