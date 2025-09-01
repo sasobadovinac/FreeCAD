@@ -173,9 +173,11 @@ void DlgAddPropertyVarSet::removeExistingWidget(QFormLayout* formLayout, int lab
         }
     }
 }
-void DlgAddPropertyVarSet::setWidgetForLabel(const char* labelName, QWidget* widget)
+
+void DlgAddPropertyVarSet::setWidgetForLabel(const char* labelName, QWidget* widget,
+                                             QLayout* layout)
 {
-    auto formLayout = qobject_cast<QFormLayout*>(layout());
+    auto formLayout = qobject_cast<QFormLayout*>(layout);
     if (formLayout == nullptr) {
         FC_ERR("Form layout not found");
         return;
@@ -183,7 +185,7 @@ void DlgAddPropertyVarSet::setWidgetForLabel(const char* labelName, QWidget* wid
 
     int labelRow = findLabelRow(labelName, formLayout);
     if (labelRow < 0) {
-        FC_ERR("Couldn't find row for '" << labelName << "'");
+        FC_ERR("Could not find row for '" << labelName << "'");
         return;
     }
 
@@ -191,14 +193,9 @@ void DlgAddPropertyVarSet::setWidgetForLabel(const char* labelName, QWidget* wid
     formLayout->setWidget(labelRow, QFormLayout::FieldRole, widget);
 }
 
-void DlgAddPropertyVarSet::initializeGroup()
+void DlgAddPropertyVarSet::populateGroup(EditFinishedComboBox& comboBox,
+                                         const App::DocumentObject* varSet)
 {
-    comboBoxGroup.setObjectName(QStringLiteral("comboBoxGroup"));
-    comboBoxGroup.setInsertPolicy(QComboBox::InsertAtTop);
-    comboBoxGroup.setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-
-    setWidgetForLabel("labelGroup", &comboBoxGroup);
-
     std::vector<App::Property*> properties;
     varSet->getPropertyList(properties);
 
@@ -221,10 +218,21 @@ void DlgAddPropertyVarSet::initializeGroup()
     });
 
     for (const auto& groupName : groupNamesSorted) {
-        comboBoxGroup.addItem(QString::fromStdString(groupName));
+        comboBox.addItem(QString::fromStdString(groupName));
     }
 
-    comboBoxGroup.setEditText(QString::fromStdString(groupNamesSorted[0]));
+    comboBox.setEditText(QString::fromStdString(groupNamesSorted[0]));
+}
+
+void DlgAddPropertyVarSet::initializeGroup()
+{
+    comboBoxGroup.setObjectName(QStringLiteral("comboBoxGroup"));
+    comboBoxGroup.setInsertPolicy(QComboBox::InsertAtTop);
+    comboBoxGroup.setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    setWidgetForLabel("labelGroup", &comboBoxGroup, layout());
+    populateGroup(comboBoxGroup, varSet);
+
     connComboBoxGroup = connect(&comboBoxGroup, &EditFinishedComboBox::editFinished,
                                 this, &DlgAddPropertyVarSet::onGroupFinished);
 }
@@ -335,7 +343,7 @@ void DlgAddPropertyVarSet::addEditor(PropertyItem* propertyItem)
     editor->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     editor->setObjectName(QStringLiteral("editor"));
 
-    setWidgetForLabel("labelValue", editor.get());
+    setWidgetForLabel("labelValue", editor.get(), layout());
 
     QWidget::setTabOrder(ui->comboBoxType, editor.get());
     QWidget::setTabOrder(editor.get(), ui->checkBoxAdd);
@@ -439,7 +447,7 @@ void DlgAddPropertyVarSet::initializeValue()
 
 void DlgAddPropertyVarSet::setTitle()
 {
-    setWindowTitle(tr("Add a property to %1").arg(QString::fromStdString(varSet->getFullName())));
+    setWindowTitle(tr("Add a Property to %1").arg(QString::fromStdString(varSet->getFullName())));
 }
 
 void DlgAddPropertyVarSet::setOkEnabled(bool enabled)
@@ -544,7 +552,7 @@ void DlgAddPropertyVarSet::removeEditor()
     auto* placeholder = new QWidget(this);
     placeholder->setObjectName(QStringLiteral("placeholder"));
     placeholder->setMinimumHeight(comboBoxGroup.height());
-    setWidgetForLabel("labelValue", placeholder);
+    setWidgetForLabel("labelValue", placeholder, layout());
 
     QWidget::setTabOrder(ui->comboBoxType, ui->checkBoxAdd);
     editor = nullptr;
