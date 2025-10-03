@@ -20,14 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
 
-#ifndef _PreComp_
 # include <sstream>
 # include <QEvent>
 # include <QFile>
 # include <QPointer>
-#endif
+
 
 #include <Base/Interpreter.h>
 #include <Gui/Application.h>
@@ -366,7 +364,9 @@ TaskDialogPy::~TaskDialogPy() = default;
 
 Py::Object TaskDialogPy::repr()
 {
-    return Py::String("Task Dialog");
+    std::stringstream str;
+    str << "<Task Dialog for '" << dialog->getDocumentName() << "' >";
+    return Py::String( str.str() );
 }
 
 Py::Object TaskDialogPy::getattr(const char * attr)

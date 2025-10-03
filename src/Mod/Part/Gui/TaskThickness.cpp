@@ -20,11 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <limits>
 # include <QMessageBox>
-#endif
 
 #include <App/Application.h>
 #include <App/Document.h>
@@ -116,7 +113,10 @@ ThicknessWidget::ThicknessWidget(Part::Thickness* thickness, QWidget* parent)
 
     d->ui.spinOffset->bind(d->thickness->Value);
 
-    setupGizmos();
+    // The interactive gizmos are implemented for this operation just as a proof
+    // of concept. And so, it is kept disabled until the other operations of the
+    // Part workbench are covered.
+    // setupGizmos();
 }
 
 ThicknessWidget::~ThicknessWidget()
@@ -323,7 +323,7 @@ void ThicknessWidget::setupGizmos()
         delete linearGizmo;
         return;
     }
-    gizmoContainer = Gui::GizmoContainer::createGizmo({linearGizmo}, vp);
+    gizmoContainer = Gui::GizmoContainer::create({linearGizmo}, vp);
 
     setGizmoPositions();
 }

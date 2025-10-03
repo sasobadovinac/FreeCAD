@@ -21,13 +21,11 @@
  ******************************************************************************/
 
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <Mod/Part/App/FCBRepAlgoAPI_Common.h>
 # include <Mod/Part/App/FCBRepAlgoAPI_Cut.h>
 # include <Mod/Part/App/FCBRepAlgoAPI_Fuse.h>
 # include <Standard_Failure.hxx>
-#endif
+
 
 #include <App/DocumentObject.h>
 #include <Mod/Part/App/modelRefine.h>
@@ -160,7 +158,7 @@ App::DocumentObjectExecReturn *Boolean::execute()
     result = refineShapeIfActive(result);
 
     if (!isSingleSolidRuleSatisfied(result.getShape())) {
-        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Result has multiple solids: enable 'Allow Compounds' in the active body."));
+        return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Result has multiple solids: enable 'Allow Compound' in the active body."));
     }
 
     this->Shape.setValue(getSolid(result));
@@ -219,6 +217,5 @@ void Boolean::handleChangedPropertyName(Base::XMLReader &reader, const char * Ty
 }
 
 }
-
 
 

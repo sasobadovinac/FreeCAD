@@ -140,12 +140,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1499"/>
       <source>Additive Helix</source>
-      <translation type="unfinished">Additive Helix</translation>
+      <translation>添加式螺旋</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1500"/>
       <source>Sweeps the selected sketch or profile along a helix and adds it to the body</source>
-      <translation type="unfinished">Sweeps the selected sketch or profile along a helix and adds it to the body</translation>
+      <translation>沿着螺旋线扫描选定的草图或轮廓，并将其添加到主体中</translation>
     </message>
   </context>
   <context>
@@ -158,12 +158,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1406"/>
       <source>Additive Loft</source>
-      <translation type="unfinished">Additive Loft</translation>
+      <translation>添加式放样</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1407"/>
       <source>Lofts the selected sketch or profile along a path and adds it to the body</source>
-      <translation type="unfinished">Lofts the selected sketch or profile along a path and adds it to the body</translation>
+      <translation>沿着路径放样选定的草图或轮廓，并将其添加到主体中</translation>
     </message>
   </context>
   <context>
@@ -176,12 +176,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1312"/>
       <source>Additive Pipe</source>
-      <translation type="unfinished">Additive Pipe</translation>
+      <translation>添加式管道</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1313"/>
       <source>Sweeps the selected sketch or profile along a path and adds it to the body</source>
-      <translation type="unfinished">Sweeps the selected sketch or profile along a path and adds it to the body</translation>
+      <translation>沿着路径扫描选定的草图或轮廓，并将其添加到主体中</translation>
     </message>
   </context>
   <context>
@@ -194,30 +194,30 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="88"/>
       <source>New Body</source>
-      <translation type="unfinished">New Body</translation>
+      <translation>新建主体</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="89"/>
       <source>Creates a new body and activates it</source>
-      <translation type="unfinished">Creates a new body and activates it</translation>
+      <translation>创建一个新主体并激活它</translation>
     </message>
   </context>
   <context>
     <name>CmdPartDesignBoolean</name>
     <message>
-      <location filename="../../Command.cpp" line="2308"/>
+      <location filename="../../Command.cpp" line="2309"/>
       <source>PartDesign</source>
       <translation>零件设计</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2309"/>
+      <location filename="../../Command.cpp" line="2310"/>
       <source>Boolean Operation</source>
       <translation>布尔运算</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2310"/>
+      <location filename="../../Command.cpp" line="2311"/>
       <source>Applies boolean operations with the selected objects and the active body</source>
-      <translation type="unfinished">Applies boolean operations with the selected objects and the active body</translation>
+      <translation>对选定的对象和激活的主体应用布尔运算</translation>
     </message>
   </context>
   <context>
@@ -235,7 +235,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="249"/>
       <source>Creates a new local coordinate system</source>
-      <translation type="unfinished">Creates a new local coordinate system</translation>
+      <translation>创建一个新的局部坐标系</translation>
     </message>
   </context>
   <context>
@@ -253,7 +253,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1780"/>
       <source>Applies a chamfer to the selected edges or faces</source>
-      <translation type="unfinished">Applies a chamfer to the selected edges or faces</translation>
+      <translation>对选定的边或面应用倒角</translation>
     </message>
   </context>
   <context>
@@ -271,7 +271,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="431"/>
       <source>Copies a solid object parametrically as the base feature of a new body</source>
-      <translation type="unfinished">Copies a solid object parametrically as the base feature of a new body</translation>
+      <translation>将一个实体对象参数化地复制为一个新主体的主体特征</translation>
     </message>
   </context>
   <context>
@@ -289,7 +289,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1809"/>
       <source>Applies a draft to the selected faces</source>
-      <translation type="unfinished">Applies a draft to the selected faces</translation>
+      <translation>对选定的面应用拔模</translation>
     </message>
   </context>
   <context>
@@ -325,7 +325,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1752"/>
       <source>Applies a fillet to the selected edges or faces</source>
-      <translation type="unfinished">Applies a fillet to the selected edges or faces</translation>
+      <translation>对选定的边或面应用圆角</translation>
     </message>
   </context>
   <context>
@@ -343,7 +343,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1250"/>
       <source>Revolves the sketch or profile around a line or axis and removes it from the body</source>
-      <translation type="unfinished">Revolves the sketch or profile around a line or axis and removes it from the body</translation>
+      <translation>围绕一条线或一个轴线旋转选定的草图或轮廓，并将其从主体中移除</translation>
     </message>
   </context>
   <context>
@@ -361,7 +361,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1152"/>
       <source>Creates holes in the active body at the center points of circles or arcs of the selected sketch or profile</source>
-      <translation type="unfinished">Creates holes in the active body at the center points of circles or arcs of the selected sketch or profile</translation>
+      <translation>在选定草图或轮廓中圆或圆弧的中心点处，在激活的主体上创建孔</translation>
     </message>
   </context>
   <context>
@@ -374,12 +374,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="192"/>
       <source>Datum Line</source>
-      <translation type="unfinished">Datum Line</translation>
+      <translation>基准线</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="193"/>
       <source>Creates a new datum line</source>
-      <translation type="unfinished">Creates a new datum line</translation>
+      <translation>创建一个新的基准线</translation>
     </message>
   </context>
   <context>
@@ -392,12 +392,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="2044"/>
       <source>Linear Pattern</source>
-      <translation type="unfinished">Linear Pattern</translation>
+      <translation>线性阵列</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="2045"/>
       <source>Duplicates the selected features or the active body in a linear pattern</source>
-      <translation type="unfinished">Duplicates the selected features or the active body in a linear pattern</translation>
+      <translation>以线性阵列的方式，复制选定的特征或激活的主体</translation>
     </message>
   </context>
   <context>
@@ -415,7 +415,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="322"/>
       <source>Migrates the document to the modern Part Design workflow</source>
-      <translation type="unfinished">Migrates the document to the modern Part Design workflow</translation>
+      <translation>将文档迁移到现代零件设计工作流</translation>
     </message>
   </context>
   <context>
@@ -433,7 +433,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1994"/>
       <source>Mirrors the selected features or active body</source>
-      <translation type="unfinished">Mirrors the selected features or active body</translation>
+      <translation>镜像选定的特征或激活的主体</translation>
     </message>
   </context>
   <context>
@@ -446,7 +446,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="675"/>
       <source>Move Object To…</source>
-      <translation type="unfinished">Move Object To…</translation>
+      <translation>移动对象到…</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="676"/>
@@ -464,12 +464,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="842"/>
       <source>Move Feature After…</source>
-      <translation type="unfinished">Move Feature After…</translation>
+      <translation>向后移动特征…</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="843"/>
       <source>Moves the selected feature after another feature in the same body</source>
-      <translation type="unfinished">Moves the selected feature after another feature in the same body</translation>
+      <translation>移动选中的特征到处于同一实体的其它特征后</translation>
     </message>
   </context>
   <context>
@@ -482,30 +482,30 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="536"/>
       <source>Set Tip</source>
-      <translation type="unfinished">Set Tip</translation>
+      <translation>设置 Tip</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="537"/>
       <source>Moves the tip of the body to the selected feature</source>
-      <translation type="unfinished">Moves the tip of the body to the selected feature</translation>
+      <translation>移动实体的标识到选定特征</translation>
     </message>
   </context>
   <context>
     <name>CmdPartDesignMultiTransform</name>
     <message>
-      <location filename="../../Command.cpp" line="2193"/>
+      <location filename="../../Command.cpp" line="2194"/>
       <source>PartDesign</source>
       <translation>零件设计</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2194"/>
+      <location filename="../../Command.cpp" line="2195"/>
       <source>Multi-Transform</source>
-      <translation type="unfinished">Multi-Transform</translation>
+      <translation>多变形</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2195"/>
+      <location filename="../../Command.cpp" line="2196"/>
       <source>Applies multiple transformations to the selected features or active body</source>
-      <translation type="unfinished">Applies multiple transformations to the selected features or active body</translation>
+      <translation>将多个转换应用到选定的特征或活动实体</translation>
     </message>
   </context>
   <context>
@@ -518,12 +518,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="504"/>
       <source>New Sketch</source>
-      <translation type="unfinished">New Sketch</translation>
+      <translation>新建草图</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="505"/>
       <source>Creates a new sketch</source>
-      <translation type="unfinished">Creates a new sketch</translation>
+      <translation>创建一个新的草图</translation>
     </message>
   </context>
   <context>
@@ -554,12 +554,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="164"/>
       <source>Datum Plane</source>
-      <translation type="unfinished">Datum Plane</translation>
+      <translation>基准面</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="165"/>
       <source>Creates a new datum plane</source>
-      <translation type="unfinished">Creates a new datum plane</translation>
+      <translation>创建一个新的基准面</translation>
     </message>
   </context>
   <context>
@@ -590,30 +590,30 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="220"/>
       <source>Datum Point</source>
-      <translation type="unfinished">Datum Point</translation>
+      <translation>基准点</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="221"/>
       <source>Creates a new datum point</source>
-      <translation type="unfinished">Creates a new datum point</translation>
+      <translation>创建一个新的基准点</translation>
     </message>
   </context>
   <context>
     <name>CmdPartDesignPolarPattern</name>
     <message>
-      <location filename="../../Command.cpp" line="2096"/>
+      <location filename="../../Command.cpp" line="2097"/>
       <source>PartDesign</source>
       <translation>零件设计</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2097"/>
+      <location filename="../../Command.cpp" line="2098"/>
       <source>Polar Pattern</source>
-      <translation type="unfinished">Polar Pattern</translation>
+      <translation>环形阵列</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2098"/>
+      <location filename="../../Command.cpp" line="2099"/>
       <source>Duplicates the selected features or the active body in a circular pattern</source>
-      <translation type="unfinished">Duplicates the selected features or the active body in a circular pattern</translation>
+      <translation>以环形阵列的方式，复制选定的特征或激活的主体</translation>
     </message>
   </context>
   <context>
@@ -637,17 +637,17 @@ so that self intersection is avoided.</source>
   <context>
     <name>CmdPartDesignScaled</name>
     <message>
-      <location filename="../../Command.cpp" line="2151"/>
+      <location filename="../../Command.cpp" line="2152"/>
       <source>PartDesign</source>
       <translation>零件设计</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2152"/>
+      <location filename="../../Command.cpp" line="2153"/>
       <source>Scale</source>
       <translation>缩放</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2153"/>
+      <location filename="../../Command.cpp" line="2154"/>
       <source>Scales the selected features or the active body</source>
       <translation type="unfinished">Scales the selected features or the active body</translation>
     </message>
@@ -662,12 +662,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="280"/>
       <source>Shape Binder</source>
-      <translation type="unfinished">Shape Binder</translation>
+      <translation>形状链接器</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="281"/>
       <source>Creates a new shape binder</source>
-      <translation type="unfinished">Creates a new shape binder</translation>
+      <translation>创建一个新的形状链接器</translation>
     </message>
   </context>
   <context>
@@ -698,7 +698,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1571"/>
       <source>Subtractive Helix</source>
-      <translation type="unfinished">Subtractive Helix</translation>
+      <translation>减料螺旋</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1572"/>
@@ -716,7 +716,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1453"/>
       <source>Subtractive Loft</source>
-      <translation type="unfinished">Subtractive Loft</translation>
+      <translation>减料放样</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1454"/>
@@ -734,7 +734,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1359"/>
       <source>Subtractive Pipe</source>
-      <translation type="unfinished">Subtractive Pipe</translation>
+      <translation>减料管道</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1360"/>
@@ -770,12 +770,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="69"/>
       <source>Additive Primitive</source>
-      <translation type="unfinished">Additive Primitive</translation>
+      <translation>增料图元</translation>
     </message>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="70"/>
       <source>Creates an additive primitive</source>
-      <translation type="unfinished">Creates an additive primitive</translation>
+      <translation>创建增料图元</translation>
     </message>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="197"/>
@@ -828,12 +828,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="242"/>
       <source>Subtractive Primitive</source>
-      <translation type="unfinished">Subtractive Primitive</translation>
+      <translation>减料图元</translation>
     </message>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="243"/>
       <source>Creates a subtractive primitive</source>
-      <translation type="unfinished">Creates a subtractive primitive</translation>
+      <translation>创建一个减料图元</translation>
     </message>
     <message>
       <location filename="../../CommandPrimitive.cpp" line="349"/>
@@ -881,17 +881,17 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="300"/>
       <source>Edit Shape Binder</source>
-      <translation type="unfinished">Edit Shape Binder</translation>
+      <translation>编辑形状链接器</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="309"/>
       <source>Create Shape Binder</source>
-      <translation type="unfinished">Create Shape Binder</translation>
+      <translation>创建形状链接器</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="392"/>
       <source>Create Sub-Shape Binder</source>
-      <translation type="unfinished">Create Sub-Shape Binder</translation>
+      <translation>创建子形状链接器</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="447"/>
@@ -901,31 +901,31 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="993"/>
       <source>Make Copy</source>
-      <translation type="unfinished">Make Copy</translation>
+      <translation>创建副本</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2238"/>
+      <location filename="../../Command.cpp" line="2239"/>
       <source>Convert to Multi-Transform feature</source>
-      <translation type="unfinished">Convert to Multi-Transform feature</translation>
+      <translation>转换为多重变换特征</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="249"/>
+      <location filename="../../SketchWorkflow.cpp" line="258"/>
       <source>Sketch on Face</source>
-      <translation type="unfinished">Sketch on Face</translation>
+      <translation>在面上创建草图</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="299"/>
+      <location filename="../../SketchWorkflow.cpp" line="317"/>
       <source>Make copy</source>
       <translation>制作副本</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="495"/>
-      <location filename="../../SketchWorkflow.cpp" line="701"/>
+      <location filename="../../SketchWorkflow.cpp" line="514"/>
+      <location filename="../../SketchWorkflow.cpp" line="746"/>
       <source>New Sketch</source>
-      <translation type="unfinished">New Sketch</translation>
+      <translation>新建草图</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2326"/>
+      <location filename="../../Command.cpp" line="2327"/>
       <source>Create Boolean</source>
       <translation>创建布尔变量</translation>
     </message>
@@ -943,12 +943,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="628"/>
       <source>Duplicate a Part Design object</source>
-      <translation type="unfinished">Duplicate a Part Design object</translation>
+      <translation>复制零件设计对象</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="911"/>
       <source>Move a feature inside body</source>
-      <translation type="unfinished">Move a feature inside body</translation>
+      <translation>移动特征到实体中</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="583"/>
@@ -961,62 +961,24 @@ so that self intersection is avoided.</source>
       <translation>移动一个对象</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="267"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="264"/>
       <source>Mirror</source>
       <translation>镜像</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="304"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="301"/>
       <source>Linear Pattern</source>
-      <translation type="unfinished">Linear Pattern</translation>
+      <translation>线性阵列</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="348"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="345"/>
       <source>Polar Pattern</source>
-      <translation type="unfinished">Polar Pattern</translation>
+      <translation>环形阵列</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="385"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="382"/>
       <source>Scale</source>
       <translation>缩放</translation>
-    </message>
-  </context>
-  <context>
-    <name>FeaturePickDialog</name>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="42"/>
-      <source>Valid</source>
-      <translation>有效</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="43"/>
-      <source>Invalid shape</source>
-      <translation>无效形状</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="44"/>
-      <source>No wire in sketch</source>
-      <translation>草图中找不到线框</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="45"/>
-      <source>Sketch already used by other feature</source>
-      <translation>草图被其他特征使用</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="46"/>
-      <source>Sketch belongs to another body feature</source>
-      <translation type="unfinished">Sketch belongs to another body feature</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="48"/>
-      <source>Feature is located after the tip of the body</source>
-      <translation type="unfinished">Feature is located after the tip of the body</translation>
-    </message>
-    <message>
-      <location filename="../../FeaturePickDialog.cpp" line="47"/>
-      <source>Base plane</source>
-      <translation>基准平面</translation>
     </message>
   </context>
   <context>
@@ -1024,22 +986,22 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Workbench.cpp" line="55"/>
       <source>Face Tools</source>
-      <translation type="unfinished">Face Tools</translation>
+      <translation>面工具</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="56"/>
       <source>Edge Tools</source>
-      <translation type="unfinished">Edge Tools</translation>
+      <translation>边缘工具</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="57"/>
       <source>Boolean Tools</source>
-      <translation type="unfinished">Boolean Tools</translation>
+      <translation>布尔工具</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="58"/>
       <source>Helper Tools</source>
-      <translation type="unfinished">Helper Tools</translation>
+      <translation>助手</translation>
     </message>
     <message>
       <location filename="../../Workbench.cpp" line="59"/>
@@ -1239,13 +1201,20 @@ Select a body from below, or create a new body.</translation>
     </message>
     <message>
       <location filename="../../TaskPrimitiveParameters.ui" line="827"/>
-      <source>Radius in local x-direction</source>
-      <translation>本地X方向的半径</translation>
+      <source>Radius in local X-direction</source>
+      <translation type="unfinished">Radius in local X-direction</translation>
     </message>
     <message>
       <location filename="../../TaskPrimitiveParameters.ui" line="843"/>
       <source>Radius 3</source>
       <translation type="unfinished">Radius 3</translation>
+    </message>
+    <message>
+      <location filename="../../TaskPrimitiveParameters.ui" line="850"/>
+      <source>Radius in local Y-direction
+If zero, it is equal to Radius2</source>
+      <translation type="unfinished">Radius in local Y-direction
+If zero, it is equal to Radius2</translation>
     </message>
     <message>
       <location filename="../../TaskPrimitiveParameters.ui" line="916"/>
@@ -1367,13 +1336,6 @@ Select a body from below, or create a new body.</translation>
       <location filename="../../TaskPrimitiveParameters.ui" line="2216"/>
       <source>Z</source>
       <translation>Z</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPrimitiveParameters.ui" line="850"/>
-      <source>Radius in local y-direction
-If zero, it is equal to Radius2</source>
-      <translation>本地方向的半径
-如果零，则等于半径2</translation>
     </message>
     <message>
       <location filename="../../TaskPrimitiveParameters.ui" line="1645"/>
@@ -1552,7 +1514,7 @@ If zero, it is equal to Radius2</source>
     <message>
       <location filename="../../TaskChamferParameters.ui" line="119"/>
       <source>Use all edges</source>
-      <translation type="unfinished">Use all edges</translation>
+      <translation>使用所有边</translation>
     </message>
     <message>
       <location filename="../../TaskChamferParameters.ui" line="100"/>
@@ -1570,27 +1532,27 @@ If zero, it is equal to Radius2</source>
       <translation>角度</translation>
     </message>
     <message>
-      <location filename="../../TaskChamferParameters.cpp" line="327"/>
+      <location filename="../../TaskChamferParameters.cpp" line="347"/>
       <source>Empty chamfer created!
 </source>
-      <translation type="unfinished">Empty chamfer created!
+      <translation>没有倒角被创建！
 </translation>
     </message>
   </context>
   <context>
     <name>PartDesignGui::TaskDlgBooleanParameters</name>
     <message>
-      <location filename="../../TaskBooleanParameters.cpp" line="387"/>
+      <location filename="../../TaskBooleanParameters.cpp" line="388"/>
       <source>Empty body list</source>
       <translation>空的实体列表</translation>
     </message>
     <message>
-      <location filename="../../TaskBooleanParameters.cpp" line="388"/>
+      <location filename="../../TaskBooleanParameters.cpp" line="389"/>
       <source>The body list cannot be empty</source>
       <translation>实体列表不能空</translation>
     </message>
     <message>
-      <location filename="../../TaskBooleanParameters.cpp" line="402"/>
+      <location filename="../../TaskBooleanParameters.cpp" line="403"/>
       <source>Boolean: Accept: Input error</source>
       <translation>布尔值： 接受： 输入错误</translation>
     </message>
@@ -1600,7 +1562,7 @@ If zero, it is equal to Radius2</source>
     <message>
       <location filename="../../TaskDatumParameters.cpp" line="101"/>
       <source>Incompatible Reference Set</source>
-      <translation type="unfinished">Incompatible Reference Set</translation>
+      <translation>不兼容的引用集</translation>
     </message>
     <message>
       <location filename="../../TaskDatumParameters.cpp" line="102"/>
@@ -1629,7 +1591,7 @@ If zero, it is equal to Radius2</source>
     <message>
       <location filename="../../TaskDraftParameters.ui" line="20"/>
       <source>Toggles between selection and preview mode</source>
-      <translation type="unfinished">Toggles between selection and preview mode</translation>
+      <translation>在选区和预览模式中切换</translation>
     </message>
     <message>
       <location filename="../../TaskDraftParameters.ui" line="23"/>
@@ -1664,7 +1626,7 @@ If zero, it is equal to Radius2</source>
       <translation>反转拔模方向</translation>
     </message>
     <message>
-      <location filename="../../TaskDraftParameters.cpp" line="287"/>
+      <location filename="../../TaskDraftParameters.cpp" line="289"/>
       <source>Empty draft created!
 </source>
       <translation type="unfinished">Empty draft created!
@@ -1702,79 +1664,79 @@ If zero, it is equal to Radius2</source>
   <context>
     <name>PartDesignGui::TaskExtrudeParameters</name>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1343"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1360"/>
       <source>No face selected</source>
       <translation>未选择任何面</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="159"/>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1123"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="163"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1140"/>
       <source>Face</source>
       <translation>面</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="73"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="75"/>
       <source>Remove</source>
       <translation>移除</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="345"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="351"/>
       <source>Preview</source>
       <translation>预览</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="349"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="355"/>
       <source>Select Faces</source>
       <translation type="unfinished">Select Faces</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="682"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="690"/>
       <source>Select reference…</source>
       <translation type="unfinished">Select reference…</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="590"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="598"/>
       <source>No shape selected</source>
       <translation>无选定的形状</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="675"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="683"/>
       <source>Sketch normal</source>
       <translation>草图法向</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="678"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="686"/>
       <source>Face normal</source>
       <translation>面法线</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="686"/>
-      <location filename="../../TaskExtrudeParameters.cpp" line="691"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="694"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="699"/>
       <source>Custom direction</source>
       <translation>自定义方向：</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1069"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1086"/>
       <source>Click on a shape in the model</source>
       <translation>点击模型中的形状</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1330"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1347"/>
       <source>One sided</source>
       <translation type="unfinished">One sided</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1331"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1348"/>
       <source>Two sided</source>
       <translation type="unfinished">Two sided</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1332"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1349"/>
       <source>Symmetric</source>
       <translation>对称</translation>
     </message>
     <message>
-      <location filename="../../TaskExtrudeParameters.cpp" line="1338"/>
+      <location filename="../../TaskExtrudeParameters.cpp" line="1355"/>
       <source>Click on a face in the model</source>
       <translation>点击模型中的一个面</translation>
     </message>
@@ -1817,52 +1779,52 @@ If zero, it is equal to Radius2</source>
       <translation>创建交叉引用</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="67"/>
+      <location filename="../../TaskFeaturePick.cpp" line="69"/>
       <source>Valid</source>
       <translation>有效</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="69"/>
+      <location filename="../../TaskFeaturePick.cpp" line="71"/>
       <source>Invalid shape</source>
       <translation>无效形状</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="71"/>
+      <location filename="../../TaskFeaturePick.cpp" line="73"/>
       <source>No wire in sketch</source>
       <translation>草图中找不到线框</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="73"/>
+      <location filename="../../TaskFeaturePick.cpp" line="75"/>
       <source>Sketch already used by other feature</source>
       <translation>草图被其他特征使用</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="75"/>
+      <location filename="../../TaskFeaturePick.cpp" line="77"/>
       <source>Belongs to another body</source>
       <translation>属于另一个实体</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="77"/>
+      <location filename="../../TaskFeaturePick.cpp" line="79"/>
       <source>Belongs to another part</source>
       <translation>属于另一个零件</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="79"/>
+      <location filename="../../TaskFeaturePick.cpp" line="81"/>
       <source>Doesn't belong to any body</source>
       <translation>不属于任何实体</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="81"/>
+      <location filename="../../TaskFeaturePick.cpp" line="83"/>
       <source>Base plane</source>
       <translation>基准平面</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="83"/>
+      <location filename="../../TaskFeaturePick.cpp" line="85"/>
       <source>Feature is located after the tip of the body</source>
       <translation type="unfinished">Feature is located after the tip of the body</translation>
     </message>
     <message>
-      <location filename="../../TaskFeaturePick.cpp" line="93"/>
+      <location filename="../../TaskFeaturePick.cpp" line="95"/>
       <source>Select attachment</source>
       <translation>选择附件</translation>
     </message>
@@ -1894,10 +1856,10 @@ If zero, it is equal to Radius2</source>
     <message>
       <location filename="../../TaskFilletParameters.ui" line="62"/>
       <source>Use all edges</source>
-      <translation type="unfinished">Use all edges</translation>
+      <translation>使用所有边</translation>
     </message>
     <message>
-      <location filename="../../TaskFilletParameters.cpp" line="193"/>
+      <location filename="../../TaskFilletParameters.cpp" line="205"/>
       <source>Empty fillet created!</source>
       <translation>空圆角已创建！</translation>
     </message>
@@ -1911,37 +1873,37 @@ If zero, it is equal to Radius2</source>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="48"/>
-      <location filename="../../TaskHelixParameters.cpp" line="237"/>
+      <location filename="../../TaskHelixParameters.cpp" line="243"/>
       <source>Base X-axis</source>
-      <translation type="unfinished">Base X-axis</translation>
+      <translation>X 轴</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="53"/>
-      <location filename="../../TaskHelixParameters.cpp" line="238"/>
+      <location filename="../../TaskHelixParameters.cpp" line="244"/>
       <source>Base Y-axis</source>
-      <translation type="unfinished">Base Y-axis</translation>
+      <translation>Y 轴</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="58"/>
-      <location filename="../../TaskHelixParameters.cpp" line="239"/>
+      <location filename="../../TaskHelixParameters.cpp" line="245"/>
       <source>Base Z-axis</source>
-      <translation type="unfinished">Base Z-axis</translation>
+      <translation>Z 轴</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="63"/>
-      <location filename="../../TaskHelixParameters.cpp" line="221"/>
+      <location filename="../../TaskHelixParameters.cpp" line="227"/>
       <source>Horizontal sketch axis</source>
       <translation>水平草绘轴</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="68"/>
-      <location filename="../../TaskHelixParameters.cpp" line="220"/>
+      <location filename="../../TaskHelixParameters.cpp" line="226"/>
       <source>Vertical sketch axis</source>
       <translation>垂直草绘轴</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="73"/>
-      <location filename="../../TaskHelixParameters.cpp" line="219"/>
+      <location filename="../../TaskHelixParameters.cpp" line="225"/>
       <source>Normal sketch axis</source>
       <translation type="unfinished">Normal sketch axis</translation>
     </message>
@@ -1957,9 +1919,9 @@ If zero, it is equal to Radius2</source>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="78"/>
-      <location filename="../../TaskHelixParameters.cpp" line="204"/>
+      <location filename="../../TaskHelixParameters.cpp" line="210"/>
       <source>Select reference…</source>
-      <translation type="unfinished">Select reference…</translation>
+      <translation>选择参考…</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="90"/>
@@ -1999,17 +1961,17 @@ If zero, it is equal to Radius2</source>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="179"/>
       <source>Turns</source>
-      <translation type="unfinished">Turns</translation>
+      <translation>圈数</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="203"/>
       <source>Cone angle</source>
-      <translation type="unfinished">Cone angle</translation>
+      <translation>圆锥角</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="233"/>
       <source>Radial growth</source>
-      <translation type="unfinished">Radial growth</translation>
+      <translation>径向增长</translation>
     </message>
     <message>
       <location filename="../../TaskHelixParameters.ui" line="289"/>
@@ -2032,27 +1994,27 @@ If zero, it is equal to Radius2</source>
       <translation>删除配置之外的文件</translation>
     </message>
     <message>
-      <location filename="../../TaskHelixParameters.cpp" line="56"/>
+      <location filename="../../TaskHelixParameters.cpp" line="60"/>
       <source>Helix Parameters</source>
       <translation type="unfinished">Helix Parameters</translation>
     </message>
     <message>
-      <location filename="../../TaskHelixParameters.cpp" line="223"/>
+      <location filename="../../TaskHelixParameters.cpp" line="229"/>
       <source>Construction line %1</source>
       <translation>辅助线 %1</translation>
     </message>
     <message>
-      <location filename="../../TaskHelixParameters.cpp" line="289"/>
+      <location filename="../../TaskHelixParameters.cpp" line="295"/>
       <source>Warning: helix might be self intersecting</source>
       <translation>警告：螺旋可能是自交的</translation>
     </message>
     <message>
-      <location filename="../../TaskHelixParameters.cpp" line="294"/>
+      <location filename="../../TaskHelixParameters.cpp" line="300"/>
       <source>Error: helix touches itself</source>
       <translation>错误: 螺旋自相交</translation>
     </message>
     <message>
-      <location filename="../../TaskHelixParameters.cpp" line="343"/>
+      <location filename="../../TaskHelixParameters.cpp" line="349"/>
       <source>Error: unsupported mode</source>
       <translation>错误：不支持的模式</translation>
     </message>
@@ -2060,177 +2022,133 @@ If zero, it is equal to Radius2</source>
   <context>
     <name>PartDesignGui::TaskHoleParameters</name>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="47"/>
+      <location filename="../../TaskHoleParameters.cpp" line="53"/>
       <source>Counterbore</source>
       <translation>沉孔</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="48"/>
+      <location filename="../../TaskHoleParameters.cpp" line="54"/>
       <source>Countersink</source>
       <translation>埋头孔</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="49"/>
+      <location filename="../../TaskHoleParameters.cpp" line="55"/>
       <source>Counterdrill</source>
       <translation>沉头钻</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="53"/>
+      <location filename="../../TaskHoleParameters.cpp" line="59"/>
       <source>Hole Parameters</source>
       <translation type="unfinished">Hole Parameters</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="63"/>
+      <location filename="../../TaskHoleParameters.cpp" line="69"/>
       <source>None</source>
       <translation>无</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="64"/>
+      <location filename="../../TaskHoleParameters.cpp" line="70"/>
       <source>ISO metric regular</source>
       <translation>ISO 米制普通螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="65"/>
+      <location filename="../../TaskHoleParameters.cpp" line="71"/>
       <source>ISO metric fine</source>
       <translation>ISO 米制细牙螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="66"/>
+      <location filename="../../TaskHoleParameters.cpp" line="72"/>
       <source>UTS coarse</source>
       <translation>UTS 统一粗牙螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="67"/>
+      <location filename="../../TaskHoleParameters.cpp" line="73"/>
       <source>UTS fine</source>
       <translation>UTS 统一细牙螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="68"/>
+      <location filename="../../TaskHoleParameters.cpp" line="74"/>
       <source>UTS extra fine</source>
       <translation>UTS 统一超细牙螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="69"/>
+      <location filename="../../TaskHoleParameters.cpp" line="75"/>
       <source>ANSI pipes</source>
       <translation>ANSI 美标管螺纹标准</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="70"/>
+      <location filename="../../TaskHoleParameters.cpp" line="76"/>
       <source>ISO/BSP pipes</source>
       <translation>ISO/BSP 国际/英标管螺纹标准</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="71"/>
+      <location filename="../../TaskHoleParameters.cpp" line="77"/>
       <source>BSW whitworth</source>
       <translation>BSW 惠氏螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="72"/>
+      <location filename="../../TaskHoleParameters.cpp" line="78"/>
       <source>BSF whitworth fine</source>
       <translation>BSF 惠氏细牙螺纹</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="73"/>
+      <location filename="../../TaskHoleParameters.cpp" line="79"/>
       <source>ISO tyre valves</source>
       <translation type="unfinished">ISO tyre valves</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="655"/>
+      <location filename="../../TaskHoleParameters.cpp" line="673"/>
       <source>Medium</source>
       <comment>Distance between thread crest and hole wall, use ISO-273 nomenclature or equivalent if possible</comment>
       <translation>中</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="656"/>
+      <location filename="../../TaskHoleParameters.cpp" line="674"/>
       <source>Fine</source>
       <comment>Distance between thread crest and hole wall, use ISO-273 nomenclature or equivalent if possible</comment>
       <translation>精细</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="657"/>
+      <location filename="../../TaskHoleParameters.cpp" line="675"/>
       <source>Coarse</source>
       <comment>Distance between thread crest and hole wall, use ISO-273 nomenclature or equivalent if possible</comment>
       <translation>粗糙</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="660"/>
+      <location filename="../../TaskHoleParameters.cpp" line="678"/>
       <source>Normal</source>
       <comment>Distance between thread crest and hole wall, use ASME B18.2.8 nomenclature or equivalent if possible</comment>
       <translation>法向</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="661"/>
+      <location filename="../../TaskHoleParameters.cpp" line="679"/>
       <source>Close</source>
       <comment>Distance between thread crest and hole wall, use ASME B18.2.8 nomenclature or equivalent if possible</comment>
       <translation>关闭</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="662"/>
+      <location filename="../../TaskHoleParameters.cpp" line="680"/>
       <source>Loose</source>
       <comment>Distance between thread crest and hole wall, use ASME B18.2.8 nomenclature or equivalent if possible</comment>
       <translation>宽松</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="665"/>
+      <location filename="../../TaskHoleParameters.cpp" line="683"/>
       <source>Normal</source>
       <comment>Distance between thread crest and hole wall</comment>
       <translation>法向</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="666"/>
+      <location filename="../../TaskHoleParameters.cpp" line="684"/>
       <source>Close</source>
       <comment>Distance between thread crest and hole wall</comment>
       <translation>关闭</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.cpp" line="667"/>
+      <location filename="../../TaskHoleParameters.cpp" line="685"/>
       <source>Wide</source>
       <comment>Distance between thread crest and hole wall</comment>
       <translation>宽度</translation>
-    </message>
-  </context>
-  <context>
-    <name>PartDesignGui::TaskLinearPatternParameters</name>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="34"/>
-      <source>Direction</source>
-      <translation>方向</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="46"/>
-      <source>Reverse direction</source>
-      <translation>反转方向</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="55"/>
-      <source>Mode</source>
-      <translation>模式</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="63"/>
-      <source>Overall length</source>
-      <translation type="unfinished">Overall length</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="68"/>
-      <location filename="../../TaskLinearPatternParameters.ui" line="131"/>
-      <source>Offset</source>
-      <translation>偏移</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="93"/>
-      <source>Length</source>
-      <translation>长度</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.ui" line="156"/>
-      <source>Occurrences</source>
-      <translation>出现次数</translation>
-    </message>
-    <message>
-      <location filename="../../TaskLinearPatternParameters.cpp" line="330"/>
-      <source>Error</source>
-      <translation>错误</translation>
     </message>
   </context>
   <context>
@@ -2294,7 +2212,7 @@ If zero, it is equal to Radius2</source>
       <translation>平面</translation>
     </message>
     <message>
-      <location filename="../../TaskMirroredParameters.cpp" line="180"/>
+      <location filename="../../TaskMirroredParameters.cpp" line="182"/>
       <source>Error</source>
       <translation>错误</translation>
     </message>
@@ -2312,47 +2230,47 @@ If zero, it is equal to Radius2</source>
       <translation>确定</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="71"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="70"/>
       <source>Edit</source>
       <translation>编辑</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="77"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="76"/>
       <source>Delete</source>
       <translation>删除</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="83"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="82"/>
       <source>Add Mirror Transformation</source>
       <translation type="unfinished">Add Mirror Transformation</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="89"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="88"/>
       <source>Add Linear Pattern</source>
       <translation type="unfinished">Add Linear Pattern</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="95"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="94"/>
       <source>Add Polar Pattern</source>
       <translation type="unfinished">Add Polar Pattern</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="101"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="100"/>
       <source>Add Scale Transformation</source>
       <translation type="unfinished">Add Scale Transformation</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="107"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="106"/>
       <source>Move Up</source>
       <translation type="unfinished">Move Up</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="110"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="109"/>
       <source>Move Down</source>
       <translation type="unfinished">Move Down</translation>
     </message>
     <message>
-      <location filename="../../TaskMultiTransformParameters.cpp" line="144"/>
+      <location filename="../../TaskMultiTransformParameters.cpp" line="143"/>
       <source>Right-click to add a transformation</source>
       <translation type="unfinished">Right-click to add a transformation</translation>
     </message>
@@ -2839,54 +2757,6 @@ measured along the specified direction</source>
     </message>
   </context>
   <context>
-    <name>PartDesignGui::TaskPolarPatternParameters</name>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="34"/>
-      <source>Axis</source>
-      <translation>轴线</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="46"/>
-      <source>Reverse direction</source>
-      <translation>反转方向</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="55"/>
-      <source>Mode</source>
-      <translation>模式</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="63"/>
-      <source>Overall angle</source>
-      <translation type="unfinished">Overall angle</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="68"/>
-      <source>Offset angle</source>
-      <translation>偏移角度</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="93"/>
-      <source>Angle</source>
-      <translation>角度</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="137"/>
-      <source>Offset</source>
-      <translation>偏移</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.ui" line="168"/>
-      <source>Occurrences</source>
-      <translation>出现次数</translation>
-    </message>
-    <message>
-      <location filename="../../TaskPolarPatternParameters.cpp" line="329"/>
-      <source>Error</source>
-      <translation>错误</translation>
-    </message>
-  </context>
-  <context>
     <name>PartDesignGui::TaskRevolutionParameters</name>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="22"/>
@@ -2895,27 +2765,27 @@ measured along the specified direction</source>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="30"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="188"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="193"/>
       <source>Dimension</source>
       <translation>尺寸标注</translation>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="50"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="235"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="240"/>
       <source>Base X-axis</source>
-      <translation type="unfinished">Base X-axis</translation>
+      <translation>X 轴</translation>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="55"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="236"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="241"/>
       <source>Base Y-axis</source>
-      <translation type="unfinished">Base Y-axis</translation>
+      <translation>Y 轴</translation>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="60"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="237"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="242"/>
       <source>Base Z-axis</source>
-      <translation type="unfinished">Base Z-axis</translation>
+      <translation>Z 轴</translation>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="65"/>
@@ -2949,7 +2819,7 @@ measured along the specified direction</source>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="75"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="244"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="249"/>
       <source>Select reference…</source>
       <translation type="unfinished">Select reference…</translation>
     </message>
@@ -2960,8 +2830,8 @@ measured along the specified direction</source>
     </message>
     <message>
       <location filename="../../TaskRevolutionParameters.ui" line="170"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="152"/>
-      <location filename="../../TaskRevolutionParameters.cpp" line="468"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="157"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="475"/>
       <source>Face</source>
       <translation>面</translation>
     </message>
@@ -2971,32 +2841,32 @@ measured along the specified direction</source>
       <translation type="unfinished">Recompute on change</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="190"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="195"/>
       <source>To last</source>
       <translation>直到最后</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="193"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="198"/>
       <source>Through all</source>
       <translation>通过所有</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="195"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="200"/>
       <source>To first</source>
       <translation>到起始位置</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="196"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="201"/>
       <source>Up to face</source>
       <translation>直到面</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="197"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="202"/>
       <source>Two dimensions</source>
       <translation>双向尺寸</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="455"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="462"/>
       <source>No face selected</source>
       <translation>未选择任何面</translation>
     </message>
@@ -3116,7 +2986,7 @@ measured along the specified direction</source>
       <translation>厚度方向向里</translation>
     </message>
     <message>
-      <location filename="../../TaskThicknessParameters.cpp" line="260"/>
+      <location filename="../../TaskThicknessParameters.cpp" line="269"/>
       <source>Empty thickness created!
 </source>
       <translation type="unfinished">Empty thickness created!
@@ -3131,7 +3001,7 @@ measured along the specified direction</source>
       <translation>移除</translation>
     </message>
     <message>
-      <location filename="../../TaskTransformedParameters.cpp" line="402"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="404"/>
       <source>Normal sketch axis</source>
       <translation>法向草图轴</translation>
     </message>
@@ -3141,49 +3011,49 @@ measured along the specified direction</source>
       <translation>垂直草图轴</translation>
     </message>
     <message>
-      <location filename="../../TaskTransformedParameters.cpp" line="404"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="402"/>
       <source>Horizontal sketch axis</source>
       <translation>水平草图轴</translation>
     </message>
     <message>
       <location filename="../../TaskTransformedParameters.cpp" line="406"/>
-      <location filename="../../TaskTransformedParameters.cpp" line="442"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="443"/>
       <source>Construction line %1</source>
       <translation>辅助线 %1</translation>
     </message>
     <message>
       <location filename="../../TaskTransformedParameters.cpp" line="420"/>
       <source>Base X-axis</source>
-      <translation type="unfinished">Base X-axis</translation>
+      <translation>X 轴</translation>
     </message>
     <message>
       <location filename="../../TaskTransformedParameters.cpp" line="421"/>
       <source>Base Y-axis</source>
-      <translation type="unfinished">Base Y-axis</translation>
+      <translation>Y 轴</translation>
     </message>
     <message>
       <location filename="../../TaskTransformedParameters.cpp" line="422"/>
       <source>Base Z-axis</source>
-      <translation type="unfinished">Base Z-axis</translation>
+      <translation>Z 轴</translation>
     </message>
     <message>
-      <location filename="../../TaskTransformedParameters.cpp" line="456"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="457"/>
       <source>Base XY-plane</source>
       <translation type="unfinished">Base XY-plane</translation>
     </message>
     <message>
-      <location filename="../../TaskTransformedParameters.cpp" line="457"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="458"/>
       <source>Base YZ-plane</source>
       <translation type="unfinished">Base YZ-plane</translation>
     </message>
     <message>
-      <location filename="../../TaskTransformedParameters.cpp" line="458"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="459"/>
       <source>Base XZ-plane</source>
       <translation type="unfinished">Base XZ-plane</translation>
     </message>
     <message>
       <location filename="../../TaskTransformedParameters.cpp" line="430"/>
-      <location filename="../../TaskTransformedParameters.cpp" line="466"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="467"/>
       <source>Select reference…</source>
       <translation type="unfinished">Select reference…</translation>
     </message>
@@ -3236,7 +3106,7 @@ measured along the specified direction</source>
     <message>
       <location filename="../../CommandBody.cpp" line="898"/>
       <source>Move Feature After…</source>
-      <translation type="unfinished">Move Feature After…</translation>
+      <translation>向后移动特征…</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="899"/>
@@ -3279,50 +3149,49 @@ measured along the specified direction</source>
       <translation>错误</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="734"/>
+      <location filename="../../SketchWorkflow.cpp" line="779"/>
       <source>Several sub-elements selected</source>
       <translation>若干子元素被选择</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="735"/>
+      <location filename="../../SketchWorkflow.cpp" line="780"/>
       <source>Select a single face as support for a sketch!</source>
       <translation type="unfinished">Select a single face as support for a sketch!</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="739"/>
+      <location filename="../../SketchWorkflow.cpp" line="784"/>
       <source>Select a face as support for a sketch!</source>
       <translation type="unfinished">Select a face as support for a sketch!</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="743"/>
+      <location filename="../../SketchWorkflow.cpp" line="788"/>
       <source>Need a planar face as support for a sketch!</source>
       <translation type="unfinished">Need a planar face as support for a sketch!</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="747"/>
+      <location filename="../../SketchWorkflow.cpp" line="792"/>
       <source>Create a plane first or select a face to sketch on</source>
       <translation type="unfinished">Create a plane first or select a face to sketch on</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="738"/>
+      <location filename="../../SketchWorkflow.cpp" line="783"/>
       <source>No support face selected</source>
       <translation>未选中支持面</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="742"/>
+      <location filename="../../SketchWorkflow.cpp" line="787"/>
       <source>No planar support</source>
       <translation>无支持平面</translation>
     </message>
     <message>
-      <location filename="../../SketchWorkflow.cpp" line="746"/>
+      <location filename="../../SketchWorkflow.cpp" line="791"/>
       <source>No valid planes in this document</source>
       <translation>文档中无有效平面</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1014"/>
-      <location filename="../../SketchWorkflow.cpp" line="661"/>
-      <location filename="../../ViewProvider.cpp" line="140"/>
-      <location filename="../../ViewProviderBoolean.cpp" line="79"/>
+      <location filename="../../SketchWorkflow.cpp" line="706"/>
+      <location filename="../../ViewProvider.cpp" line="139"/>
       <location filename="../../ViewProviderDatum.cpp" line="250"/>
       <location filename="../../ViewProviderShapeBinder.cpp" line="96"/>
       <source>A dialog is already open in the task panel</source>
@@ -3365,9 +3234,8 @@ measured along the specified direction</source>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1015"/>
-      <location filename="../../SketchWorkflow.cpp" line="662"/>
-      <location filename="../../ViewProvider.cpp" line="141"/>
-      <location filename="../../ViewProviderBoolean.cpp" line="80"/>
+      <location filename="../../SketchWorkflow.cpp" line="707"/>
+      <location filename="../../ViewProvider.cpp" line="140"/>
       <location filename="../../ViewProviderDatum.cpp" line="251"/>
       <location filename="../../ViewProviderShapeBinder.cpp" line="97"/>
       <source>Close this dialog?</source>
@@ -3602,19 +3470,19 @@ This may lead to unexpected results.</source>
       <translation>如果没有可用的基础特征, 就不可能创建减料特征</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="221"/>
-      <location filename="../../TaskTransformedParameters.cpp" line="439"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="226"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="440"/>
       <source>Vertical sketch axis</source>
       <translation>垂直草绘轴</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="222"/>
-      <location filename="../../TaskTransformedParameters.cpp" line="440"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="227"/>
+      <location filename="../../TaskTransformedParameters.cpp" line="441"/>
       <source>Horizontal sketch axis</source>
       <translation>水平草绘轴</translation>
     </message>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="224"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="229"/>
       <source>Construction line %1</source>
       <translation>辅助线 %1</translation>
     </message>
@@ -3663,7 +3531,7 @@ For legacy documents with Part Design objects lacking a body, use the migrate fu
       <translation>要使用此特征, 它需隶属于文档中的零件对象。</translation>
     </message>
     <message>
-      <location filename="../../ViewProvider.cpp" line="97"/>
+      <location filename="../../ViewProvider.cpp" line="96"/>
       <location filename="../../ViewProviderDressUp.cpp" line="65"/>
       <location filename="../../ViewProviderShapeBinder.cpp" line="210"/>
       <location filename="../../ViewProviderTransformed.cpp" line="66"/>
@@ -3671,7 +3539,7 @@ For legacy documents with Part Design objects lacking a body, use the migrate fu
       <translation>编辑 %1</translation>
     </message>
     <message>
-      <location filename="../../ViewProvider.cpp" line="110"/>
+      <location filename="../../ViewProvider.cpp" line="109"/>
       <source>Set Face Colors</source>
       <translation type="unfinished">Set Face Colors</translation>
     </message>
@@ -3718,7 +3586,7 @@ This feature is broken and cannot be edited.</translation>
     <message>
       <location filename="../../ViewProviderShapeBinder.cpp" line="205"/>
       <source>Edit Shape Binder</source>
-      <translation type="unfinished">Edit Shape Binder</translation>
+      <translation>编辑形状链接器</translation>
     </message>
     <message>
       <location filename="../../ViewProviderShapeBinder.cpp" line="317"/>
@@ -3729,21 +3597,6 @@ This feature is broken and cannot be edited.</translation>
       <location filename="../../ViewProviderShapeBinder.cpp" line="319"/>
       <source>Select Bound Object</source>
       <translation type="unfinished">Select Bound Object</translation>
-    </message>
-    <message>
-      <location filename="../../ViewProviderTransformed.cpp" line="151"/>
-      <source>One transformed shape does not intersect the support</source>
-      <translation>变换后形状与支持面不相交</translation>
-    </message>
-    <message>
-      <location filename="../../ViewProviderTransformed.cpp" line="153"/>
-      <source>%1 transformed shapes do not intersect the support</source>
-      <translation>变换后形状%1与支持面不相交</translation>
-    </message>
-    <message>
-      <location filename="../../ViewProviderTransformed.cpp" line="163"/>
-      <source>Transformation succeeded</source>
-      <translation>变换成功</translation>
     </message>
     <message>
       <location filename="../../WorkflowManager.cpp" line="140"/>
@@ -3778,7 +3631,7 @@ Although you will be able to migrate any moment later with 'Part Design -&gt; Mi
       <translation type="unfinished">Migrate Manually</translation>
     </message>
     <message>
-      <location filename="../../ViewProviderBoolean.cpp" line="63"/>
+      <location filename="../../ViewProviderBoolean.cpp" line="72"/>
       <source>Edit Boolean</source>
       <translation type="unfinished">Edit Boolean</translation>
     </message>
@@ -4064,137 +3917,137 @@ Although you will be able to migrate any moment later with 'Part Design -&gt; Mi
   <context>
     <name>TaskHoleParameters</name>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="803"/>
+      <location filename="../../TaskHoleParameters.ui" line="813"/>
       <source>Live update of changes to the thread
 Note that the calculation can take some time</source>
       <translation>实时更新对线程的更改
 注意计算可能需要一些时间</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="996"/>
+      <location filename="../../TaskHoleParameters.ui" line="1006"/>
       <source>Thread Depth</source>
       <translation>螺纹深度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="1049"/>
+      <location filename="../../TaskHoleParameters.ui" line="1059"/>
       <source>Customize thread clearance</source>
       <translation>自定义螺纹间隙</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="722"/>
+      <location filename="../../TaskHoleParameters.ui" line="709"/>
       <source>Clearance</source>
       <translation>间隙</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="78"/>
+      <location filename="../../TaskHoleParameters.ui" line="65"/>
       <source>Head type</source>
       <translation type="unfinished">Head type</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="117"/>
+      <location filename="../../TaskHoleParameters.ui" line="153"/>
       <source>Depth type</source>
       <translation type="unfinished">Depth type</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="199"/>
+      <location filename="../../TaskHoleParameters.ui" line="245"/>
       <source>Head diameter</source>
       <translation type="unfinished">Head diameter</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="247"/>
+      <location filename="../../TaskHoleParameters.ui" line="293"/>
       <source>Head depth</source>
       <translation type="unfinished">Head depth</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="668"/>
+      <location filename="../../TaskHoleParameters.ui" line="678"/>
       <source>Clearance / Passthrough</source>
       <translation type="unfinished">Clearance / Passthrough</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="673"/>
+      <location filename="../../TaskHoleParameters.ui" line="683"/>
       <source>Tap drill (to be threaded)</source>
       <translation type="unfinished">Tap drill (to be threaded)</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="678"/>
+      <location filename="../../TaskHoleParameters.ui" line="688"/>
       <source>Modeled thread</source>
       <translation type="unfinished">Modeled thread</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="686"/>
+      <location filename="../../TaskHoleParameters.ui" line="696"/>
       <source>Hole type</source>
       <translation type="unfinished">Hole type</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="807"/>
+      <location filename="../../TaskHoleParameters.ui" line="817"/>
       <source>Update thread view</source>
       <translation>更新螺纹视图</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="1055"/>
+      <location filename="../../TaskHoleParameters.ui" line="1065"/>
       <source>Custom Clearance</source>
       <translation>自定义间隙</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="1068"/>
+      <location filename="../../TaskHoleParameters.ui" line="1078"/>
       <source>Custom Thread clearance value</source>
       <translation>自定义螺纹间隙大小</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="858"/>
+      <location filename="../../TaskHoleParameters.ui" line="868"/>
       <source>Direction</source>
       <translation>方向</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="650"/>
+      <location filename="../../TaskHoleParameters.ui" line="49"/>
       <source>Size</source>
       <translation>大小</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="735"/>
+      <location filename="../../TaskHoleParameters.ui" line="722"/>
       <source>Hole clearance
 Only available for holes without thread</source>
       <translation>孔位
 仅适用于无螺纹孔</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="627"/>
-      <location filename="../../TaskHoleParameters.ui" line="740"/>
+      <location filename="../../TaskHoleParameters.ui" line="88"/>
+      <location filename="../../TaskHoleParameters.ui" line="727"/>
       <source>Standard</source>
       <translation>标准</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="745"/>
+      <location filename="../../TaskHoleParameters.ui" line="732"/>
       <source>Close</source>
       <translation>关闭</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="750"/>
+      <location filename="../../TaskHoleParameters.ui" line="737"/>
       <source>Wide</source>
       <translation>宽度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="838"/>
+      <location filename="../../TaskHoleParameters.ui" line="848"/>
       <source>Class</source>
       <translation>类</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="825"/>
+      <location filename="../../TaskHoleParameters.ui" line="835"/>
       <source>Tolerance class for threaded holes according to hole profile</source>
       <translation>根据孔配置方案螺纹孔的公差等级</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="506"/>
+      <location filename="../../TaskHoleParameters.ui" line="552"/>
       <source>Diameter</source>
       <translation>直径</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="528"/>
+      <location filename="../../TaskHoleParameters.ui" line="574"/>
       <source>Hole diameter</source>
       <translation>孔直径</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="461"/>
+      <location filename="../../TaskHoleParameters.ui" line="507"/>
       <source>Depth</source>
       <translation>深度</translation>
     </message>
@@ -4204,118 +4057,128 @@ Only available for holes without thread</source>
       <translation type="unfinished">Hole Parameters</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="43"/>
+      <location filename="../../TaskHoleParameters.ui" line="95"/>
       <source>Base profile types</source>
       <translation>基本轮廓类型</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="51"/>
+      <location filename="../../TaskHoleParameters.ui" line="126"/>
       <source>Circles and arcs</source>
       <translation>圆和圆弧</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="56"/>
+      <location filename="../../TaskHoleParameters.ui" line="131"/>
       <source>Points, circles and arcs</source>
       <translation>点、圆和圆弧</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="61"/>
+      <location filename="../../TaskHoleParameters.ui" line="136"/>
       <source>Points</source>
       <translation>点</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="95"/>
-      <location filename="../../TaskHoleParameters.ui" line="966"/>
+      <location filename="../../TaskHoleParameters.ui" line="170"/>
+      <location filename="../../TaskHoleParameters.ui" line="976"/>
       <source>Dimension</source>
       <translation>尺寸标注</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="100"/>
+      <location filename="../../TaskHoleParameters.ui" line="175"/>
       <source>Through all</source>
       <translation>通过所有</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="151"/>
+      <location filename="../../TaskHoleParameters.ui" line="197"/>
       <source>Custom head values</source>
       <translation>自定义头部值</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="321"/>
+      <location filename="../../TaskHoleParameters.ui" line="367"/>
       <source>Drill angle</source>
       <extracomment>Translate it as short as possible</extracomment>
       <translation>钻孔角度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="357"/>
+      <location filename="../../TaskHoleParameters.ui" line="403"/>
       <source>Include in depth</source>
       <extracomment>Translate it as short as possible</extracomment>
       <translation>包含在深度中</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="564"/>
+      <location filename="../../TaskHoleParameters.ui" line="610"/>
       <source>Switch direction</source>
       <translation>切换方向</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="882"/>
+      <location filename="../../TaskHoleParameters.ui" line="662"/>
+      <source>&lt;b&gt;Threading&lt;/b&gt;</source>
+      <translation type="unfinished">&lt;b&gt;Threading&lt;/b&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../TaskHoleParameters.ui" line="783"/>
+      <source>Thread</source>
+      <translation>螺纹铣</translation>
+    </message>
+    <message>
+      <location filename="../../TaskHoleParameters.ui" line="892"/>
       <source>&amp;Right hand</source>
       <translation>右手(&amp;R)</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="898"/>
+      <location filename="../../TaskHoleParameters.ui" line="908"/>
       <source>&amp;Left hand</source>
       <translation>左手(&amp;L)</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="947"/>
+      <location filename="../../TaskHoleParameters.ui" line="957"/>
       <source>Thread Depth Type</source>
       <translation>螺纹深度类型</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="961"/>
+      <location filename="../../TaskHoleParameters.ui" line="971"/>
       <source>Hole depth</source>
       <translation>孔深度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="971"/>
+      <location filename="../../TaskHoleParameters.ui" line="981"/>
       <source>Tapped (DIN76)</source>
       <translation>螺纹 (DIN76)</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="130"/>
+      <location filename="../../TaskHoleParameters.ui" line="118"/>
       <source>Cut type for screw heads</source>
       <translation>螺丝头的切割类型</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="145"/>
+      <location filename="../../TaskHoleParameters.ui" line="191"/>
       <source>Check to override the values predefined by the 'Type'</source>
       <translation>检查以覆盖“类型”预定义的值</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="260"/>
+      <location filename="../../TaskHoleParameters.ui" line="306"/>
       <source>For countersinks this is the depth of
 the screw's top below the surface</source>
       <translation>对于沉头孔，这是螺钉顶部到沉头表面的深度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="416"/>
+      <location filename="../../TaskHoleParameters.ui" line="462"/>
       <source>Countersink angle</source>
       <translation>埋头孔角度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="353"/>
+      <location filename="../../TaskHoleParameters.ui" line="399"/>
       <source>The size of the drill point will be taken into
 account for the depth of blind holes</source>
       <translation>钻孔点的大小将被计入
 盲孔的深度</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="580"/>
+      <location filename="../../TaskHoleParameters.ui" line="626"/>
       <source>Tapered</source>
       <translation>锥孔</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="593"/>
+      <location filename="../../TaskHoleParameters.ui" line="639"/>
       <source>Taper angle for the hole
 90 degree: straight hole
 under 90: smaller hole radius at the bottom
@@ -4326,7 +4189,7 @@ over 90: larger hole radius at the bottom</source>
 大于90：底部的较大孔半径</translation>
     </message>
     <message>
-      <location filename="../../TaskHoleParameters.ui" line="561"/>
+      <location filename="../../TaskHoleParameters.ui" line="607"/>
       <source>Reverses the hole direction</source>
       <translation>反转孔方向</translation>
     </message>
@@ -4580,7 +4443,7 @@ over 90: larger hole radius at the bottom</source>
       <translation>基础特征必须是 Part::Feature</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureBase.cpp" line="78"/>
+      <location filename="../../../App/FeatureBase.cpp" line="75"/>
       <source>BaseFeature has an empty shape</source>
       <translation>基础特征有空形状</translation>
     </message>
@@ -4614,15 +4477,19 @@ over 90: larger hole radius at the bottom</source>
       <location filename="../../../App/FeatureBoolean.cpp" line="163"/>
       <location filename="../../../App/FeatureChamfer.cpp" line="174"/>
       <location filename="../../../App/FeatureDraft.cpp" line="291"/>
-      <location filename="../../../App/FeatureExtrude.cpp" line="578"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="576"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="589"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="599"/>
       <location filename="../../../App/FeatureFillet.cpp" line="119"/>
       <location filename="../../../App/FeatureGroove.cpp" line="196"/>
-      <location filename="../../../App/FeatureHole.cpp" line="2185"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2197"/>
       <location filename="../../../App/FeatureLoft.cpp" line="277"/>
+      <location filename="../../../App/FeatureLoft.cpp" line="312"/>
       <location filename="../../../App/FeaturePipe.cpp" line="404"/>
-      <location filename="../../../App/FeatureRevolution.cpp" line="232"/>
-      <source>Result has multiple solids: enable 'Allow Compounds' in the active body.</source>
-      <translation type="unfinished">Result has multiple solids: enable 'Allow Compounds' in the active body.</translation>
+      <location filename="../../../App/FeaturePipe.cpp" line="425"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="233"/>
+      <source>Result has multiple solids: enable 'Allow Compound' in the active body.</source>
+      <translation type="unfinished">Result has multiple solids: enable 'Allow Compound' in the active body.</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureBoolean.cpp" line="112"/>
@@ -4636,41 +4503,33 @@ over 90: larger hole radius at the bottom</source>
       <translation>不支持的布尔操作</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="325"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="327"/>
       <source>Cannot create a pad with a total length of zero.</source>
       <translation type="unfinished">Cannot create a pad with a total length of zero.</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="330"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="332"/>
       <source>Cannot create a pocket with a total length of zero.</source>
       <translation type="unfinished">Cannot create a pocket with a total length of zero.</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="516"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="514"/>
       <source>No extrusion geometry was generated.</source>
       <translation type="unfinished">No extrusion geometry was generated.</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="536"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="534"/>
       <source>Resulting fused extrusion is null.</source>
       <translation type="unfinished">Resulting fused extrusion is null.</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="570"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="568"/>
       <location filename="../../../App/FeatureLoft.cpp" line="306"/>
       <location filename="../../../App/FeaturePipe.cpp" line="401"/>
       <location filename="../../../App/FeaturePipe.cpp" line="422"/>
       <location filename="../../../App/FeaturePrimitive.cpp" line="130"/>
       <source>Resulting shape is not a solid</source>
       <translation>结果形状不是实体</translation>
-    </message>
-    <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="591"/>
-      <location filename="../../../App/FeatureExtrude.cpp" line="601"/>
-      <location filename="../../../App/FeatureLoft.cpp" line="312"/>
-      <location filename="../../../App/FeaturePipe.cpp" line="425"/>
-      <source>Result has multiple solids: that is not currently supported.</source>
-      <translation>结果形状有多个实体：目前暂不支持。</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureChamfer.cpp" line="157"/>
@@ -4725,7 +4584,7 @@ over 90: larger hole radius at the bottom</source>
     </message>
     <message>
       <location filename="../../../App/FeatureGroove.cpp" line="112"/>
-      <location filename="../../../App/FeatureHole.cpp" line="1904"/>
+      <location filename="../../../App/FeatureHole.cpp" line="1913"/>
       <source>The requested feature cannot be created. The reason may be that:
   - the active Body does not contain a base shape, so there is no
   material to be removed;
@@ -4736,37 +4595,37 @@ over 90: larger hole radius at the bottom</source>
   - 选中的草图不属于活动实体。</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="371"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="373"/>
       <source>Failed to obtain profile shape</source>
       <translation>无法获取轮廓形状</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="423"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="425"/>
       <source>Creation failed because direction is orthogonal to sketch's normal vector</source>
       <translation>创建失败，方向与草图的法线矢量正交</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="445"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="447"/>
       <location filename="../../../App/FeatureGroove.cpp" line="129"/>
-      <location filename="../../../App/FeatureRevolution.cpp" line="136"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="137"/>
       <source>Creating a face from sketch failed</source>
       <translation>从草图创建面失败</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureGroove.cpp" line="151"/>
-      <location filename="../../../App/FeatureRevolution.cpp" line="154"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="155"/>
       <source>Revolve axis intersects the sketch</source>
       <translation>旋转轴与草图相交</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureGroove.cpp" line="159"/>
-      <location filename="../../../App/FeatureRevolution.cpp" line="239"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="240"/>
       <source>Could not revolve the sketch!</source>
       <translation>无法旋转草图！</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureGroove.cpp" line="205"/>
-      <location filename="../../../App/FeatureRevolution.cpp" line="251"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="252"/>
       <source>Could not create face from sketch.
 Intersecting sketch entities in a sketch are not allowed.</source>
       <translation>无法从草图中创建面。
@@ -4818,7 +4677,7 @@ Intersecting sketch entities in a sketch are not allowed.</source>
     <message>
       <location filename="../../../App/FeatureHelix.cpp" line="299"/>
       <location filename="../../../App/FeatureHelix.cpp" line="331"/>
-      <location filename="../../../App/FeatureHole.cpp" line="2529"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2541"/>
       <source>Error: Result is not a solid</source>
       <translation>错误：结果不是实体</translation>
     </message>
@@ -4860,73 +4719,78 @@ Intersecting sketch entities in a sketch are not allowed.</source>
       <translation>螺纹类型无效</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1944"/>
+      <location filename="../../../App/FeatureHole.cpp" line="1953"/>
       <source>Hole error: Unsupported length specification</source>
       <translation>孔错误：不支持的长度</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1947"/>
+      <location filename="../../../App/FeatureHole.cpp" line="1956"/>
       <source>Hole error: Invalid hole depth</source>
       <translation>孔错误：无效的孔深度</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1970"/>
+      <location filename="../../../App/FeatureHole.cpp" line="1979"/>
       <source>Hole error: Invalid taper angle</source>
       <translation>孔错误：无效斜角</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1991"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2000"/>
       <source>Hole error: Hole cut diameter too small</source>
       <translation>孔错误：挖孔直径太小</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1995"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2004"/>
       <source>Hole error: Hole cut depth must be less than hole depth</source>
       <translation>孔错误：孔切割深度必须小于孔深度</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="1999"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2008"/>
       <source>Hole error: Hole cut depth must be greater or equal to zero</source>
       <translation>孔错误：孔切割深度必须大于等于 0</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2021"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2030"/>
       <source>Hole error: Invalid countersink</source>
       <translation>孔错误：无效的埋头孔</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2054"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2063"/>
       <source>Hole error: Invalid drill point angle</source>
       <translation>孔错误：无效的钻尖角度</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2064"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2073"/>
       <source>Hole error: Invalid drill point</source>
       <translation>孔错误：钻点无效</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2098"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2107"/>
       <source>Hole error: Could not revolve sketch</source>
       <translation>孔错误：无法旋转草图</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2102"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2111"/>
       <source>Hole error: Resulting shape is empty</source>
       <translation>孔错误：结果形状为空</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2112"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2121"/>
       <source>Error: Adding the thread failed</source>
       <translation>错误：添加螺纹失败</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2163"/>
-      <location filename="../../../App/FeatureHole.cpp" line="2168"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2129"/>
+      <source>Hole error: Finding axis failed</source>
+      <translation type="unfinished">Hole error: Finding axis failed</translation>
+    </message>
+    <message>
+      <location filename="../../../App/FeatureHole.cpp" line="2175"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2180"/>
       <source>Boolean operation failed on profile Edge</source>
       <translation>轮廓边缘布尔运算失败</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2174"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2186"/>
       <source>Boolean operation produced non-solid on profile Edge</source>
       <translation>在轮廓边缘的布尔运算产生了非实体</translation>
     </message>
@@ -4936,23 +4800,23 @@ Intersecting sketch entities in a sketch are not allowed.</source>
       <translation>布尔操作失败</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2195"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2207"/>
       <source>Could not create face from sketch.
 Intersecting sketch entities or multiple faces in a sketch are not allowed for making a pocket up to a face.</source>
       <translation>无法从草图创建面。不允许使用相交的草图实体、或草图中的多个面来制作凹槽。</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2345"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2357"/>
       <source>Thread type out of range</source>
       <translation>螺线类型超出范围</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2348"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2360"/>
       <source>Thread size out of range</source>
       <translation>螺线大小超出范围</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureHole.cpp" line="2504"/>
+      <location filename="../../../App/FeatureHole.cpp" line="2516"/>
       <source>Error: Thread could not be built</source>
       <translation>错误：无法构建螺纹</translation>
     </message>
@@ -4977,7 +4841,7 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed for m
       <translation>拉伸：创建外壳失败</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="613"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="611"/>
       <source>Could not create face from sketch.
 Intersecting sketch entities or multiple faces in a sketch are not allowed.</source>
       <translation>无法从草图立建面。
@@ -5204,22 +5068,22 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
       <translation>楔形的 X2 差是负数</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureRevolution.cpp" line="91"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="92"/>
       <source>Angle of revolution too large</source>
       <translation>旋转角过大</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureRevolution.cpp" line="97"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="98"/>
       <source>Angle of revolution too small</source>
       <translation>旋转角过小</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureRevolution.cpp" line="129"/>
+      <location filename="../../../App/FeatureRevolution.cpp" line="130"/>
       <source>Reference axis is invalid</source>
       <translation>参考坐标轴无效</translation>
     </message>
     <message>
-      <location filename="../../../App/FeatureExtrude.cpp" line="563"/>
+      <location filename="../../../App/FeatureExtrude.cpp" line="561"/>
       <source>Fusion with base feature failed</source>
       <translation>与基本特征联合失败</translation>
     </message>
@@ -5327,12 +5191,12 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
   <context>
     <name>CmdPartDesignCompDatums</name>
     <message>
-      <location filename="../../Command.cpp" line="2371"/>
+      <location filename="../../Command.cpp" line="2372"/>
       <source>Create Datum</source>
       <translation type="unfinished">Create Datum</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2372"/>
+      <location filename="../../Command.cpp" line="2373"/>
       <source>Creates a datum object or local coordinate system</source>
       <translation type="unfinished">Creates a datum object or local coordinate system</translation>
     </message>
@@ -5340,12 +5204,12 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
   <context>
     <name>CmdPartDesignCompSketches</name>
     <message>
-      <location filename="../../Command.cpp" line="2406"/>
+      <location filename="../../Command.cpp" line="2407"/>
       <source>Create Datum</source>
       <translation type="unfinished">Create Datum</translation>
     </message>
     <message>
-      <location filename="../../Command.cpp" line="2407"/>
+      <location filename="../../Command.cpp" line="2408"/>
       <source>Creates a datum object or local coordinate system</source>
       <translation type="unfinished">Creates a datum object or local coordinate system</translation>
     </message>
@@ -5447,7 +5311,7 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
   <context>
     <name>PartDesignGui::TaskDlgRevolutionParameters</name>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="716"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="828"/>
       <source>Revolution Parameters</source>
       <translation type="unfinished">Revolution Parameters</translation>
     </message>
@@ -5455,7 +5319,7 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
   <context>
     <name>PartDesignGui::TaskDlgGrooveParameters</name>
     <message>
-      <location filename="../../TaskRevolutionParameters.cpp" line="724"/>
+      <location filename="../../TaskRevolutionParameters.cpp" line="836"/>
       <source>Groove Parameters</source>
       <translation type="unfinished">Groove Parameters</translation>
     </message>
@@ -5569,6 +5433,24 @@ Intersecting sketch entities or multiple faces in a sketch are not allowed.</sou
       <location filename="../../ViewProviderThickness.h" line="41"/>
       <source>Thickness Parameters</source>
       <translation type="unfinished">Thickness Parameters</translation>
+    </message>
+  </context>
+  <context>
+    <name>PartDesignGui::TaskPatternParameters</name>
+    <message>
+      <location filename="../../TaskPatternParameters.cpp" line="116"/>
+      <source>Direction 2</source>
+      <translation type="unfinished">Direction 2</translation>
+    </message>
+    <message>
+      <location filename="../../TaskPatternParameters.cpp" line="219"/>
+      <source>Select a direction reference (edge, face, datum line)</source>
+      <translation type="unfinished">Select a direction reference (edge, face, datum line)</translation>
+    </message>
+    <message>
+      <location filename="../../TaskPatternParameters.cpp" line="299"/>
+      <source>Invalid selection. Select an edge, planar face, or datum line.</source>
+      <translation type="unfinished">Invalid selection. Select an edge, planar face, or datum line.</translation>
     </message>
   </context>
 </TS>

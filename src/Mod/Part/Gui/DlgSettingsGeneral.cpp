@@ -20,14 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <QButtonGroup>
 # include <QRegularExpression>
 # include <QRegularExpressionValidator>
 # include <QVBoxLayout>
 # include <Interface_Static.hxx>
-#endif
+
 
 #include <Mod/Part/App/Interface.h>
 #include <Mod/Part/App/FuzzyHelper.h>
@@ -67,6 +65,7 @@ void DlgSettingsGeneral::saveSettings()
     ui->comboDefaultProfileTypeForHole->onSave();
     ui->checkShowFinalPreview->onSave();
     ui->checkShowTransparentPreview->onSave();
+    ui->checkShowProfilePreview->onSave();
     ui->checkSwitchToTask->onSave();
 }
 
@@ -82,6 +81,7 @@ void DlgSettingsGeneral::loadSettings()
     ui->comboDefaultProfileTypeForHole->onRestore();
     ui->checkShowFinalPreview->onRestore();
     ui->checkShowTransparentPreview->onRestore();
+    ui->checkShowProfilePreview->onRestore();
     ui->checkSwitchToTask->onRestore();
 }
 

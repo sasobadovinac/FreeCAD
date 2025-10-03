@@ -21,11 +21,10 @@
  ***************************************************************************/
 
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
+
 # include <QDockWidget>
 # include <QStatusBar>
-#endif
+
 
 #include "Workbench.h"
 #include "WorkbenchManipulator.h"
@@ -719,10 +718,13 @@ MenuItem* StdWorkbench::setupMenuBar() const
     auto tool = new MenuItem( menuBar );
     tool->setCommand("&Tools");
 #ifdef BUILD_ADDONMGR
-    *tool << "Std_AddonMgr"
-          << "Separator";
+    if (Application::Instance->commandManager().getCommandByName("Std_AddonMgr")) {
+        *tool << "Std_AddonMgr"
+              << "Separator";
+    }
 #endif
     *tool << "Std_Measure"
+          << "Std_ClarifySelection"
           << "Std_QuickMeasure"
           << "Std_UnitsCalculator"
           << "Separator"
@@ -813,7 +815,7 @@ ToolBarItem* StdWorkbench::setupToolBars() const
     auto view = new ToolBarItem( root );
     view->setCommand("View");
     *view << "Std_ViewFitAll" << "Std_ViewFitSelection" << "Std_ViewGroup" << "Std_AlignToSelection"
-          << "Separator" << "Std_DrawStyle" << "Std_TreeViewActions" << "Std_Measure" << "Std_QuickMeasure";
+          << "Separator" << "Std_DrawStyle" << "Std_TreeViewActions" << "Std_Measure";
 
     // Individual views
     auto individualViews = new ToolBarItem(root, ToolBarItem::DefaultVisibility::Hidden);

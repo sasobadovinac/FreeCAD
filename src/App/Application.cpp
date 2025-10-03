@@ -21,9 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "PreCompiled.h"
+#include <FCConfig.h>
 
-#ifndef _PreComp_
 # if defined(FC_OS_LINUX) || defined(FC_OS_MACOSX) || defined(FC_OS_BSD)
 #  include <unistd.h>
 #  include <pwd.h>
@@ -48,7 +47,6 @@
 # include <tuple>
 # include <vector>
 # include <fmt/format.h>
-#endif
 
 #ifdef FC_OS_WIN32
 # include <Shlobj.h>
@@ -103,6 +101,7 @@
 #include "Annotation.h"
 #include "Application.h"
 #include "ApplicationDirectories.h"
+#include "ApplicationDirectoriesPy.h"
 #include "CleanupProcess.h"
 #include "ComplexGeoData.h"
 #include "Services.h"
@@ -333,6 +332,7 @@ void Application::setupPythonTypes()
     Base::InterpreterSingleton::addType(&Base::TypePy            ::Type,pBaseModule,"TypeId");
     Base::InterpreterSingleton::addType(&Base::PrecisionPy       ::Type,pBaseModule,"Precision");
 
+    Base::InterpreterSingleton::addType(&ApplicationDirectoriesPy::Type, pAppModule, "ApplicationDirectories");
     Base::InterpreterSingleton::addType(&MaterialPy::Type, pAppModule, "Material");
     Base::InterpreterSingleton::addType(&MetadataPy::Type, pAppModule, "Metadata");
 
@@ -2569,12 +2569,12 @@ void Application::initConfig(int argc, char ** argv)
         mConfig["KeepDeprecatedPaths"] = "1";
     }
 
+    if (vm.contains("safe-mode")) {
+        mConfig["SafeMode"] = "1";
+    }
+
     // extract home paths
     _appDirs = std::make_unique<ApplicationDirectories>(mConfig);
-
-    if (vm.contains("safe-mode")) {
-        SafeMode::StartSafeMode();
-    }
 
 #   ifdef FC_DEBUG
     mConfig["Debug"] = "1";
@@ -2782,8 +2782,7 @@ void Application::initApplication()
        ("User parameter:BaseApp/Preferences/Units");
     Base::UnitsApi::setSchema(hGrp->GetInt("UserSchema", Base::UnitsApi::getDefSchemaNum()));
     Base::UnitsApi::setDecimals(hGrp->GetInt("Decimals", Base::UnitsApi::getDecimals()));
-    Base::QuantityFormat::setDefaultDenominator(
-        hGrp->GetInt("FracInch", Base::QuantityFormat::getDefaultDenominator()));
+    Base::UnitsApi::setDenominator(hGrp->GetInt("FracInch", Base::UnitsApi::getDenominator()));
 
 #if defined (_DEBUG)
     Base::Console().log("Application is built with debug information\n");
@@ -3781,6 +3780,9 @@ void Application::getVerboseAddOnsInfo(QTextStream& str, const std::map<std::str
     bool firstMod = true;
     if (fs::exists(modDir) && fs::is_directory(modDir)) {
         for (const auto& mod : fs::directory_iterator(modDir)) {
+            if (!fs::is_directory(mod)) {
+                continue; // Ignore files, only show directories
+            }
             auto dirName = mod.path().string();
             addModuleInfo(str, QString::fromStdString(dirName), firstMod);
         }

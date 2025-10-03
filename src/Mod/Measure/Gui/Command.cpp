@@ -19,10 +19,7 @@
  *                                                                         *
  **************************************************************************/
 
-#include "PreCompiled.h"
-#ifndef _PreComp_
 #include <QApplication>
-#endif
 
 #include <App/Application.h>
 #include <App/Document.h>
@@ -115,6 +112,9 @@ protected:
         }
 
         if (iMsg == 0) {
+            if (quickMeasure) {
+                quickMeasure->print(QString());
+            }
             quickMeasure.reset();
         }
         else {
@@ -125,7 +125,7 @@ protected:
     {
         Gui::Action* action = Gui::Command::createAction();
         action->setCheckable(true);
-        action->setChecked(parameter->GetBool("EnableQuickMeasure", false));
+        action->setChecked(parameter->GetBool("EnableQuickMeasure", true));
         return action;
     }
     void accessParameter()

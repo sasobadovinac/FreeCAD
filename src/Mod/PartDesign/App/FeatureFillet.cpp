@@ -20,10 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 
-
-#include "PreCompiled.h"
-#ifndef _PreComp_
 # include <limits>
+
 # include <BRepAlgo.hxx>
 # include <BRepFilletAPI_MakeFillet.hxx>
 # include <TopoDS.hxx>
@@ -31,7 +29,6 @@
 # include <TopTools_ListOfShape.hxx>
 # include <ShapeFix_Shape.hxx>
 # include <ShapeFix_ShapeTolerance.hxx>
-#endif
 
 #include <Base/Exception.h>
 #include <Base/Reader.h>
@@ -116,7 +113,7 @@ App::DocumentObjectExecReturn *Fillet::execute()
         this->rawShape = shape;
         shape = refineShapeIfActive(shape);
         if (!isSingleSolidRuleSatisfied(shape.getShape())) {
-            return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Result has multiple solids: enable 'Allow Compounds' in the active body."));
+            return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP("Exception", "Result has multiple solids: enable 'Allow Compound' in the active body."));
         }
 
         shape = getSolid(shape);

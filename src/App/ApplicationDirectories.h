@@ -22,12 +22,17 @@
 #ifndef SRC_APP_APPLICATIONDIRECTORIES_H_
 #define SRC_APP_APPLICATIONDIRECTORIES_H_
 
+#include "FCConfig.h"
 #include "FCGlobal.h"
 
 #include <filesystem>
 #include <map>
 #include <string>
 #include <vector>
+
+#ifdef FC_OS_WIN32
+#include <QString>
+#endif
 
 namespace App {
 
@@ -55,6 +60,10 @@ namespace App {
         /// certainly NOT use this path for anything. See alternatives in the
         /// `App::ApplicationDirectories` class.
         const std::filesystem::path& getHomePath() const;
+
+        /// Get the user's home directory. This should not be used for many things, use caution when
+        /// deciding to use it for anything, there are usually better places.
+        const std::filesystem::path& getUserHomePath() const;
 
         /// Temp path is the location of all temporary files: it is not guaranteed to preserve
         /// information between runs of the program, but *is* guaranteed to exist for the duration
@@ -174,6 +183,10 @@ namespace App {
 
     protected:
 
+        /// Override all application directories with temp directories. Returns true on success and
+        /// false if the temp directory creation failed.
+        bool startSafeMode(std::map<std::string,std::string>& mConfig);
+
         /// Take a path and add a version to it, if it's possible to do so. A version can be
         /// appended only if a) the versioned subdirectory already exists, or b) pathToCheck/subdirs
         /// does NOT yet exist. This does not actually create any directories, just determines
@@ -220,6 +233,12 @@ namespace App {
         /// \return The version tuple.
         static std::tuple<int, int> extractVersionFromConfigMap(const std::map<std::string,std::string> &config);
 
+        /// A utility method to remove any stray null characters from a path (Conda sometimes
+        /// injects these for unknown reasons -- see #6892 in the bug tracker).
+        /// \param pathAsString The std::string path to sanitize
+        /// \returns A path with any stray nulls removed
+        static std::filesystem::path sanitizePath(const std::string& pathAsString);
+
     private:
         std::tuple<int, int> _currentVersion;
         std::filesystem::path _home;
@@ -228,6 +247,7 @@ namespace App {
         std::filesystem::path _userConfig;
         std::filesystem::path _userAppData;
         std::filesystem::path _userMacro;
+        std::filesystem::path _userHome;
         std::filesystem::path _resource;
         std::filesystem::path _library;
         std::filesystem::path _help;
