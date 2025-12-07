@@ -39,9 +39,35 @@ from ...assets.asset import Asset
 from ...camassets import cam_assets
 from ...shape import ToolBitShape, ToolBitShapeCustom, ToolBitShapeIcon
 from ..util import to_json, format_value
+from ..migration import ParameterAccessor, migrate_parameters
 
 
 ToolBitView = LazyLoader("Path.Tool.toolbit.ui.view", globals(), "Path.Tool.toolbit.ui.view")
+
+
+class ToolBitRecomputeObserver:
+    """Document observer that triggers queued visual updates after recompute completes."""
+
+    def __init__(self, toolbit_proxy):
+        self.toolbit_proxy = toolbit_proxy
+
+    def slotRecomputedDocument(self, doc):
+        """Called when document recompute is finished."""
+        # Check if the toolbit object is still valid
+        try:
+            obj_doc = self.toolbit_proxy.obj.Document
+        except ReferenceError:
+            # Object has been deleted or does not exist, nothing to do
+            return
+
+        # Only process updates for the correct document
+        if doc != obj_doc:
+            return
+
+        # Process any queued visual updates
+        if self.toolbit_proxy and hasattr(self.toolbit_proxy, "_process_queued_visual_update"):
+            Path.Log.debug("Document recompute finished, processing queued visual update")
+            self.toolbit_proxy._process_queued_visual_update()
 
 
 PropertyGroupShape = "Shape"
@@ -103,6 +129,8 @@ class ToolBit(Asset, ABC):
             raise ValueError("ToolBit dictionary is missing 'shape' key")
 
         # Try to find the shape type. Default to Unknown if necessary.
+        if "shape" in attrs and "shape-type" not in attrs:
+            attrs["shape-type"] = attrs["shape"]
         shape_type = attrs.get("shape-type")
         shape_class = ToolBitShape.get_shape_class_from_id(shape_id, shape_type)
         if not shape_class:
@@ -151,9 +179,19 @@ class ToolBit(Asset, ABC):
         params = attrs.get("parameter", {})
         attr = attrs.get("attribute", {})
 
+        # Filter parameters if method exists
+        if (
+            hasattr(tool_bit_shape.__class__, "filter_parameters")
+            and callable(getattr(tool_bit_shape.__class__, "filter_parameters"))
+            and isinstance(params, dict)
+        ):
+            params = tool_bit_shape.__class__.filter_parameters(params)
+
         # Update parameters.
         for param_name, param_value in params.items():
             tool_bit_shape.set_parameter(param_name, param_value)
+            if hasattr(toolbit.obj, param_name):
+                PathUtil.setProperty(toolbit.obj, param_name, param_value)
 
         # Update attributes; the separation between parameters and attributes
         # is currently not well defined, so for now we add them to the
@@ -480,6 +518,20 @@ class ToolBit(Asset, ABC):
                 Path.Log.debug(f"onDocumentRestored: Attaching ViewProvider for {self.obj.Label}")
                 ToolBitView.ViewProvider(self.obj.ViewObject, "ToolBit")
 
+        # Migrate legacy parameters using unified accessor
+        migrate_parameters(ParameterAccessor(obj))
+
+        # Filter parameters if method exists (removes FlatRadius from obj)
+        filter_func = getattr(self._tool_bit_shape.__class__, "filter_parameters", None)
+        if callable(filter_func):
+            # Only filter if FlatRadius is present
+            if "FlatRadius" in self.obj.PropertiesList:
+                try:
+                    self.obj.removeProperty("FlatRadius")
+                    Path.Log.info(f"Filtered out FlatRadius for {self.obj.Label}")
+                except Exception as e:
+                    Path.Log.error(f"Failed to remove FlatRadius for {self.obj.Label}: {e}")
+
         # Copy properties from the restored object to the ToolBitShape.
         for name, item in self._tool_bit_shape.schema().items():
             if name in self.obj.PropertiesList:
@@ -559,15 +611,19 @@ class ToolBit(Asset, ABC):
             new_value = obj.getPropertyByName(prop)
             Path.Log.debug(
                 f"Shape parameter '{prop}' changed to {new_value}. "
-                f"Updating visual representation."
+                f"Queuing visual representation update."
             )
             self._tool_bit_shape.set_parameter(prop, new_value)
-            self._update_visual_representation()
+            self._queue_visual_update()
         finally:
             self._in_update = False
 
     def onDelete(self, obj, arg2=None):
         Path.Log.track(obj.Label)
+        # Clean up any pending observer
+        if hasattr(self, "_recompute_observer"):
+            FreeCAD.removeDocumentObserver(self._recompute_observer)
+            del self._recompute_observer
         self._removeBitBody()
         obj.Document.removeObject(obj.Name)
 
@@ -760,6 +816,37 @@ class ToolBit(Asset, ABC):
         material_value = self._tool_bit_shape.get_parameters().get("Material")
         if material_value in ("HSS", "Carbide") and self.obj.Material != material_value:
             PathUtil.setProperty(self.obj, "Material", material_value)
+
+    def _queue_visual_update(self):
+        """Queue a visual update to be processed after document recompute is complete."""
+        if not hasattr(self, "_visual_update_queued"):
+            self._visual_update_queued = False
+
+        if not self._visual_update_queued:
+            self._visual_update_queued = True
+            Path.Log.debug(f"Queuing visual update for {self.obj.Label}")
+
+            # Set up a document observer to process the update after recompute
+            self._setup_recompute_observer()
+
+    def _setup_recompute_observer(self):
+        """Set up a document observer to process queued visual updates after recompute."""
+        if not hasattr(self, "_recompute_observer"):
+            Path.Log.debug(f"Setting up recompute observer for {self.obj.Label}")
+            self._recompute_observer = ToolBitRecomputeObserver(self)
+            FreeCAD.addDocumentObserver(self._recompute_observer)
+
+    def _process_queued_visual_update(self):
+        """Process the queued visual update."""
+        if hasattr(self, "_visual_update_queued") and self._visual_update_queued:
+            self._visual_update_queued = False
+            Path.Log.debug(f"Processing queued visual update for {self.obj.Label}")
+            self._update_visual_representation()
+
+            # Clean up the observer
+            if hasattr(self, "_recompute_observer"):
+                FreeCAD.removeDocumentObserver(self._recompute_observer)
+                del self._recompute_observer
 
     def _update_visual_representation(self):
         """
