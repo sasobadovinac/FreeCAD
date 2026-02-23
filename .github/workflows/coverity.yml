@@ -111,7 +111,7 @@ jobs:
           mkdir build
           cd build
           cmake -DBUILD_FEM_NETGEN=ON -DFREECAD_USE_PYBIND11=ON ../
-          cov-build --dir cov-int --fs-capture-search ../src make -j$(nproc)
+          coverity capture --dir cov-int --project-dir ../src -- make -j$(nproc)
       
       - name: Submit to Coverity Scan
         run: |
