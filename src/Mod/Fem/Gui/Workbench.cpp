@@ -89,6 +89,7 @@ void Workbench::setupContextMenu(const char* recipient, Gui::MenuItem* item) con
     StdWorkbench::setupContextMenu(recipient, item);
     *item << "Separator"
           << "FEM_MeshClear"
+          << "FEM_MeshClearGroups"
           << "FEM_MeshDisplayInfo";
 }
 
@@ -235,7 +236,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
 
     Gui::MenuItem* elec = new Gui::MenuItem;
     elec->setCommand("&Electromagnetic Boundary Conditions");
-    *elec << "FEM_ConstraintElectrostaticPotential"
+    *elec << "FEM_ConstraintElectromagnetic"
           << "FEM_ConstraintCurrentDensity"
           << "FEM_ConstraintMagnetization"
           << "FEM_ConstraintElectricChargeDensity";

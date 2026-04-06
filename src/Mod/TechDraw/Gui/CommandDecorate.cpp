@@ -73,8 +73,8 @@ CmdTechDrawToggleFrame::CmdTechDrawToggleFrame()
 {
     sAppModule      = "TechDraw";
     sGroup          = QT_TR_NOOP("TechDraw");
-    sMenuText       = QT_TR_NOOP("Turn View Frames On/Off");
-    sToolTipText    = QT_TR_NOOP("Turn View Frames On/Off");
+    sMenuText       = QT_TR_NOOP("Toggle View Frames");
+    sToolTipText    = QT_TR_NOOP("Toggles visibility of view frames and vertices");
     sWhatsThis      = "TechDraw_Toggle";
     sStatusTip      = sToolTipText;
     sPixmap         = "actions/TechDraw_ToggleFrame";
@@ -319,17 +319,20 @@ void CmdTechDrawImage::activated(int iMsg)
     std::string PageName = page->getNameInDocument();
 
     // Reading an image
+    QStringList filterList;
+    filterList << QString::fromUtf8(QT_TR_NOOP("Image files (*.jpg *.jpeg *.png *.bmp)"));
+    filterList << QString::fromUtf8(QT_TR_NOOP("All files (*)"));
     QString fileName = Gui::FileDialog::getOpenFileName(Gui::getMainWindow(),
         QString::fromUtf8(QT_TR_NOOP("Select an image file")),
         Preferences::defaultSymbolDir(),
-        QString::fromUtf8(QT_TR_NOOP("Image files (*.jpg *.jpeg *.png *.bmp);;All files (*)")));
+        filterList);
     if (fileName.isEmpty()) {
         return;
     }
 
     std::string FeatName = getUniqueObjectName("Image");
-    fileName = Base::Tools::escapeEncodeFilename(fileName);
-    auto filespec = DU::cleanFilespecBackslash(fileName.toStdString());
+    auto filespec = DU::cleanFilespecBackslash(
+        Base::Tools::escapeEncodeFilename(fileName.toStdString()));
 
     openCommand(QT_TRANSLATE_NOOP("Command", "Create Image"));
     doCommand(Doc, "App.activeDocument().addObject('TechDraw::DrawViewImage', '%s')", FeatName.c_str());
