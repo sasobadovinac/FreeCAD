@@ -3364,7 +3364,22 @@ bool ViewProviderSketch::isConstructionMode() const
 
 void ViewProviderSketch::setGeometryCreationMode(GeometryCreationMode newMode)
 {
+    if (geometryCreationMode == newMode) {
+        return;
+    }
+
     geometryCreationMode = newMode;
+
+    if (!editCoinManager) {
+        return;
+    }
+
+    editCoinManager->updateEditCurveAppearance(newMode);
+
+    Gui::MDIView* mdi = getActiveView();
+    if (mdi && mdi->isDerivedFrom<Gui::View3DInventor>()) {
+        static_cast<Gui::View3DInventor*>(mdi)->getViewer()->redraw();
+    }
 }
 
 GeometryCreationMode ViewProviderSketch::getGeometryCreationMode() const
@@ -4122,7 +4137,8 @@ void ViewProviderSketch::attach(App::DocumentObject* pcFeat)
 
 void ViewProviderSketch::setupContextMenu(QMenu* menu, QObject* receiver, const char* member)
 {
-    menu->addAction(tr("Edit Sketch"), receiver, member);
+    QAction* act = menu->addAction(tr("Edit Sketch"), receiver, member);
+    act->setData(QVariant((int)ViewProvider::Default));
     // Call the extensions
     ViewProvider::setupContextMenu(menu, receiver, member);
 }
@@ -5027,6 +5043,11 @@ void ViewProviderSketch::slotToolWidgetChanged(QWidget* newwidget)
 void ViewProviderSketch::setConstraintSelectability(bool enabled /*= true*/)
 {
     editCoinManager->setConstraintSelectability(enabled);
+}
+
+void ViewProviderSketch::setOriginPointMarker(bool hollow)
+{
+    editCoinManager->setOriginPointMarker(hollow);
 }
 
 void ViewProviderSketch::setPositionText(const Base::Vector2d& Pos, const SbString& text)
