@@ -2259,6 +2259,7 @@ void setCategoryFilterRules()
     stream << "qt.qpa.mime.warning=false\n";
     stream << "qt.qpa.wayland.warning=false\n";
     stream << "qt.qpa.wayland.*.warning=false\n";
+    stream << "qt.accessibility.table.warning=false\n";
     stream << "qt.svg.warning=false\n";
     stream << "qt.xkb.compose.warning=false\n";
     stream << "kf.*.warning=false\n";
@@ -2853,8 +2854,8 @@ void Application::setStyleSheet(const QString& qssFile, bool tiledBackground)
                 QLabel l1, l2;
                 l2.setProperty("haslink", QByteArray("true"));
 
-                l1.show();
-                l2.show();
+                l1.ensurePolished();
+                l2.ensurePolished();
                 QColor text = l1.palette().color(QPalette::Text);
                 QColor link = l2.palette().color(QPalette::Text);
 

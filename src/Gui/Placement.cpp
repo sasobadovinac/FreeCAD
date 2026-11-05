@@ -93,7 +93,15 @@ public:
 
         // search for the placement property
         std::map<std::string, App::Property*>::iterator jt;
-        jt = std::find_if(props.begin(), props.end(), find_placement(propertyName));
+        std::string name = propertyName;
+        if (name == "Placement") {
+            // Links synchronize Placement and LinkPlacement, but only one alias is visible.
+            auto* placement = obj->getPlacementProperty();
+            if (placement && !placement->testStatus(App::Property::Hidden)) {
+                name = placement->getName();
+            }
+        }
+        jt = std::find_if(props.begin(), props.end(), find_placement(name));
         if (jt != props.end()) {
             return dynamic_cast<App::PropertyPlacement*>(jt->second);
         }
@@ -352,7 +360,7 @@ void PlacementHandler::applyPlacement(const App::DocumentObject* obj, const QStr
             cmd = getSimplePlacement(obj, data);
         }
 
-        Gui::Command::runCommand(Gui::Command::App, cmd.toLatin1());
+        Gui::Command::runCommand(Gui::Command::App, cmd.toUtf8());
     }
 }
 
@@ -360,9 +368,9 @@ QString PlacementHandler::getIncrementalPlacement(const App::DocumentObject* obj
 {
     return QStringLiteral(R"(App.getDocument("%1").%2.%3=%4.multiply(App.getDocument("%1").%2.%3))")
         .arg(
-            QString::fromLatin1(obj->getDocument()->getName()),
-            QString::fromLatin1(obj->getNameInDocument()),
-            QString::fromLatin1(this->propertyName.c_str()),
+            QString::fromUtf8(obj->getDocument()->getName()),
+            QString::fromUtf8(obj->getNameInDocument()),
+            QString::fromUtf8(this->propertyName.c_str()),
             data
         );
 }
@@ -371,9 +379,9 @@ QString PlacementHandler::getSimplePlacement(const App::DocumentObject* obj, con
 {
     return QStringLiteral("App.getDocument(\"%1\").%2.%3=%4")
         .arg(
-            QString::fromLatin1(obj->getDocument()->getName()),
-            QString::fromLatin1(obj->getNameInDocument()),
-            QString::fromLatin1(this->propertyName.c_str()),
+            QString::fromUtf8(obj->getDocument()->getName()),
+            QString::fromUtf8(obj->getNameInDocument()),
+            QString::fromUtf8(this->propertyName.c_str()),
             data
         );
 }

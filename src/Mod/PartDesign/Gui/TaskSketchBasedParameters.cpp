@@ -220,7 +220,7 @@ QVariant TaskSketchBasedParameters::setUpToFace(const QString& text)
         return {};
     }
 
-    App::DocumentObject* obj = doc->getObject(parts[0].toLatin1());
+    App::DocumentObject* obj = doc->getObject(parts[0].toUtf8());
     if (!obj) {
         return {};
     }
@@ -315,7 +315,8 @@ QString TaskSketchBasedParameters::make2DLabel(
         return {};
     }
     else {
-        return QString::fromStdString((std::string(section->getNameInDocument()) + ":" + subValues[0]));
+        return QString::fromUtf8(section->Label.getValue()) + ":"
+            + QString::fromStdString(subValues[0]);
     }
 }
 

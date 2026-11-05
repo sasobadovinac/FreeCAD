@@ -1852,7 +1852,7 @@ void Document::saveAll()
                 getMainWindow(),
                 QObject::tr("Failed to save document")
                     + QStringLiteral(": %1").arg(QString::fromUtf8(doc->getName())),
-                QString::fromLatin1(e.what())
+                QString::fromUtf8(e.what())
             );
             break;
         }
@@ -1925,7 +1925,7 @@ void Document::Save(Base::Writer& writer) const
         );
         if (hGrp->GetBool("SaveThumbnail", true)) {
             int size = hGrp->GetInt("ThumbnailSize", 256);
-            size = Base::clamp<int>(size, 64, 512);
+            size = std::clamp<int>(size, 64, 512);
             std::list<MDIView*> mdi = getMDIViews();
 
             View3DInventorViewer* view = nullptr;

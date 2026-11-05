@@ -460,30 +460,16 @@ int SketchObject::fillet(int GeoId1, int GeoId2, const Base::Vector3d& refPnt1,
         coinc2->addElement(GeoElementId(lineGeoId, filletPosId2));
 #endif
 
-        if (trim) {
 #ifdef SKETCHER_CONSTRAINT_USE_LEGACY_ELEMENTS
-            coinc1->Second = GeoId1;
-            coinc1->SecondPos = PosId1;
+        coinc1->Second = filletId;
+        coinc1->SecondPos = PointPos::start;
 
-            coinc2->Second = GeoId2;
-            coinc2->SecondPos = PosId2;
+        coinc2->Second = filletId;
+        coinc2->SecondPos = PointPos::end;
 #else
-            coinc1->addElement(GeoElementId(GeoId1, PosId1));
-            coinc2->addElement(GeoElementId(GeoId2, PosId2));
+        coinc1->addElement(GeoElementId(filletId, PointPos::start));
+        coinc2->addElement(GeoElementId(filletId, PointPos::end));
 #endif
-        }
-        else {
-#ifdef SKETCHER_CONSTRAINT_USE_LEGACY_ELEMENTS
-            coinc1->Second = filletId;
-            coinc1->SecondPos = PointPos::start;
-
-            coinc2->Second = filletId;
-            coinc2->SecondPos = PointPos::end;
-#else
-            coinc1->addElement(GeoElementId(filletId, PointPos::start));
-            coinc2->addElement(GeoElementId(filletId, PointPos::end));
-#endif
-        }
 
         addConstraint(std::move(coinc1));
         addConstraint(std::move(coinc2));
@@ -1220,8 +1206,17 @@ int SketchObject::split(int GeoId, const Base::Vector3d& point)
         transferConstraints(GeoId, PointPos::start, newIds.front(), PointPos::start, true);
         transferConstraints(GeoId, PointPos::end, newIds.back(), PointPos::end, true);
     }
+    const bool isConic = geoAsCurve->isDerivedFrom<Part::GeomConic>()
+        || geoAsCurve->isDerivedFrom<Part::GeomArcOfConic>();
     for (const auto& oldConstrId : idsOfOldConstraints) {
         Constraint* con = allConstraints[oldConstrId];
+        // Internal geometry stays with the first piece, as in trim
+        if (con->Type == InternalAlignment && isConic) {
+            auto* newCon = con->copy();
+            newCon->Second = newIds.front();
+            newConstraints.push_back(newCon);
+            continue;
+        }
         deriveConstraintsForPieces(GeoId, newIds, newGeosConst, con, newConstraints, true);
     }
 
@@ -1251,6 +1246,14 @@ int SketchObject::split(int GeoId, const Base::Vector3d& point)
         midJoint->Second = newIds.back();
         midJoint->SecondPos = PointPos::mid;
         newConstraints.push_back(midJoint);
+        // Center and end point fix a circle but not the other conics
+        if (!geoAsCurve->is<Part::GeomArcOfCircle>()) {
+            auto* equal = new Constraint();
+            equal->Type = Equal;
+            equal->First = newIds.front();
+            equal->Second = newIds.back();
+            newConstraints.push_back(equal);
+        }
     }
     // for lines, we add a tangent constraint instead of coincident
     // TODO: this shouldn't be only for lines & bsplines, but for any geometry that isn't
